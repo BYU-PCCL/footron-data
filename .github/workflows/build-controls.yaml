@@ -38,7 +38,8 @@ jobs:
         REACT_APP_MESSAGING_BASE_URL: ${{ secrets[format('messaging_base_url_{0}', steps.format-branch-name.outputs.BRANCH_NAME)] }}
       run: CI= python3 -m footron_web_build ./web ./build $(python3 clone_remote_experiences.py)
     - name: Upload web build
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: web-build
         path: build
+        include-hidden-files: true
