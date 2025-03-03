@@ -24,7 +24,8 @@ jobs:
     - name: Generate experience hashes
       run: python generate_experience_hashes.py build/experiences/* | tee build/hashes.json | python3 -mjson.tool
     - name: Upload experiences
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: experiences
         path: build/
+        include-hidden-files: true
