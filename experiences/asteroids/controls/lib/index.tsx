@@ -1,19 +1,14 @@
 /** @jsxImportSource @emotion/react */
 import React, { MouseEventHandler, useState } from "react";
+import { Box, ClickAwayListener, Dialog } from "@material-ui/core";
+import { Close, Settings } from "@material-ui/icons";
 import { useMessaging } from "@footron/controls-client";
-import { Box, createTheme } from "@material-ui/core";
 
-import { Backdrop } from "@mui/material";
-
-import SettingsIcon from "@mui/icons-material/Settings";
-import CloseIcon from "@mui/icons-material/Close";
-import { ClickAwayListener } from "@mui/base/ClickAwayListener";
-
-import FlyTo from "./flyTo";
-import SettingsMenu from "./SettingsMenu";
 import AsteroidWatch from "./AsteroidWatch";
-import Learn from "./Learn";
+import FlyTo from "./flyTo";
 import Info from "./Info";
+import Learn from "./Learn";
+import SettingsMenu from "./SettingsMenu";
 import {
   dynamicUiwrapperStyle,
   overlayMenuWrapperStyle,
@@ -22,8 +17,9 @@ import {
   tabPanelStyle,
   tabsStyle,
   tabStyle,
-  wrapperStyle,
+  wrapperStyle
 } from "./style";
+
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -37,7 +33,7 @@ interface TabProps {
   selected: boolean;
 }
 
-function CustomTabPanel(props: TabPanelProps) {
+function CustomTabPanel(props: TabPanelProps): JSX.Element {
   const { children, value, index, ...other } = props;
 
   return (
@@ -103,11 +99,13 @@ const ControlsComponent = (): JSX.Element => {
     );
   }
 
+  // TODO: Remove footron container stuff
+
   return (
     <Box css={wrapperStyle}>
       {/* Settings overlay */}
       {menuOpen ? (
-        <Backdrop open={true} css={overlayStyle}>
+        <Dialog open={true} css={overlayStyle}>
           <ClickAwayListener onClickAway={handleClickAwaySettings}>
             <Box css={overlayMenuWrapperStyle}>
               <SettingsMenu
@@ -116,7 +114,7 @@ const ControlsComponent = (): JSX.Element => {
               />
             </Box>
           </ClickAwayListener>
-        </Backdrop>
+        </Dialog>
       ) : null}
       <Box css={dynamicUiwrapperStyle}>
         <CustomTabPanel value={value} index={1}>
@@ -134,7 +132,7 @@ const ControlsComponent = (): JSX.Element => {
       </Box>
       <Box css={tabsStyle}>
         <Tab selected={false} onClick={handleOpenSettings}>
-          {menuOpen ? <CloseIcon /> : <SettingsIcon />}
+          {menuOpen ? <Close /> : <Settings />}
         </Tab>
         <Tab selected={value == 1} onClick={getWatch}>
           Watch

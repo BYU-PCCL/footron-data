@@ -1,14 +1,14 @@
-import { Button, Slider, Box } from "@material-ui/core";
-import { useMessaging } from "@footron/controls-client";
 import { useEffect, useState } from "react";
+import { Button, Slider, Box } from "@material-ui/core";
+import { Pause, PlayArrow } from "@material-ui/icons";
+import { useMessaging } from "@footron/controls-client";
+
 import {
   helpMessageStyle,
   timeButtonsContainerStyle,
   timeComponentStyle as timeComponentStyle,
   timeSliderStyle,
 } from "./style";
-import PauseIcon from "@mui/icons-material/Pause";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 
 function formatTime(seconds: number): string {
   const units = [
@@ -102,7 +102,7 @@ export default function TimeSlider() {
   };
 
   return (
-    <Box css>
+    <Box>
       <Box css={timeComponentStyle}>
         <Box css={timeSliderStyle}>
           <Box css={helpMessageStyle(helpMessage)}>
@@ -125,7 +125,7 @@ export default function TimeSlider() {
             onClick={rate == 0 ? play : pauseTime}
             size="large"
           >
-            {rate == 0 ? <PlayArrowIcon /> : <PauseIcon />}
+            {rate == 0 ? <PlayArrow /> : <Pause />}
           </Button>
           <Button
             onClick={goLive}
