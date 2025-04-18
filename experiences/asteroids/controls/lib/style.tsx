@@ -1,104 +1,11 @@
 import { css } from "@emotion/react";
 
-// TODO: Remove these dev styles
-
-export const pageWrapperStyle = css`
-  display: flex;
-  justify-content: center;
-  height: 100%;
-`;
-
-export const pageWidthStyle = css`
-  width: 100%;
-  height: 100%;
-
-  @media (min-width: 600px) {
-    width: 600px;
-  }
-`;
-
-export const fixedFooterStyle = css`
-  position: fixed;
-  bottom: 0;
-
-  @media (max-width: 600px) {
-    left: 0;
-    right: 0;
-  }
-
-  @media (min-width: 600px) {
-    width: 600px;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: rgba(0, 30, 76, 0.25) 0 5px 5px;
-  }
-`;
-
-export const headerStyle = css`
-  height: 64px;
-  width: calc(100% - 32px);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  background: #f7faff;
-  border-bottom: 2px solid #b4bfd2;
-  gap: 12px;
-`;
-
-export const titleStyle = css`
-  font-family: "Montserrat", sans-serif;
-  font-size: 20px;
-  font-weight: bold;
-  color: #001e4c;
-`;
-
-export const controlsContainerStyle = css`
-  // Height of more experiences button
-  margin-bottom: 64px;
-`;
-
-export const footerStyle = css`
-  height: 64px;
-  width: calc(100% - 32px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 16px;
-  transition: background 100ms ease-out;
-  background: #001e4c;
-
-  &:hover {
-    background: #072b6a;
-  }
-
-  &:active {
-    background: #0b3379;
-  }
-`;
-
-export const footerInnerStyle = css`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-`;
-
-export const bottomTitleStyle = css`
-  font-family: "Source Code Pro", sans-serif;
-  font-size: 18px;
-  font-weight: bold;
-  text-transform: uppercase;
-  color: #f0f6ff;
-`;
-
-// END dev styles
-
 export const overlayStyle = css`
   z-index: 99999;
 `;
 
 export const overlayMenuWrapperStyle = css`
-background-color: white;
+  background-color: white;
   max-width: min(80vw, 480px);
   max-height: min(80vh, 480px);
   overflow: auto;
@@ -169,7 +76,6 @@ export const thickWidgetStyle = css`
   height: 192px;
   padding: 0px;
 `;
-
 
 // We are inserted within footron's
 // controlsContainer which is not the
@@ -267,7 +173,6 @@ export const topUI = css`
 export const paginationStyle = css`
   display: flex;
   justify-content: center;
-  gap: 0.5em;
   align-items: center;
   height: 32px;
   padding: 0px;

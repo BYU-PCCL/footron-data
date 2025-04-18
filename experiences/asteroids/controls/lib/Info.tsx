@@ -1,24 +1,26 @@
 import React, { ReactNode, useState } from "react";
 import {
+  Dialog,
   Box,
-  Pagination,
-  Backdrop,
-  ClickAwayListener,
-  Link,
   Button,
-} from "@mui/material";
-import { Divider, IconButton } from "@material-ui/core";
+  ClickAwayListener,
+  Divider,
+  IconButton,
+  Link,
+} from "@material-ui/core";
 import { Close } from "@material-ui/icons";
+
+import { Pagination } from "./NonStandardDependencies.es";
 import {
-  overlayMenuWrapperStyle,
-  overlayStyle,
+  definitionListStyle,
   fullUIStyle,
-  standardBottomUiStyle,
-  topUI,
-  paginationStyle,
   overlayMenuHeaderStyle,
   overlayMenuStyle,
-  definitionListStyle,
+  overlayMenuWrapperStyle,
+  overlayStyle,
+  paginationStyle,
+  standardBottomUiStyle,
+  topUI
 } from "./style";
 
 interface InfoObject {
@@ -476,13 +478,13 @@ export default function Info() {
   return (
     <Box css={fullUIStyle}>
       {menuOpen ? (
-        <Backdrop open={true} css={overlayStyle}>
+        <Dialog open={true} css={overlayStyle}>
           <ClickAwayListener onClickAway={handleClickAwaySettings}>
             <Box css={overlayMenuWrapperStyle}>
               <DefinitionOverlay definition={currentDefinition} />
             </Box>
           </ClickAwayListener>
-        </Backdrop>
+        </Dialog>
       ) : null}
       <Box css={topUI}>{pages[currentPage - 1]}</Box>
       <Box css={standardBottomUiStyle}>

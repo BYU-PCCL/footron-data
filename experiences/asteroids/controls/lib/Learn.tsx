@@ -1,19 +1,17 @@
-import { Box, Button, Fab } from "@material-ui/core";
+import { useCallback, useState } from "react";
+import { Box, Button, Fab, IconButton } from "@material-ui/core";
+import { Replay, SkipPrevious, Close } from "@material-ui/icons";
 import { useMessaging } from "@footron/controls-client";
-import ReplayIcon from "@mui/icons-material/Replay";
-import { IconButton } from "@mui/material";
+
+import StandardBottomUi from "./standardBottomUi";
 import {
   fabStyle,
   fullUIStyle,
   largeIconStyle,
   storyBoxStyle,
   thinWidgetStyle,
-  topUI,
+  topUI
 } from "./style";
-import { useCallback, useState } from "react";
-import { Close } from "@mui/icons-material";
-import StandardBottomUi from "./standardBottomUi";
-import { SkipPrevious } from "@material-ui/icons";
 
 const dummyText = "Loading";
 
@@ -116,7 +114,7 @@ export default function Learn() {
                 <IconButton color="primary" 
                   onClick={replay}
                 >
-                  <ReplayIcon />
+                  <Replay />
                 </IconButton>
               )}
             </Box>

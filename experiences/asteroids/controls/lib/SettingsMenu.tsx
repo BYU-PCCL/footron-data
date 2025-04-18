@@ -1,39 +1,35 @@
 import React, { useEffect, useState } from "react";
+import { useMessaging } from "@footron/controls-client";
 import {
   Box,
+  Button,
   IconButton,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
   Switch,
-} from "@mui/material";
+} from "@material-ui/core";
+import { Close, Settings, Label } from "@material-ui/icons";
+
 import {
   AsteroidIcon,
   CometIcon,
-  ShadowLightingIcon,
-  OrbitIcon,
-  PlanetIcon,
-  NaturalLightingIcon,
-  FloodLightingIcon,
   ConstellationIcon,
+  FloodLightingIcon,
+  NaturalLightingIcon,
+  OrbitIcon,
+  PHOIcon,
+  PlanetIcon,
+  ShadowLightingIcon,
+  StarsIcon,
+  Satellite
 } from "./icons";
-import {
-  AutoAwesome,
-  Label,
-  Settings,
-  Radar,
-  SatelliteAlt,
-} from "@mui/icons-material";
-
-import { useMessaging } from "@footron/controls-client";
 import {
   overlayMenuHeaderStyle,
   overlayMenuStyle,
   overlaySettingsMenuStyle,
 } from "./style";
-import { Close } from "@material-ui/icons";
-import { Button } from "@material-ui/core";
 
 interface Props {
   toggle: boolean;
@@ -125,7 +121,7 @@ export default function SettingsMenu({ toggle, onToggle }: Props) {
         </ListItem>
         <ListItem>
           <ListItemIcon>
-            <Radar />
+            <PHOIcon />
           </ListItemIcon>
           <ListItemText primary="Only PHOs" />
           <Switch
@@ -190,7 +186,7 @@ export default function SettingsMenu({ toggle, onToggle }: Props) {
         </ListItem>
         <ListItem>
           <ListItemIcon>
-            <SatelliteAlt />
+            <Satellite />
           </ListItemIcon>
           <Button
             variant="contained"
@@ -238,7 +234,7 @@ export default function SettingsMenu({ toggle, onToggle }: Props) {
         </ListItem>
         <ListItem>
           <ListItemIcon>
-            <AutoAwesome />
+            <StarsIcon />
           </ListItemIcon>
           <Button
             variant="contained"
