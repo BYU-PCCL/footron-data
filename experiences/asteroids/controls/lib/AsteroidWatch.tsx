@@ -1,5 +1,5 @@
 import { useMessaging } from "@footron/controls-client";
-import { Box, Button } from "@mui/material";
+import { Box, Button } from "@material-ui/core";
 import { thinWidgetStyle, topUI, fullUIStyle } from "./style";
 import StandardBottomUi from "./standardBottomUi";
 

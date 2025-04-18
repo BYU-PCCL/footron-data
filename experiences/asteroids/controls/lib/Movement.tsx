@@ -1,17 +1,17 @@
+import { useEffect, useState } from "react";
 import { Box } from "@material-ui/core";
 import { useMessaging } from "@footron/controls-client";
+
+import { Joystick, JoystickShape } from "./NonStandardDependencies.es";
 import {
   joystickStyle,
   movementComponentStyle,
   helpMessageStyle,
 } from "./style";
-import { Joystick, JoystickShape } from "react-joystick-component";
-import { IJoystickUpdateEvent } from "react-joystick-component/build/lib/Joystick";
-import { useEffect, useState } from "react";
 
 interface TabPanelProps {
   children?: React.ReactNode;
-  move: (event: IJoystickUpdateEvent) => void;
+  move: (event: any) => void;
   stop: () => void;
 }
 

@@ -1,37 +1,36 @@
 import React, { useCallback, useState } from "react";
 import {
-  ClickAwayListener,
   Backdrop,
-  IconButton,
-  Divider,
-} from "@mui/material";
-import {
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   Box,
   Button,
+  ClickAwayListener,
+  Divider,
+  FormControl,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Select
 } from "@material-ui/core";
+import { Close } from "@material-ui/icons";
 import { useMessaging } from "@footron/controls-client";
+
 import {
   flyCategories,
   flyTargets,
   sortedFlyTargets,
   targetToId,
 } from "./flytargets";
+import StandardBottomUi from "./standardBottomUi";
 import {
-  overlayMenuWrapperStyle,
+  definitionListStyle,
   fullSizeStyle,
-  topUI,
+  fullUIStyle,
   overlayMenuHeaderStyle,
+  overlayMenuWrapperStyle,
   overlayStyle,
   thinWidgetStyle,
-  fullUIStyle,
-  definitionListStyle,
+  topUI,
 } from "./style";
-import { Close } from "@material-ui/icons";
-import StandardBottomUi from "./standardBottomUi";
 
 interface DescriptionsProps {
   blurb: string[];
@@ -163,8 +162,8 @@ export default function FlyTo() {
   const DefinitionOverlay: React.FC<Content> = (content: Content) => {
     const dataEntries = content.data
       ? Object.entries(content.data).filter(
-        (element) => element[0] !== "distance"
-      )
+          (element) => element[0] !== "distance"
+        )
       : [];
     const visibleEntries = expandData ? dataEntries : dataEntries.slice(0, 3);
     console.log(visibleEntries);
@@ -326,16 +325,16 @@ export default function FlyTo() {
             sortedFlyTargets[targetInfoID].name == selectedTarget) ||
           (sortedFlyTargets[preselectedTarget] &&
             infoText.title == sortedFlyTargets[preselectedTarget].name)) && (
-            <Box css={thinWidgetStyle}>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => setMenuOpen(true)}
-              >
-                About
-              </Button>
-            </Box>
-          )}
+          <Box css={thinWidgetStyle}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => setMenuOpen(true)}
+            >
+              About
+            </Button>
+          </Box>
+        )}
       </Box>
       <StandardBottomUi />
     </Box>

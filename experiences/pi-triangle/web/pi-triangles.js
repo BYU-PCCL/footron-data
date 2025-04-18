@@ -102,7 +102,7 @@ function draw() {
   textStyle(BOLD)
   text("Actual value of π", 0, 0)
   textStyle(NORMAL)
-  text(PI.toFixed(PI_DIGITS), 0, 50)
+  text(PI.toFixed(PI_DIGITS)+"...", 0, 50)
   pop()
 
   // ESTIMATED VALUE OF PI
@@ -131,6 +131,9 @@ function draw() {
       textArray.push([calculatedArea[i], RED]) // red
     }
   }
+  textArray.push( "..." )
+  textArray.push( "..." )
+  textArray.push( "..." )
   drawText(0, 50, textArray, true)
   pop()
 
