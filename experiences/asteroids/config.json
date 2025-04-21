@@ -1,0 +1,10 @@
+{
+  "id": "asteroids",
+  "type": "web",
+  "title": "Asteroid Tracking",
+  "description": "A NASA simulation of all tracked asteroids in the solar system",
+  "action_hints": ["Find a planet", "Take a tour", "Fly through the solar system"],
+  "layout": "full",
+  "lifetime": 180,
+  "queueable": true
+}
