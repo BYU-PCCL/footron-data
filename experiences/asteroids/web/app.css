@@ -4058,32 +4058,32 @@ body.offset-up #static-ui > div.follow-reframe {
   font-family: Inter;
   font-style: normal;
   font-weight: 300;
-  src: url(assets/default/fonts/Inter-Light.woff2?v=3.15) format("woff2"),
-    url(assets/default/fonts/Inter-Light.woff?v=3.15) format("woff");
+  src: url(assets/default/fonts/Inter-Light.woff2) format("woff2"),
+    url(assets/default/fonts/Inter-Light.woff) format("woff");
 }
 @font-face {
   font-display: swap;
   font-family: Inter;
   font-style: normal;
   font-weight: 400;
-  src: url(assets/default/fonts/Inter-Regular.woff2?v=3.15) format("woff2"),
-    url(assets/default/fonts/Inter-Regular.woff?v=3.15) format("woff");
+  src: url(assets/default/fonts/Inter-Regular.woff2) format("woff2"),
+    url(assets/default/fonts/Inter-Regular.woff) format("woff");
 }
 @font-face {
   font-display: swap;
   font-family: Inter;
   font-style: normal;
   font-weight: 600;
-  src: url(assets/default/fonts/Inter-SemiBold.woff2?v=3.15) format("woff2"),
-    url(assets/default/fonts/Inter-SemiBold.woff?v=3.15) format("woff");
+  src: url(assets/default/fonts/Inter-SemiBold.woff2) format("woff2"),
+    url(assets/default/fonts/Inter-SemiBold.woff) format("woff");
 }
 @font-face {
   font-display: swap;
   font-family: Inter;
   font-style: normal;
   font-weight: 700;
-  src: url(assets/default/fonts/Inter-Bold.woff2?v=3.15) format("woff2"),
-    url(assets/default/fonts/Inter-Bold.woff?v=3.15) format("woff");
+  src: url(assets/default/fonts/Inter-Bold.woff2) format("woff2"),
+    url(assets/default/fonts/Inter-Bold.woff) format("woff");
 }
 @font-face {
   font-family: DMMono;
