@@ -31,12 +31,7 @@ import {
   overlaySettingsMenuStyle,
 } from "./style";
 
-interface Props {
-  toggle: boolean;
-  onToggle: () => void;
-}
-
-export default function SettingsMenu({ toggle, onToggle }: Props) {
+export default function SettingsMenu({ toggle, onToggle }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { sendMessage } = useMessaging();
   const [state, setState] = useState({
@@ -50,7 +45,7 @@ export default function SettingsMenu({ toggle, onToggle }: Props) {
     setMenuOpen(toggle);
   }, [toggle]);
 
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (event) => {
     sendMessage({
       type: "settings",
       setting: event.target.name,
@@ -62,20 +57,20 @@ export default function SettingsMenu({ toggle, onToggle }: Props) {
     });
   };
 
-  const toggleButton = (setting: string) => {
+  const toggleButton = (setting) => {
     sendMessage({
       type: "settings",
       setting: setting,
     });
   };
 
-  const handleLightingChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLightingChange = (event) => {
     sendMessage({
       type: "settings",
       setting: "lighting",
       value: event.target.name,
     });
-    setLighting(event.target.name as string);
+    setLighting(event.target.name);
   };
 
   return (
