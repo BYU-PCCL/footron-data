@@ -13,6 +13,7 @@ import {
 } from "@material-ui/core";
 import { Close } from "@material-ui/icons";
 import { useMessaging } from "@footron/controls-client";
+import PropTypes from "prop-types";
 
 import {
   flyCategories,

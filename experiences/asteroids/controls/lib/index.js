@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Box, ClickAwayListener, Dialog } from "@material-ui/core";
 import { Close, Settings } from "@material-ui/icons";
 import { useMessaging } from "@footron/controls-client";
+import PropTypes from "prop-types";
 
 import AsteroidWatch from "./AsteroidWatch";
 import FlyTo from "./flyTo";
@@ -35,6 +36,12 @@ function CustomTabPanel(props) {
       {children}
     </div>
   );
+}
+
+CustomTabPanel.propTypes = {
+  children: PropTypes.node,
+  value: PropTypes.number,
+  index: PropTypes.number
 }
 
 const ControlsComponent = () => {
@@ -86,7 +93,11 @@ const ControlsComponent = () => {
     );
   }
 
-  // TODO: Remove footron container stuff
+  Tab.propTypes = {
+    children: PropTypes.node,
+    onClick: PropTypes.func,
+    selected: string // This might be wrong
+  }
 
   return (
     <Box css={wrapperStyle}>

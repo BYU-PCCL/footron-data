@@ -11,6 +11,7 @@ import {
   Switch,
 } from "@material-ui/core";
 import { Close, Settings, Label } from "@material-ui/icons";
+import PropTypes from "prop-types";
 
 import {
   AsteroidIcon,
@@ -30,6 +31,7 @@ import {
   overlayMenuStyle,
   overlaySettingsMenuStyle,
 } from "./style";
+
 
 export default function SettingsMenu({ toggle, onToggle }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -267,3 +269,8 @@ export default function SettingsMenu({ toggle, onToggle }) {
     </Box>
   );
 }
+
+SettingsMenu.propType = {
+  toggle: PropTypes.bool,
+  onToggle: PropTypes.func
+};
