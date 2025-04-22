@@ -441,7 +441,7 @@ export default function Info() {
       <div
         css={definitionListStyle}
       >
-        {items.map((item, index) => (
+        {items.map((item: string, index: any) => (
           <Button
             key={item}
             onClick={() => openDef(item)}

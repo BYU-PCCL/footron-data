@@ -39,7 +39,7 @@ export default function Learn() {
     console.log(prevSlide, nextSlide);
   });
   const getInfoText = useCallback(
-    async (value) => {
+    async (value: any) => {
       await sendMessage({ type: "learn", value: value });
     },
     [sendMessage]

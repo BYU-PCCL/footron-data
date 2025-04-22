@@ -101,7 +101,7 @@ export default function FlyTo() {
   };
 
   const getInfoText = useCallback(
-    async (target) => {
+    async (target: string) => {
       await sendMessage({ type: "fly", value: targetToId[target] });
     },
     [sendMessage]

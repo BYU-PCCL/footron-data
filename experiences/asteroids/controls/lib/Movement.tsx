@@ -59,7 +59,7 @@ export default function MovementControls() {
     else if (stateMachine[machineIndex] > 0 && direction != stateMachinePattern[(stateMachine[machineIndex] - 1) % stateMachinePattern.length]) {
       setStateMachine([0, 0]);
     }
-    if (stateMachine.every((value) => value >= stateMachinePattern.length)) {
+    if (stateMachine.every((value: number) => value >= stateMachinePattern.length)) {
       toggleFlyMode()
       setStateMachine(stateMachine.fill(0));
     }
