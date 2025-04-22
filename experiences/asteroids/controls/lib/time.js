@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button, Slider, Box } from "@material-ui/core";
 import { Pause, PlayArrow } from "@material-ui/icons";
 import { useMessaging } from "@footron/controls-client";
