@@ -6,13 +6,13 @@ var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __propIsEnum = Object.prototype.propertyIsEnumerable;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __spreadValues = (a, b2) => {
-  for (var prop in b2 || (b2 = {}))
-    if (__hasOwnProp.call(b2, prop))
-      __defNormalProp(a, prop, b2[prop]);
+  for (var propTheSecond in b2 || (b2 = {}))
+    if (__hasOwnProp.call(b2, propTheSecond))
+      __defNormalProp(a, propTheSecond, b2[propTheSecond]);
   if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b2)) {
-      if (__propIsEnum.call(b2, prop))
-        __defNormalProp(a, prop, b2[prop]);
+    for (var propTheSecond of __getOwnPropSymbols(b2)) {
+      if (__propIsEnum.call(b2, propTheSecond))
+        __defNormalProp(a, propTheSecond, b2[propTheSecond]);
     }
   return a;
 };
@@ -241,6 +241,7 @@ var StyleSheet = /* @__PURE__ */ function() {
       try {
         sheet.insertRule(rule, sheet.cssRules.length);
       } catch (e2) {
+        e2 = 0;
       }
     } else {
       tag.appendChild(document.createTextNode(rule));
