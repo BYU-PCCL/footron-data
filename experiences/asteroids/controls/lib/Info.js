@@ -445,9 +445,8 @@ export default function Info() {
     items: PropTypes.string,
   }
 
-  const DefinitionOverlay = ({
-    definition,
-  }) => {
+  const DefinitionOverlay = (props) => {
+    const { definition } = props
     return (
       <Box css={overlayMenuStyle}>
         <Box css={overlayMenuHeaderStyle}>
@@ -465,7 +464,7 @@ export default function Info() {
     );
   };
 
-  DefinitionOverlay.PropTypes = {
+  DefinitionOverlay.propTypes = {
     definition: PropTypes.string
   }
 
