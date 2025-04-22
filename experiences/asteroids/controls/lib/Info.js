@@ -57,7 +57,7 @@ export default function Info() {
         <br />
         With asteroids represented as blue points, and comets as white points,
         our database is updated daily to give you approximately 36,000 NEOs (and
-        counting). Additionally, you can explore most of NASA's asteroid and
+        counting). Additionally, you can explore most of NASA&apos;s asteroid and
         comet missions (past and present), from Galileo, to Lucy and DART.
       </p>
       <div>
@@ -82,19 +82,19 @@ export default function Info() {
     <div key="page3">
       <h2>Learn with the footron</h2>
       <p>
-        Select 'Learn' to access three different stories about asteroids and
-        comets, including a tour through NASA's historic missions.
+        Select &apos;Learn&apos; to access three different stories about asteroids and
+        comets, including a tour through NASA&apos;s historic missions.
       </p>
     </div>,
     <div key="page4">
       <h2>Keep an Eye Out!</h2>
       <p>
-        Select the 'Watch' option to see the next five closest approaches to
+        Select the &apos;Watch&apos; option to see the next five closest approaches to
         Earth, complete with a countdown.
       </p>
       <div>
         <h5>Hint:</h5>
-        <p>Don't forget to play with that time slider!</p>
+        <p>Don&apos;t forget to play with that time slider!</p>
       </div>
     </div>,
     <div key="page5">
@@ -144,7 +144,7 @@ export default function Info() {
         <a href="https://cneos.jpl.nasa.gov" target="_blank">
           Center for Near-Earth Object Studies
         </a>{" "}
-        and JPL's{" "}
+        and JPL&apos;s{" "}
         <a href="https://ssd.jpl.nasa.gov" target="_blank">
           Solar System Dynamics
         </a>{" "}
@@ -326,7 +326,7 @@ export default function Info() {
             the Moon.
           </p>
           <p>
-            More technically, it's the length of the semi-major axis of the
+            More technically, it&apos;s the length of the semi-major axis of the
             geocentric lunar orbit.
           </p>
           <p>
@@ -358,7 +358,7 @@ export default function Info() {
             <Link href="#" onClick={() => openDef("pho")}>
               Potentially Hazardous Object
             </Link>{" "}
-            if it's large enough.
+            if it&apos;s large enough.
           </p>
         </div>
       ),
@@ -375,7 +375,7 @@ export default function Info() {
               the Statue of Liberty is tall.
             </li>
             <li>
-              Approach Earth's orbit to within about 7.5 million kilometers (4.6
+              Approach Earth&apos;s orbit to within about 7.5 million kilometers (4.6
               million miles). This can also be expressed as having a{" "}
               <Link href="#" onClick={() => openDef("moid")}>
                 MOID
