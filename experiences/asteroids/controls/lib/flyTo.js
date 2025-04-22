@@ -122,7 +122,8 @@ export default function FlyTo() {
     setMenuOpen(false);
   };
 
-  const ButtonList = ({ items }) => {
+  const ButtonList = (props) => {
+    const { items } = props
     let filteredItems = items.filter((item) => sortedFlyTargets[item] != null);
     return (
       <div css={definitionListStyle}>
@@ -139,6 +140,10 @@ export default function FlyTo() {
       </div>
     );
   };
+
+  ButtonList.propTypes = {
+    items: PropTypes.arrayOf(PropTypes.string)
+  }
 
   const DefinitionOverlay = (content) => {
     const dataEntries = content.data

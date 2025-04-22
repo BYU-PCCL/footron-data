@@ -96,7 +96,7 @@ const ControlsComponent = () => {
   Tab.propTypes = {
     children: PropTypes.node,
     onClick: PropTypes.func,
-    selected: string // This might be wrong
+    selected: PropTypes.string // This might be wrong
   }
 
   return (
