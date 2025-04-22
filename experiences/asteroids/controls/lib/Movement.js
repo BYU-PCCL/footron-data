@@ -1,6 +1,7 @@
-import React, { useEffect, useState, PropTypes } from "react";
+import React, { useEffect, useState } from "react";
 import { Box } from "@material-ui/core";
 import { useMessaging } from "@footron/controls-client";
+import PropTypes from "prop-types";
 
 import { Joystick, JoystickShape } from "./NonStandardDependencies.es.js";
 import {
