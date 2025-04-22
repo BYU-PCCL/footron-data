@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, PropTypes } from "react";
 import { Box } from "@material-ui/core";
 import { useMessaging } from "@footron/controls-client";
 
@@ -10,7 +10,7 @@ import {
 } from "./style.js";
 
 function CustomJoystick(props) {
-  const { children, move, stop, ...other } = props;
+  const { move, stop } = props;
   return (
     <Joystick
       throttle={100}
@@ -22,6 +22,11 @@ function CustomJoystick(props) {
     />
   );
 }
+
+CustomJoystick.propTypes = {
+  move: PropTypes.func,
+  stop: PropTypes.func,
+};
 
 export default function MovementControls() {
   const [helpUi, setHelpUi] = useState(true);
