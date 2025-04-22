@@ -488,8 +488,9 @@ export default function Info() {
       ) : null}
       <Box css={topUI}>{pages[currentPage - 1]}</Box>
       <Box css={standardBottomUiStyle}>
+        // @ts-ignore
         <Pagination
-          // size="medium"
+          size="medium"
           count={pages.length}
           page={currentPage}
           onChange={handlePageChange}

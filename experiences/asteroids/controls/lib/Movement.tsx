@@ -106,12 +106,14 @@ export default function MovementControls() {
   return (
     <Box css={movementComponentStyle}>
       <Box css={joystickStyle}>
+        // @ts-ignore
         <CustomJoystick move={leftStickMove} stop={leftStickStop} />
       </Box>
       <Box css={joystickStyle}>
       {controlOption == "standard" ? (<b css={helpMessageStyle(helpUi)}>Move the camera</b>) : (<b css={{color: "red"}}>Expert freefly mode</b>)}
       </Box>
       <Box css={joystickStyle}>
+        // @ts-ignore
         <CustomJoystick move={rightStickMove} stop={rightStickStop} />
       </Box>
     </Box>
