@@ -23,7 +23,7 @@ export default function Learn() {
   const [prevSlide, setPrevSlide] = useState(false);
   const [nextSlide, setNextSlide] = useState(false);
   const [infoText, setInfoText] = useState(dummyText);
-  const { sendMessage } = useMessaging((content: any) => {
+  const { sendMessage } = useMessaging((content) => {
     if (content.type != "slideInfo") return;
     content = content.slideInfo;
     console.log("Incoming info: ", content);
@@ -39,7 +39,7 @@ export default function Learn() {
     console.log(prevSlide, nextSlide);
   });
   const getInfoText = useCallback(
-    async (value: any) => {
+    async (value) => {
       await sendMessage({ type: "learn", value: value });
     },
     [sendMessage]
@@ -66,7 +66,7 @@ export default function Learn() {
     sendMessage({ type: "context", value: "home" });
   };
 
-  const startShow = async (value: string) => {
+  const startShow = async (value) => {
     setSlideShowPlaying(true);
     getInfoText(value);
   };

@@ -13,15 +13,15 @@ const containerStyle = css`
   }
 `;
 
-const ControlsComponent = (): JSX.Element => {
+const ControlsComponent = () => {
   const [number, setNumber] = useState<number | undefined>(0);
 
-  const { sendMessage } = useMessaging<number>((message: any) => {
+  const { sendMessage } = useMessaging<number>((message) => {
     setNumber(message);
   });
 
   const updateSlider = useCallback(
-    async (event: any, value: any) => {
+    async (event, value) => {
       await sendMessage(value);
     },
     [sendMessage]

@@ -32,27 +32,7 @@ import {
   topUI,
 } from "./style";
 
-interface DescriptionsProps {
-  blurb: string[];
-  more?: string[];
-}
-
-interface Content {
-  title: string;
-  data: { [key: string]: number };
-  description?: DescriptionsProps;
-  related?: string[];
-  approach?: any;
-  stats?: any;
-  cards?: any;
-}
-
-interface DescriptionMessageProms {
-  content?: Content;
-  title: string;
-}
-
-const addUnit = (dataType: string, value: number) => {
+const addUnit = (dataType, value) => {
   switch (dataType) {
     case "radius":
       return `${value} km`;
@@ -66,7 +46,7 @@ const addUnit = (dataType: string, value: number) => {
 };
 
 export default function FlyTo() {
-  const emptyDescription: Content = {
+  const emptyDescription = {
     title: "None",
     related: [],
     description: { blurb: [], more: [] },
@@ -79,7 +59,7 @@ export default function FlyTo() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [expandData, setExpandData] = useState(false);
   const [infoText, setInfoText] = useState<Content>(emptyDescription);
-  const { sendMessage } = useMessaging((message: DescriptionMessageProms) => {
+  const { sendMessage } = useMessaging((message) => {
     console.log(message);
     if (message.title != null && message.content != null) {
       setTargetInfoID(message.title);
@@ -88,26 +68,26 @@ export default function FlyTo() {
   });
 
   const handleCategoryChange = (
-    event: React.ChangeEvent<{ value: unknown }>
+    event
   ) => {
-    const category = event.target.value as string;
+    const category = event.target.value;
     setSelectedCategory(category);
     setSelectedTarget(flyTargets[category][0]);
     setInfoText(emptyDescription);
   };
-  const handleTargetChange = (event: React.ChangeEvent<{ value: unknown }>) => {
-    setSelectedTarget(event.target.value as string);
+  const handleTargetChange = (event) => {
+    setSelectedTarget(event.target.value);
     setInfoText(emptyDescription);
   };
 
   const getInfoText = useCallback(
-    async (target: string) => {
+    async (target) => {
       await sendMessage({ type: "fly", value: targetToId[target] });
     },
     [sendMessage]
   );
 
-  const clickLink = (target: string) => {
+  const clickLink = (target) => {
     let targetObject = sortedFlyTargets[target];
     let category = "";
     switch (targetObject.type) {
@@ -135,13 +115,13 @@ export default function FlyTo() {
     getInfoText(targetObject.name);
   };
 
-  const handleClickAwaySettings = (event: any) => {
+  const handleClickAwaySettings = (event) => {
     event.preventDefault();
     event.stopPropagation();
     setMenuOpen(false);
   };
 
-  const ButtonList: React.FC<{ items: string[] }> = ({ items }) => {
+  const ButtonList = ({ items }) => {
     let filteredItems = items.filter((item) => sortedFlyTargets[item] != null);
     return (
       <div css={definitionListStyle}>
@@ -159,7 +139,7 @@ export default function FlyTo() {
     );
   };
 
-  const DefinitionOverlay: React.FC<Content> = (content: Content) => {
+  const DefinitionOverlay = (content) => {
     const dataEntries = content.data
       ? Object.entries(content.data).filter(
           (element) => element[0] !== "distance"

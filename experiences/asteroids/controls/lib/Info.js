@@ -21,26 +21,14 @@ import {
   paginationStyle,
   standardBottomUiStyle,
   topUI
-} from "./style";
-
-interface InfoObject {
-  [key: string]: definitionObject;
-}
-interface definitionObject {
-  title: string;
-  description: ReactNode;
-  relatedTerms: string[];
-}
-interface DefinitionOverlayProps {
-  definition: string;
-}
+} from "./style.js";
 
 export default function Info() {
   const [currentPage, setCurrentPage] = useState(1);
   const [currentDefinition, setCurrentDefinition] = useState("asteroid");
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const openDef = (word: string) => {
+  const openDef = (word) => {
     setCurrentDefinition(word);
     setMenuOpen(true);
   };
@@ -170,18 +158,18 @@ export default function Info() {
         for more information on how NASA monitors for potentially hazardous
         asteroids and comets.
       </p>
-      <br/>
+      <br />
       <b>One last secret:</b>
-      <br/>
+      <br />
       <q>
         I wonder what would happen if you spun the joysticks counterclockwise?
       </q>
-      <br/>
+      <br />
       -Christian
     </div>,
   ];
 
-  const definitions: InfoObject = {
+  const definitions = {
     asteroid: {
       title: "Asteroid",
       description: (
@@ -421,26 +409,23 @@ export default function Info() {
     },
   };
 
-  const handlePageChange = (
-    _event: React.ChangeEvent<unknown>,
-    page: number
-  ) => {
+  const handlePageChange = (_event, page) => {
     setCurrentPage(page);
   };
 
-  const handleClickAwaySettings = (event: any) => {
+  const handleClickAwaySettings = (event) => {
     event.preventDefault();
     event.stopPropagation();
     setMenuOpen(false);
     console.log("Clicked away");
   };
 
-  const ButtonList: React.FC<{ items: string[] }> = ({ items }) => {
+  const ButtonList = ({ items }) => {
     return (
       <div
         css={definitionListStyle}
       >
-        {items.map((item: string, index: any) => (
+        {items.map((item, index) => (
           <Button
             key={item}
             onClick={() => openDef(item)}
@@ -454,7 +439,7 @@ export default function Info() {
     );
   };
 
-  const DefinitionOverlay: React.FC<DefinitionOverlayProps> = ({
+  const DefinitionOverlay = ({
     definition,
   }) => {
     return (

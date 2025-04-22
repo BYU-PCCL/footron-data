@@ -7,15 +7,9 @@ import {
   joystickStyle,
   movementComponentStyle,
   helpMessageStyle,
-} from "./style";
+} from "./style.js";
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  move: (event: any) => void;
-  stop: () => void;
-}
-
-function CustomJoystick(props: TabPanelProps) {
+function CustomJoystick(props) {
   const { children, move, stop, ...other } = props;
   return (
     <Joystick
@@ -52,20 +46,20 @@ export default function MovementControls() {
 
   }
 
-  const updateStateMachine = (machineIndex: number, direction: string | null) => {
+  const updateStateMachine = (machineIndex, direction) => {
     if (direction == stateMachinePattern[stateMachine[machineIndex] % stateMachinePattern.length]) {
       stateMachine[machineIndex]++;
     }
     else if (stateMachine[machineIndex] > 0 && direction != stateMachinePattern[(stateMachine[machineIndex] - 1) % stateMachinePattern.length]) {
       setStateMachine([0, 0]);
     }
-    if (stateMachine.every((value: number) => value >= stateMachinePattern.length)) {
+    if (stateMachine.every((value) => value >= stateMachinePattern.length)) {
       toggleFlyMode()
       setStateMachine(stateMachine.fill(0));
     }
   }
 
-  const leftStickMove = (event: IJoystickUpdateEvent) => {
+  const leftStickMove = (event) => {
     updateStateMachine(0, event.direction)
     if (helpUi) setHelpUi(false);
     if (controlOption == "standard") {
@@ -75,7 +69,7 @@ export default function MovementControls() {
     }
   };
 
-  const rightStickMove = (event: IJoystickUpdateEvent) => {
+  const rightStickMove = (event) => {
     updateStateMachine(1, event.direction)
     if (helpUi) setHelpUi(false);
     if (controlOption == "standard") {
