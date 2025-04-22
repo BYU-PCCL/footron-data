@@ -135,7 +135,7 @@ export default function FlyTo() {
     getInfoText(targetObject.name);
   };
 
-  const handleClickAwaySettings = (event: globalThis.MouseEvent | globalThis.TouchEvent) => {
+  const handleClickAwaySettings = (event: any) => {
     event.preventDefault();
     event.stopPropagation();
     setMenuOpen(false);

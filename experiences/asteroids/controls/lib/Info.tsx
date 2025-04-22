@@ -429,7 +429,7 @@ export default function Info() {
     setCurrentPage(page);
   };
 
-  const handleClickAwaySettings = (event: globalThis.MouseEvent | globalThis.TouchEvent) => {
+  const handleClickAwaySettings = (event: any) => {
     event.preventDefault();
     event.stopPropagation();
     setMenuOpen(false);
