@@ -31,11 +31,19 @@ interface definitionObject {
   description: ReactNode;
   relatedTerms: string[];
 }
-
 interface DefinitionOverlayProps {
   definition: string;
 }
+interface PaginationProps {
+  count: number;
+  page: number;
+  onChange: (_event: React.ChangeEvent<unknown>, page: number) => void;
+  color: string;
+  variant: string;
+  css?: any;
+}
 
+const CustomPagination = Pagination as React.FC<PaginationProps>;
 export default function Info() {
   const [currentPage, setCurrentPage] = useState(1);
   const [currentDefinition, setCurrentDefinition] = useState("asteroid");
@@ -489,7 +497,7 @@ export default function Info() {
       <Box css={topUI}>{pages[currentPage - 1]}</Box>
       <Box css={standardBottomUiStyle}>
         // @ts-ignore
-        <Pagination
+        <CustomPagination
           size="medium"
           count={pages.length}
           page={currentPage}
