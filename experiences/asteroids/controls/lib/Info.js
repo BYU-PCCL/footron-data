@@ -9,6 +9,7 @@ import {
   Link,
 } from "@material-ui/core";
 import { Close } from "@material-ui/icons";
+import PropTypes from "prop-types";
 
 import { Pagination } from "./NonStandardDependencies.es.js";
 import {
@@ -141,17 +142,17 @@ export default function Info() {
       <p>I hope you enjoyed it!</p>
       <p>
         The data used to generate this visualization is from the{" "}
-        <a href="https://cneos.jpl.nasa.gov" target="_blank">
+        <a href="https://cneos.jpl.nasa.gov" rel="opener">
           Center for Near-Earth Object Studies
         </a>{" "}
         and JPL&apos;s{" "}
-        <a href="https://ssd.jpl.nasa.gov" target="_blank">
+        <a href="https://ssd.jpl.nasa.gov" rel="opener">
           Solar System Dynamics
         </a>{" "}
         website. Visit the{" "}
         <a
           href="https://www.nasa.gov/planetarydefense/overview"
-          target="_blank"
+          rel="opener"
         >
           Planetary Defense Coordination Office
         </a>{" "}

@@ -52,13 +52,13 @@ export default function FlyTo() {
     description: { blurb: [], more: [] },
     data: {},
   };
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [selectedTarget, setSelectedTarget] = useState<string>("");
-  const [targetInfoID, setTargetInfoID] = useState<string>("");
-  const [preselectedTarget, setPreSelectedTarget] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedTarget, setSelectedTarget] = useState("");
+  const [targetInfoID, setTargetInfoID] = useState("");
+  const [preselectedTarget, setPreSelectedTarget] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [expandData, setExpandData] = useState(false);
-  const [infoText, setInfoText] = useState<Content>(emptyDescription);
+  const [infoText, setInfoText] = useState(emptyDescription);
   const { sendMessage } = useMessaging((message) => {
     console.log(message);
     if (message.title != null && message.content != null) {
@@ -142,8 +142,8 @@ export default function FlyTo() {
   const DefinitionOverlay = (content) => {
     const dataEntries = content.data
       ? Object.entries(content.data).filter(
-          (element) => element[0] !== "distance"
-        )
+        (element) => element[0] !== "distance"
+      )
       : [];
     const visibleEntries = expandData ? dataEntries : dataEntries.slice(0, 3);
     console.log(visibleEntries);
@@ -305,16 +305,16 @@ export default function FlyTo() {
             sortedFlyTargets[targetInfoID].name == selectedTarget) ||
           (sortedFlyTargets[preselectedTarget] &&
             infoText.title == sortedFlyTargets[preselectedTarget].name)) && (
-          <Box css={thinWidgetStyle}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => setMenuOpen(true)}
-            >
-              About
-            </Button>
-          </Box>
-        )}
+            <Box css={thinWidgetStyle}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => setMenuOpen(true)}
+              >
+                About
+              </Button>
+            </Box>
+          )}
       </Box>
       <StandardBottomUi />
     </Box>
