@@ -453,6 +453,8 @@ function parse(value, root, parent, rule, rules, rulesets, pseudo, points, decla
             ampersand = -1;
           break;
         }
+        characters2 += delimit(character2);
+        break;
       case 34:
       case 39:
       case 91:
@@ -6960,11 +6962,11 @@ var Joystick = function(_super) {
     return _this;
   }
   Joystick2.prototype.componentWillUnmount = function() {
-    var _this = this;
+    var pm = this._pointerMove;
     this._mounted = false;
     if (this.props.followCursor) {
       window.removeEventListener(InteractionEvents.PointerMove, function(event) {
-        return _this._pointerMove(event);
+        return pm(event);
       });
     }
     if (this.frameId !== null) {
@@ -6972,7 +6974,7 @@ var Joystick = function(_super) {
     }
   };
   Joystick2.prototype.componentDidMount = function() {
-    var _this = this;
+    var pm = this._pointerMove;
     this._mounted = true;
     if (this.props.followCursor) {
       this._parentRect = this._baseRef.current.getBoundingClientRect();
@@ -6980,7 +6982,7 @@ var Joystick = function(_super) {
         dragging: true
       });
       window.addEventListener(InteractionEvents.PointerMove, function(event) {
-        return _this._pointerMove(event);
+        return pm(event);
       });
       if (this.props.start) {
         this.props.start({
@@ -6994,10 +6996,11 @@ var Joystick = function(_super) {
     }
   };
   Joystick2.prototype._updatePos = function(coordinates) {
-    var _this = this;
+    var _pm = this._mounted;
+    var _ss = this._setState;
     this.frameId = window.requestAnimationFrame(function() {
-      if (_this._mounted) {
-        _this.setState({
+      if (_pm) {
+        _ss({
           coordinates
         });
       }

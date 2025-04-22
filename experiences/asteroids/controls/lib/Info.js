@@ -440,6 +440,10 @@ export default function Info() {
     );
   };
 
+  ButtonList.PropTypes = {
+    items: PropTypes.string,
+  }
+
   const DefinitionOverlay = ({
     definition,
   }) => {
@@ -459,6 +463,10 @@ export default function Info() {
       </Box>
     );
   };
+
+  DefinitionOverlay.PropTypes = {
+    definition: PropTypes.string
+  }
 
   return (
     <Box css={fullUIStyle}>
