@@ -489,7 +489,7 @@ export default function Info() {
       <Box css={topUI}>{pages[currentPage - 1]}</Box>
       <Box css={standardBottomUiStyle}>
         <Pagination
-          size="medium"
+          // size="medium"
           count={pages.length}
           page={currentPage}
           onChange={handlePageChange}
