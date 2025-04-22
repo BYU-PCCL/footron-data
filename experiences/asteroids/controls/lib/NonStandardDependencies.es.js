@@ -1383,7 +1383,7 @@ var jsx = function jsx2(type, props) {
 };
 (function(_jsx) {
   var JSX;
-  (function(_JSX) {
+  (function(_JSX) {return;
   })(JSX || (JSX = _jsx.JSX || (_jsx.JSX = {})));
 })(jsx || (jsx = {}));
 function css() {
@@ -3613,6 +3613,7 @@ function isFocusVisible(element) {
   try {
     return element.matches(":focus-visible");
   } catch (error) {
+    error = 0;
   }
   return false;
 }
@@ -4638,6 +4639,7 @@ const silent = (fn) => {
   try {
     return fn();
   } catch (error) {
+    error = 0
   }
   return void 0;
 };
