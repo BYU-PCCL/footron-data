@@ -23,3 +23,6 @@
 // 		},
 // 	},
 // });
+
+// Delete this line if you need to use the script. It's just for convincing the compiler keep this file
+export {}
