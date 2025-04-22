@@ -270,7 +270,7 @@ export default function SettingsMenu({ toggle, onToggle }) {
   );
 }
 
-SettingsMenu.propType = {
+SettingsMenu.propTypes = {
   toggle: PropTypes.bool,
   onToggle: PropTypes.func
 };

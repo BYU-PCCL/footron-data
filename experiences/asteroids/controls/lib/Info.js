@@ -421,7 +421,8 @@ export default function Info() {
     console.log("Clicked away");
   };
 
-  const ButtonList = ({ items }) => {
+  const ButtonList = (props) => {
+    const {items} = props
     return (
       <div
         css={definitionListStyle}
@@ -440,7 +441,7 @@ export default function Info() {
     );
   };
 
-  ButtonList.PropTypes = {
+  ButtonList.propTypes = {
     items: PropTypes.string,
   }
 
