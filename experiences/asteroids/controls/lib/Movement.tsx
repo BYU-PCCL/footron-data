@@ -1,17 +1,22 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Box } from "@material-ui/core";
 import { useMessaging } from "@footron/controls-client";
-import PropTypes from "prop-types";
 
 import { Joystick, JoystickShape } from "./NonStandardDependencies.es.js";
 import {
   joystickStyle,
   movementComponentStyle,
   helpMessageStyle,
-} from "./style.js";
+} from "./style";
 
-function CustomJoystick(props) {
-  const { move, stop } = props;
+interface TabPanelProps {
+  children?: React.ReactNode;
+  move: (event: any) => void;
+  stop: () => void;
+}
+
+function CustomJoystick(props: TabPanelProps) {
+  const { children, move, stop, ...other } = props;
   return (
     <Joystick
       throttle={100}
@@ -23,11 +28,6 @@ function CustomJoystick(props) {
     />
   );
 }
-
-CustomJoystick.propTypes = {
-  move: PropTypes.func,
-  stop: PropTypes.func,
-};
 
 export default function MovementControls() {
   const [helpUi, setHelpUi] = useState(true);
@@ -52,7 +52,7 @@ export default function MovementControls() {
 
   }
 
-  const updateStateMachine = (machineIndex, direction) => {
+  const updateStateMachine = (machineIndex: number, direction: string | null) => {
     if (direction == stateMachinePattern[stateMachine[machineIndex] % stateMachinePattern.length]) {
       stateMachine[machineIndex]++;
     }
@@ -65,7 +65,7 @@ export default function MovementControls() {
     }
   }
 
-  const leftStickMove = (event) => {
+  const leftStickMove = (event: IJoystickUpdateEvent) => {
     updateStateMachine(0, event.direction)
     if (helpUi) setHelpUi(false);
     if (controlOption == "standard") {
@@ -75,7 +75,7 @@ export default function MovementControls() {
     }
   };
 
-  const rightStickMove = (event) => {
+  const rightStickMove = (event: IJoystickUpdateEvent) => {
     updateStateMachine(1, event.direction)
     if (helpUi) setHelpUi(false);
     if (controlOption == "standard") {

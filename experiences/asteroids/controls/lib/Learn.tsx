@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import { useCallback, useState } from "react";
 import { Box, Button, Fab, IconButton } from "@material-ui/core";
 import { Replay, SkipPrevious, Close } from "@material-ui/icons";
 import { useMessaging } from "@footron/controls-client";
@@ -23,7 +23,7 @@ export default function Learn() {
   const [prevSlide, setPrevSlide] = useState(false);
   const [nextSlide, setNextSlide] = useState(false);
   const [infoText, setInfoText] = useState(dummyText);
-  const { sendMessage } = useMessaging((content) => {
+  const { sendMessage } = useMessaging((content: any) => {
     if (content.type != "slideInfo") return;
     content = content.slideInfo;
     console.log("Incoming info: ", content);
@@ -66,7 +66,7 @@ export default function Learn() {
     sendMessage({ type: "context", value: "home" });
   };
 
-  const startShow = async (value) => {
+  const startShow = async (value: string) => {
     setSlideShowPlaying(true);
     getInfoText(value);
   };

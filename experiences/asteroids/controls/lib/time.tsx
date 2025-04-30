@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Slider, Box } from "@material-ui/core";
 import { Pause, PlayArrow } from "@material-ui/icons";
 import { useMessaging } from "@footron/controls-client";
@@ -10,7 +10,7 @@ import {
   timeSliderStyle,
 } from "./style";
 
-function formatTime(seconds) {
+function formatTime(seconds: number): string {
   const units = [
     { label: "month", value: 60 * 60 * 24 * 30.5 },
     { label: "week", value: 60 * 60 * 24 * 7 },
@@ -43,7 +43,7 @@ const fiveDays = Math.log2(60 * 60 * 24 * 5 + 1) / sliderScale;
 const live = Math.log2(2) / sliderScale;
 const pause = 0;
 
-function calculateValue(value) {
+function calculateValue(value: number) {
   return Math.sign(value) * (2 ** Math.abs(value * sliderScale) - 1);
 }
 
@@ -63,7 +63,7 @@ export default function TimeSlider() {
   }, []);
 
   useEffect(() => {
-    let timer;
+    let timer: number;
     if (rateMessage) {
       console.log("SHOW")
       timer = setTimeout(() => {
@@ -75,7 +75,7 @@ export default function TimeSlider() {
     return () => clearTimeout(timer);
   }, [rateMessage]);
 
-  const updateTime = (event, value) => {
+  const updateTime = (event: any, value: any) => {
     setHelpMessage(false);
     setRate(value);
     setRateMessage(true)

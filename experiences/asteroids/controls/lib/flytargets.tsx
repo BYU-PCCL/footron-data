@@ -1,4 +1,4 @@
-export const flyCategories = [
+export const flyCategories: string[] = [
   "Systems",
   "Planets",
   "Moons",
@@ -7,7 +7,7 @@ export const flyCategories = [
   "Spacecraft",
 ];
 
-export const flyTargets = {
+export const flyTargets: { [key: string]: string[] } = {
   Systems: [
     "Sun", // Exception
     "Inner Solar System",
@@ -409,7 +409,9 @@ export const flyTargets = {
   ],
 };
 
-export const sortedFlyTargets = {
+export const sortedFlyTargets: {
+  [key: string]: { name: string; type: string };
+} = {
   sun: { name: "Sun", type: "system" }, // Exception. Don't use goToSystem
   inner_solar_system: { name: "Inner Solar System", type: "system" },
   outer_solar_system: { name: "Outer Solar System", type: "system" },
@@ -1090,7 +1092,7 @@ export const sortedFlyTargets = {
   sc_venus_express: { name: "Venus express", type: "spacecraft" },
 };
 
-export const targetToId = {
+export const targetToId: { [key: string]: string } = {
   ////////////////////////////////////////////////////
   //                     Systems                    //
   ////////////////////////////////////////////////////

@@ -1,5 +1,5 @@
 // import { defineConfig } from 'vite';
-// // import react from "@vitejs/plugin-react";
+// import react from "@vitejs/plugin-react";
 
 // export default defineConfig({
 // 	// plugins: [react()],
@@ -23,6 +23,3 @@
 // 		},
 // 	},
 // });
-
-// Delete this line if you need to use the script. It's just for convincing the compiler keep this file
-export {}

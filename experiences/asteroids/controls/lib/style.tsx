@@ -207,7 +207,7 @@ export const joystickStyle = css`
   justify-content: center;
 `;
 
-export const helpMessageStyle = (visible) => css`
+export const helpMessageStyle = (visible: boolean) => css`
   flex: 1;
   opacity: ${visible ? 1 : 0};
   transition: opacity 0.5s ease-in-out;

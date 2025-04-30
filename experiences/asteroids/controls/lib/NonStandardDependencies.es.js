@@ -6,13 +6,13 @@ var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __propIsEnum = Object.prototype.propertyIsEnumerable;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
 var __spreadValues = (a, b2) => {
-  for (var propTheSecond in b2 || (b2 = {}))
-    if (__hasOwnProp.call(b2, propTheSecond))
-      __defNormalProp(a, propTheSecond, b2[propTheSecond]);
+  for (var prop in b2 || (b2 = {}))
+    if (__hasOwnProp.call(b2, prop))
+      __defNormalProp(a, prop, b2[prop]);
   if (__getOwnPropSymbols)
-    for (var propTheSecond of __getOwnPropSymbols(b2)) {
-      if (__propIsEnum.call(b2, propTheSecond))
-        __defNormalProp(a, propTheSecond, b2[propTheSecond]);
+    for (var prop of __getOwnPropSymbols(b2)) {
+      if (__propIsEnum.call(b2, prop))
+        __defNormalProp(a, prop, b2[prop]);
     }
   return a;
 };
@@ -241,7 +241,6 @@ var StyleSheet = /* @__PURE__ */ function() {
       try {
         sheet.insertRule(rule, sheet.cssRules.length);
       } catch (e2) {
-        e2 = 0;
       }
     } else {
       tag.appendChild(document.createTextNode(rule));
@@ -454,8 +453,6 @@ function parse(value, root, parent, rule, rules, rulesets, pseudo, points, decla
             ampersand = -1;
           break;
         }
-        characters2 += delimit(character2);
-        break;
       case 34:
       case 39:
       case 91:
@@ -1383,7 +1380,7 @@ var jsx = function jsx2(type, props) {
 };
 (function(_jsx) {
   var JSX;
-  (function(_JSX) {return;
+  (function(_JSX) {
   })(JSX || (JSX = _jsx.JSX || (_jsx.JSX = {})));
 })(jsx || (jsx = {}));
 function css() {
@@ -3613,7 +3610,6 @@ function isFocusVisible(element) {
   try {
     return element.matches(":focus-visible");
   } catch (error) {
-    error = 0;
   }
   return false;
 }
@@ -4639,7 +4635,6 @@ const silent = (fn) => {
   try {
     return fn();
   } catch (error) {
-    error = 0
   }
   return void 0;
 };
@@ -6965,11 +6960,11 @@ var Joystick = function(_super) {
     return _this;
   }
   Joystick2.prototype.componentWillUnmount = function() {
-    var pm = this._pointerMove;
+    var _this = this;
     this._mounted = false;
     if (this.props.followCursor) {
       window.removeEventListener(InteractionEvents.PointerMove, function(event) {
-        return pm(event);
+        return _this._pointerMove(event);
       });
     }
     if (this.frameId !== null) {
@@ -6977,7 +6972,7 @@ var Joystick = function(_super) {
     }
   };
   Joystick2.prototype.componentDidMount = function() {
-    var pm = this._pointerMove;
+    var _this = this;
     this._mounted = true;
     if (this.props.followCursor) {
       this._parentRect = this._baseRef.current.getBoundingClientRect();
@@ -6985,7 +6980,7 @@ var Joystick = function(_super) {
         dragging: true
       });
       window.addEventListener(InteractionEvents.PointerMove, function(event) {
-        return pm(event);
+        return _this._pointerMove(event);
       });
       if (this.props.start) {
         this.props.start({
@@ -6999,11 +6994,10 @@ var Joystick = function(_super) {
     }
   };
   Joystick2.prototype._updatePos = function(coordinates) {
-    var _pm = this._mounted;
-    var _ss = this._setState;
+    var _this = this;
     this.frameId = window.requestAnimationFrame(function() {
-      if (_pm) {
-        _ss({
+      if (_this._mounted) {
+        _this.setState({
           coordinates
         });
       }

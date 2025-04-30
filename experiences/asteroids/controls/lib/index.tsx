@@ -1,9 +1,8 @@
 /** @jsxImportSource @emotion/react */
-import React, { useState } from "react";
+import React, { MouseEventHandler, useState } from "react";
 import { Box, ClickAwayListener, Dialog } from "@material-ui/core";
 import { Close, Settings } from "@material-ui/icons";
 import { useMessaging } from "@footron/controls-client";
-import PropTypes from "prop-types";
 
 import AsteroidWatch from "./AsteroidWatch";
 import FlyTo from "./flyTo";
@@ -21,7 +20,20 @@ import {
   wrapperStyle
 } from "./style";
 
-function CustomTabPanel(props) {
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+interface TabProps {
+  children?: React.ReactNode;
+  onClick: MouseEventHandler;
+  selected: boolean;
+}
+
+function CustomTabPanel(props: TabPanelProps): JSX.Element {
   const { children, value, index, ...other } = props;
 
   return (
@@ -38,13 +50,7 @@ function CustomTabPanel(props) {
   );
 }
 
-CustomTabPanel.propTypes = {
-  children: PropTypes.node,
-  value: PropTypes.number,
-  index: PropTypes.number
-}
-
-const ControlsComponent = () => {
+const ControlsComponent = (): JSX.Element => {
   const { sendMessage } = useMessaging();
   const [menuOpen, setMenuOpen] = useState(false);
   const [value, setValue] = useState(2);
@@ -53,7 +59,7 @@ const ControlsComponent = () => {
     setMenuOpen((prev) => !prev);
   };
 
-  const handleClickAwaySettings = (event) => {
+  const handleClickAwaySettings = (event: MouseEvent | TouchEvent) => {
     event.preventDefault();
     event.stopPropagation();
 
@@ -79,7 +85,7 @@ const ControlsComponent = () => {
     setValue(4);
   };
 
-  function Tab(props) {
+  function Tab(props: TabProps) {
     const { children, onClick, selected, ...other } = props;
 
     return (
@@ -93,11 +99,7 @@ const ControlsComponent = () => {
     );
   }
 
-  Tab.propTypes = {
-    children: PropTypes.node,
-    onClick: PropTypes.func,
-    selected: PropTypes.string // This might be wrong
-  }
+  // TODO: Remove footron container stuff
 
   return (
     <Box css={wrapperStyle}>

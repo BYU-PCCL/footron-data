@@ -9,7 +9,6 @@ import {
   Link,
 } from "@material-ui/core";
 import { Close } from "@material-ui/icons";
-import PropTypes from "prop-types";
 
 import { Pagination } from "./NonStandardDependencies.es.js";
 import {
@@ -22,14 +21,27 @@ import {
   paginationStyle,
   standardBottomUiStyle,
   topUI
-} from "./style.js";
+} from "./style";
+
+interface InfoObject {
+  [key: string]: definitionObject;
+}
+interface definitionObject {
+  title: string;
+  description: ReactNode;
+  relatedTerms: string[];
+}
+
+interface DefinitionOverlayProps {
+  definition: string;
+}
 
 export default function Info() {
   const [currentPage, setCurrentPage] = useState(1);
   const [currentDefinition, setCurrentDefinition] = useState("asteroid");
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const openDef = (word) => {
+  const openDef = (word: string) => {
     setCurrentDefinition(word);
     setMenuOpen(true);
   };
@@ -58,7 +70,7 @@ export default function Info() {
         <br />
         With asteroids represented as blue points, and comets as white points,
         our database is updated daily to give you approximately 36,000 NEOs (and
-        counting). Additionally, you can explore most of NASA&apos;s asteroid and
+        counting). Additionally, you can explore most of NASA's asteroid and
         comet missions (past and present), from Galileo, to Lucy and DART.
       </p>
       <div>
@@ -83,19 +95,19 @@ export default function Info() {
     <div key="page3">
       <h2>Learn with the footron</h2>
       <p>
-        Select &apos;Learn&apos; to access three different stories about asteroids and
-        comets, including a tour through NASA&apos;s historic missions.
+        Select 'Learn' to access three different stories about asteroids and
+        comets, including a tour through NASA's historic missions.
       </p>
     </div>,
     <div key="page4">
       <h2>Keep an Eye Out!</h2>
       <p>
-        Select the &apos;Watch&apos; option to see the next five closest approaches to
+        Select the 'Watch' option to see the next five closest approaches to
         Earth, complete with a countdown.
       </p>
       <div>
         <h5>Hint:</h5>
-        <p>Don&apos;t forget to play with that time slider!</p>
+        <p>Don't forget to play with that time slider!</p>
       </div>
     </div>,
     <div key="page5">
@@ -142,35 +154,35 @@ export default function Info() {
       <p>I hope you enjoyed it!</p>
       <p>
         The data used to generate this visualization is from the{" "}
-        <a href="https://cneos.jpl.nasa.gov" rel="opener">
+        <a href="https://cneos.jpl.nasa.gov" target="_blank">
           Center for Near-Earth Object Studies
         </a>{" "}
-        and JPL&apos;s{" "}
-        <a href="https://ssd.jpl.nasa.gov" rel="opener">
+        and JPL's{" "}
+        <a href="https://ssd.jpl.nasa.gov" target="_blank">
           Solar System Dynamics
         </a>{" "}
         website. Visit the{" "}
         <a
           href="https://www.nasa.gov/planetarydefense/overview"
-          rel="opener"
+          target="_blank"
         >
           Planetary Defense Coordination Office
         </a>{" "}
         for more information on how NASA monitors for potentially hazardous
         asteroids and comets.
       </p>
-      <br />
+      <br/>
       <b>One last secret:</b>
-      <br />
+      <br/>
       <q>
         I wonder what would happen if you spun the joysticks counterclockwise?
       </q>
-      <br />
+      <br/>
       -Christian
     </div>,
   ];
 
-  const definitions = {
+  const definitions: InfoObject = {
     asteroid: {
       title: "Asteroid",
       description: (
@@ -327,7 +339,7 @@ export default function Info() {
             the Moon.
           </p>
           <p>
-            More technically, it&apos;s the length of the semi-major axis of the
+            More technically, it's the length of the semi-major axis of the
             geocentric lunar orbit.
           </p>
           <p>
@@ -359,7 +371,7 @@ export default function Info() {
             <Link href="#" onClick={() => openDef("pho")}>
               Potentially Hazardous Object
             </Link>{" "}
-            if it&apos;s large enough.
+            if it's large enough.
           </p>
         </div>
       ),
@@ -376,7 +388,7 @@ export default function Info() {
               the Statue of Liberty is tall.
             </li>
             <li>
-              Approach Earth&apos;s orbit to within about 7.5 million kilometers (4.6
+              Approach Earth's orbit to within about 7.5 million kilometers (4.6
               million miles). This can also be expressed as having a{" "}
               <Link href="#" onClick={() => openDef("moid")}>
                 MOID
@@ -410,19 +422,21 @@ export default function Info() {
     },
   };
 
-  const handlePageChange = (_event, page) => {
+  const handlePageChange = (
+    _event: React.ChangeEvent<unknown>,
+    page: number
+  ) => {
     setCurrentPage(page);
   };
 
-  const handleClickAwaySettings = (event) => {
+  const handleClickAwaySettings = (event: MouseEvent | TouchEvent) => {
     event.preventDefault();
     event.stopPropagation();
     setMenuOpen(false);
     console.log("Clicked away");
   };
 
-  const ButtonList = (props) => {
-    const {items} = props
+  const ButtonList: React.FC<{ items: string[] }> = ({ items }) => {
     return (
       <div
         css={definitionListStyle}
@@ -441,12 +455,9 @@ export default function Info() {
     );
   };
 
-  ButtonList.propTypes = {
-    items: PropTypes.string,
-  }
-
-  const DefinitionOverlay = (props) => {
-    const { definition } = props
+  const DefinitionOverlay: React.FC<DefinitionOverlayProps> = ({
+    definition,
+  }) => {
     return (
       <Box css={overlayMenuStyle}>
         <Box css={overlayMenuHeaderStyle}>
@@ -463,10 +474,6 @@ export default function Info() {
       </Box>
     );
   };
-
-  DefinitionOverlay.propTypes = {
-    definition: PropTypes.string
-  }
 
   return (
     <Box css={fullUIStyle}>

@@ -13,7 +13,6 @@ import {
 } from "@material-ui/core";
 import { Close } from "@material-ui/icons";
 import { useMessaging } from "@footron/controls-client";
-import PropTypes from "prop-types";
 
 import {
   flyCategories,
@@ -33,7 +32,27 @@ import {
   topUI,
 } from "./style";
 
-const addUnit = (dataType, value) => {
+interface DescriptionsProps {
+  blurb: string[];
+  more?: string[];
+}
+
+interface Content {
+  title: string;
+  data: { [key: string]: number };
+  description?: DescriptionsProps;
+  related?: string[];
+  approach?: any;
+  stats?: any;
+  cards?: any;
+}
+
+interface DescriptionMessageProms {
+  content?: Content;
+  title: string;
+}
+
+const addUnit = (dataType: string, value: number) => {
   switch (dataType) {
     case "radius":
       return `${value} km`;
@@ -47,20 +66,20 @@ const addUnit = (dataType, value) => {
 };
 
 export default function FlyTo() {
-  const emptyDescription = {
+  const emptyDescription: Content = {
     title: "None",
     related: [],
     description: { blurb: [], more: [] },
     data: {},
   };
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedTarget, setSelectedTarget] = useState("");
-  const [targetInfoID, setTargetInfoID] = useState("");
-  const [preselectedTarget, setPreSelectedTarget] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [selectedTarget, setSelectedTarget] = useState<string>("");
+  const [targetInfoID, setTargetInfoID] = useState<string>("");
+  const [preselectedTarget, setPreSelectedTarget] = useState<string>("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [expandData, setExpandData] = useState(false);
-  const [infoText, setInfoText] = useState(emptyDescription);
-  const { sendMessage } = useMessaging((message) => {
+  const [infoText, setInfoText] = useState<Content>(emptyDescription);
+  const { sendMessage } = useMessaging((message: DescriptionMessageProms) => {
     console.log(message);
     if (message.title != null && message.content != null) {
       setTargetInfoID(message.title);
@@ -69,15 +88,15 @@ export default function FlyTo() {
   });
 
   const handleCategoryChange = (
-    event
+    event: React.ChangeEvent<{ value: unknown }>
   ) => {
-    const category = event.target.value;
+    const category = event.target.value as string;
     setSelectedCategory(category);
     setSelectedTarget(flyTargets[category][0]);
     setInfoText(emptyDescription);
   };
-  const handleTargetChange = (event) => {
-    setSelectedTarget(event.target.value);
+  const handleTargetChange = (event: React.ChangeEvent<{ value: unknown }>) => {
+    setSelectedTarget(event.target.value as string);
     setInfoText(emptyDescription);
   };
 
@@ -88,7 +107,7 @@ export default function FlyTo() {
     [sendMessage]
   );
 
-  const clickLink = (target) => {
+  const clickLink = (target: string) => {
     let targetObject = sortedFlyTargets[target];
     let category = "";
     switch (targetObject.type) {
@@ -116,14 +135,13 @@ export default function FlyTo() {
     getInfoText(targetObject.name);
   };
 
-  const handleClickAwaySettings = (event) => {
+  const handleClickAwaySettings = (event: MouseEvent | TouchEvent) => {
     event.preventDefault();
     event.stopPropagation();
     setMenuOpen(false);
   };
 
-  const ButtonList = (props) => {
-    const { items } = props
+  const ButtonList: React.FC<{ items: string[] }> = ({ items }) => {
     let filteredItems = items.filter((item) => sortedFlyTargets[item] != null);
     return (
       <div css={definitionListStyle}>
@@ -141,15 +159,11 @@ export default function FlyTo() {
     );
   };
 
-  ButtonList.propTypes = {
-    items: PropTypes.arrayOf(PropTypes.string)
-  }
-
-  const DefinitionOverlay = (content) => {
+  const DefinitionOverlay: React.FC<Content> = (content: Content) => {
     const dataEntries = content.data
       ? Object.entries(content.data).filter(
-        (element) => element[0] !== "distance"
-      )
+          (element) => element[0] !== "distance"
+        )
       : [];
     const visibleEntries = expandData ? dataEntries : dataEntries.slice(0, 3);
     console.log(visibleEntries);
@@ -311,16 +325,16 @@ export default function FlyTo() {
             sortedFlyTargets[targetInfoID].name == selectedTarget) ||
           (sortedFlyTargets[preselectedTarget] &&
             infoText.title == sortedFlyTargets[preselectedTarget].name)) && (
-            <Box css={thinWidgetStyle}>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => setMenuOpen(true)}
-              >
-                About
-              </Button>
-            </Box>
-          )}
+          <Box css={thinWidgetStyle}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => setMenuOpen(true)}
+            >
+              About
+            </Button>
+          </Box>
+        )}
       </Box>
       <StandardBottomUi />
     </Box>

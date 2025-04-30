@@ -11,7 +11,6 @@ import {
   Switch,
 } from "@material-ui/core";
 import { Close, Settings, Label } from "@material-ui/icons";
-import PropTypes from "prop-types";
 
 import {
   AsteroidIcon,
@@ -32,8 +31,12 @@ import {
   overlaySettingsMenuStyle,
 } from "./style";
 
+interface Props {
+  toggle: boolean;
+  onToggle: () => void;
+}
 
-export default function SettingsMenu({ toggle, onToggle }) {
+export default function SettingsMenu({ toggle, onToggle }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { sendMessage } = useMessaging();
   const [state, setState] = useState({
@@ -47,7 +50,7 @@ export default function SettingsMenu({ toggle, onToggle }) {
     setMenuOpen(toggle);
   }, [toggle]);
 
-  const handleChange = (event) => {
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     sendMessage({
       type: "settings",
       setting: event.target.name,
@@ -59,20 +62,20 @@ export default function SettingsMenu({ toggle, onToggle }) {
     });
   };
 
-  const toggleButton = (setting) => {
+  const toggleButton = (setting: string) => {
     sendMessage({
       type: "settings",
       setting: setting,
     });
   };
 
-  const handleLightingChange = (event) => {
+  const handleLightingChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     sendMessage({
       type: "settings",
       setting: "lighting",
       value: event.target.name,
     });
-    setLighting(event.target.name);
+    setLighting(event.target.name as string);
   };
 
   return (
@@ -269,8 +272,3 @@ export default function SettingsMenu({ toggle, onToggle }) {
     </Box>
   );
 }
-
-SettingsMenu.propTypes = {
-  toggle: PropTypes.bool,
-  onToggle: PropTypes.func
-};

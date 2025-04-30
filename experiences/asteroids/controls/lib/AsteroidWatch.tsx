@@ -1,4 +1,3 @@
-import React from "react";
 import { useMessaging } from "@footron/controls-client";
 import { Box, Button } from "@material-ui/core";
 import { thinWidgetStyle, topUI, fullUIStyle } from "./style";
