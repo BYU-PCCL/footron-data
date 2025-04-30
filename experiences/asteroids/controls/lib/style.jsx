@@ -5,9 +5,9 @@ export const overlayStyle = css`
 `;
 
 export const overlayMenuWrapperStyle = css`
-  background-color: white;
-  max-width: min(80vw, 480px);
-  max-height: min(80vh, 480px);
+  width: calc(100% - 2em);
+  max-width: 480px;
+  max-height: 80vh;
   overflow: auto;
   padding: 1em;
   opacity: 1;
@@ -23,15 +23,10 @@ export const overlaySettingsMenuStyle = css`
 display: flex;
 flex-flow: column;
 `
-export const overlaySettingsMenuContentStyle = css`
-  display: flex;
-  flex-flow: column;
-  overlow: auto;
-`
 
 export const overlayMenuHeaderStyle = css`
   display: flex;
-  width: 100%;
+  width: min(80vw, 480px);
   justify-content: space-between;
 `;
 
@@ -68,15 +63,10 @@ export const thinWidgetStyle = css`
   padding: 0px;
 `;
 
-export const thickWidgetStyle = css`
-  background-color: lightsalmon;
-  justify-content: center;
-  gap: 0.5em;
-  align-items: center;
-  height: 192px;
-  padding: 0px;
-`;
-
+export const selectionWrapperStyle = css`
+  width: 80%;
+  padding: 3em;
+`
 // We are inserted within footron's
 // controlsContainer which is not the
 // full screen, everything else should not
@@ -107,12 +97,7 @@ export const dynamicUiwrapperStyle = css`
 // all tabs are rendered in the wrapper
 export const tabPanelStyle = css`
   flex: 1;
-`;
-
-export const bottomBarStyle = css`
-  height: 64;
-  min-height: 64px;
-  display: flex;
+  width: 100%;
 `;
 
 export const tabsStyle = css`
@@ -151,32 +136,26 @@ export const fullUIStyle = css`
   flex-flow: column;
 `;
 
-export const fabStyle = css`
-  float: right;
-`;
-
-export const tabUI = css`
-  display: flex;
-  flex-flow: column nowrap;
-`;
-
 export const topUI = css`
   flex: 1;
   display: flex;
   flex-flow: column;
   gap: 0.5em;
   overflow: auto;
+  width: 100%;
+`;
+
+export const centeredTopUI = css`
+  flex: 1;
+  display: flex;
+  flex-flow: column;
+  gap: 0.5em;
+  overflow: auto;
+  width: 100%;
+  align-items: center;
 `;
 
 // Static Bottom UI
-
-export const paginationStyle = css`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 32px;
-  padding: 0px;
-`;
 
 export const standardBottomUiStyle = css`
   padding: 1em 0;
@@ -184,11 +163,6 @@ export const standardBottomUiStyle = css`
   flex-flow: column nowrap;
   align-items: stretch;
   gap: 1em;
-`;
-
-export const largeBottomUiStyle = css`
-  height: 320;
-  max-height: 320;
 `;
 
 export const movementComponentStyle = css`

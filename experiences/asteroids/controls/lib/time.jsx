@@ -102,40 +102,38 @@ export default function TimeSlider() {
   };
 
   return (
-    <Box>
-      <Box css={timeComponentStyle}>
-        <Box css={timeSliderStyle}>
-          <Box css={helpMessageStyle(helpMessage)}>
-            <b>Change the speed of time</b>
-          </Box>
-          <Slider
-            defaultValue={18.7}
-            min={-25}
-            max={25}
-            value={rate}
-            step={0.01}
-            onChange={(e, v) => updateTime(e, v)}
-          />
-          <Box css={helpMessageStyle(rateMessage)}>{formatTime(calculateValue(rate))}</Box>
+    <Box css={timeComponentStyle}>
+      <Box css={timeSliderStyle}>
+        <Box css={helpMessageStyle(helpMessage)}>
+          <b>Change the speed of time</b>
         </Box>
-        <Box css={timeButtonsContainerStyle}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={rate == 0 ? play : pauseTime}
-            size="large"
-          >
-            {rate == 0 ? <PlayArrow /> : <Pause />}
-          </Button>
-          <Button
-            onClick={goLive}
-            variant="contained"
-            color="primary"
-            size="large"
-          >
-            Live
-          </Button>
-        </Box>
+        <Slider
+          defaultValue={18.7}
+          min={-25}
+          max={25}
+          value={rate}
+          step={0.01}
+          onChange={(e, v) => updateTime(e, v)}
+        />
+        <Box css={helpMessageStyle(rateMessage)}>{formatTime(calculateValue(rate))}</Box>
+      </Box>
+      <Box css={timeButtonsContainerStyle}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={rate == 0 ? play : pauseTime}
+          size="large"
+        >
+          {rate == 0 ? <PlayArrow /> : <Pause />}
+        </Button>
+        <Button
+          onClick={goLive}
+          variant="contained"
+          color="primary"
+          size="large"
+        >
+          Live
+        </Button>
       </Box>
     </Box>
   );

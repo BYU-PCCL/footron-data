@@ -8,10 +8,10 @@ import {
   Divider,
   IconButton,
   Link,
+  ButtonGroup,
 } from "@material-ui/core";
-import { Close } from "@material-ui/icons";
+import { Close, NavigateBefore, NavigateNext } from "@material-ui/icons";
 
-import { Pagination } from "./NonStandardDependencies.es.js";
 import {
   definitionListStyle,
   fullUIStyle,
@@ -19,10 +19,9 @@ import {
   overlayMenuStyle,
   overlayMenuWrapperStyle,
   overlayStyle,
-  paginationStyle,
-  standardBottomUiStyle,
+  thinWidgetStyle,
   topUI
-} from "./style.js";
+} from "./style.jsx";
 
 export default function Info() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -411,15 +410,6 @@ export default function Info() {
     },
   };
 
-
-
-  const handlePageChange = (
-    _event,
-    page
-  ) => {
-    setCurrentPage(page);
-  };
-
   const handleClickAwaySettings = (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -445,6 +435,40 @@ export default function Info() {
       </div>
     );
   };
+
+  const Pagination = () => {
+    return (
+      <Box css={thinWidgetStyle}>
+        <ButtonGroup>
+          <Button
+            color="primary"
+            variant="contained"
+            onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
+            disabled={currentPage == 1}
+          >
+            <NavigateBefore />
+          </Button>
+          {pages.map((page, index) => {
+            const highlight = currentPage == index + 1;
+            return (
+              <Button key={index} onClick={() => setCurrentPage(index + 1)} variant={highlight ? "contained" : "text"} disabled={highlight} color="primary">
+                {index + 1}
+              </Button>
+            )
+          })}
+          <Button
+            color="primary"
+            variant="contained"
+            onClick={() => setCurrentPage(Math.min(currentPage + 1, pages.length))}
+            disabled={currentPage == pages.length}
+          >
+            <NavigateNext />
+          </Button>
+        </ButtonGroup>
+        {/* <Pagination inProps={paginationProps}/> */}
+      </Box>
+    )
+  }
 
   ButtonList.propTypes = {
     items: PropTypes.arrayOf(PropTypes.string)
@@ -474,15 +498,6 @@ export default function Info() {
     definition: PropTypes.string
   }
 
-  const paginationProps = {
-    count: pages.length,
-    page: currentPage,
-    onChange: handlePageChange,
-    color: "primary",
-    variant: "outlined",
-    css: paginationStyle
-  }
-
   return (
     <Box css={fullUIStyle}>
       {menuOpen ? (
@@ -495,9 +510,7 @@ export default function Info() {
         </Dialog>
       ) : null}
       <Box css={topUI}>{pages[currentPage - 1]}</Box>
-      <Box css={standardBottomUiStyle}>
-        <Pagination inProps={paginationProps}/>
-      </Box>
+      <Pagination />
     </Box>
   );
 }

@@ -8,7 +8,7 @@ import {
   joystickStyle,
   movementComponentStyle,
   helpMessageStyle,
-} from "./style.js";
+} from "./style.jsx";
 
 function CustomJoystick(props) {
   const { move, stop } = props;
@@ -108,7 +108,7 @@ export default function MovementControls() {
         <CustomJoystick move={leftStickMove} stop={leftStickStop} />
       </Box>
       <Box css={joystickStyle}>
-      {controlOption == "standard" ? (<b css={helpMessageStyle(helpUi)}>Move the camera</b>) : (<b css={{color: "red"}}>Expert freefly mode</b>)}
+        {controlOption == "standard" ? (<b css={helpMessageStyle(helpUi)}>Move the camera</b>) : (<b css={{ color: "red" }}>Expert freefly mode</b>)}
       </Box>
       <Box css={joystickStyle}>
         <CustomJoystick move={rightStickMove} stop={rightStickStop} />

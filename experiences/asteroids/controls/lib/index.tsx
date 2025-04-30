@@ -1,5 +1,5 @@
 /** @jsxImportSource @emotion/react */
-import React, { useState } from "react";
+import React, { MouseEventHandler, useState } from "react";
 import PropTypes from "prop-types";
 import { Box, ClickAwayListener, Dialog } from "@material-ui/core";
 import { Close, Settings } from "@material-ui/icons";
@@ -21,7 +21,19 @@ import {
   wrapperStyle
 } from "./style";
 
-function CustomTabPanel(props) {
+interface TabPanelProps {
+  children?: React.ReactNode,
+  value: number,
+  index: number
+}
+
+interface TabProps {
+  children?: React.ReactNode;
+  onClick: MouseEventHandler;
+  selected: boolean;
+}
+
+function CustomTabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
 
   return (
@@ -37,11 +49,6 @@ function CustomTabPanel(props) {
     </div>
   );
 }
-CustomTabPanel.propTypes = {
-  children: PropTypes.node,
-  value: PropTypes.number,
-  index: PropTypes.number
-}
 
 const ControlsComponent = () => {
   const { sendMessage } = useMessaging();
@@ -52,7 +59,7 @@ const ControlsComponent = () => {
     setMenuOpen((prev) => !prev);
   };
 
-  const handleClickAwaySettings = (event) => {
+  const handleClickAwaySettings = (event: React.MouseEvent<Document, MouseEvent> | TouchEvent) => {
     event.preventDefault();
     event.stopPropagation();
 
@@ -78,7 +85,7 @@ const ControlsComponent = () => {
     setValue(4);
   };
 
-  function Tab(props) {
+  function Tab(props: TabProps) {
     const { children, onClick, selected, ...other } = props;
 
     return (
@@ -107,7 +114,6 @@ const ControlsComponent = () => {
           <ClickAwayListener onClickAway={handleClickAwaySettings}>
             <Box css={overlayMenuWrapperStyle}>
               <SettingsMenu
-                toggle={menuOpen}
                 onToggle={handleOpenSettings}
               />
             </Box>

@@ -5,7 +5,6 @@ import { useMessaging } from "@footron/controls-client";
 
 import StandardBottomUi from "./standardBottomUi";
 import {
-  fabStyle,
   fullUIStyle,
   largeIconStyle,
   storyBoxStyle,
@@ -76,7 +75,7 @@ export default function Learn() {
       {slideshowPlaying ? (
         <Box css={fullUIStyle}>
           <Box css={topUI}>
-            <Fab onClick={close} size="small" color="primary" css={fabStyle}>
+            <Fab onClick={close} size="small" color="primary">
               <Close />
             </Fab>
             <Box>
@@ -111,7 +110,7 @@ export default function Learn() {
                 <strong>{">"}</strong>
               </Button>
               {showReplay && (
-                <IconButton color="primary" 
+                <IconButton color="primary"
                   onClick={replay}
                 >
                   <Replay />

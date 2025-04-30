@@ -1,7 +1,7 @@
 import React from 'react';
 import { useMessaging } from "@footron/controls-client";
 import { Box, Button } from "@material-ui/core";
-import { thinWidgetStyle, topUI, fullUIStyle } from "./style";
+import { thinWidgetStyle, fullUIStyle, centeredTopUI } from "./style";
 import StandardBottomUi from "./standardBottomUi";
 
 export default function AsteroidWatch() {
@@ -17,7 +17,7 @@ export default function AsteroidWatch() {
 
   return (
     <div css={fullUIStyle}>
-      <Box css={topUI}>
+      <Box css={centeredTopUI}>
         <h3>Select the next close approach</h3>
       </Box>
       <StandardBottomUi>

@@ -32,7 +32,7 @@ import {
   overlaySettingsMenuStyle,
 } from "./style";
 
-export default function SettingsMenu({ toggle, onToggle }) {
+export default function SettingsMenu({ onToggle }) {
   const { sendMessage } = useMessaging();
   const [state, setState] = useState({
     asteroidsFilter: false,
