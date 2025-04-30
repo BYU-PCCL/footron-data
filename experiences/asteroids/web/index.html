@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>FOOTRON ASTEROIDS</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: black;
+      }
+      #footron-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0, 0, 0);
+        color: aliceblue;
+        z-index: 9999;
+      }
+    </style>
+  </head>
+
+  <body class="asteroids">
+    <div id="footron-overlay"> </div>
+    <div id="pioneer"></div>
+    <div id="ui" class="ui">
+      <div id="static-ui" class="ui grid-layout simple-grid">
+        <TutorialOverlay></TutorialOverlay>
+        <LoadIcon></LoadIcon>
+        <Overlay></Overlay>
+      </div>
+      <div id="dynamic-ui" class="ui grid-layout simple-grid"></div>
+    </div>
+  </body>
+  <footer>
+    <link rel="stylesheet" type="text/css" href="vendors.css" />
+    <link rel="stylesheet" type="text/css" href="app.css" />
+    <script src="config.js"></script>
+    <script src="vendors.js"></script>
+    <script src="app.js"></script>
+    <script src="footron.js"></script>
+    <script src="footron-messaging.development.js"></script>
+    <script src="messageHandler.js"></script>
+    <script src="footron-dev.js"></script>
+    <script src="registered_entities.js"></script>
+    <script src="entityDescriptions.js"></script>
+  </footer>
+</html>
