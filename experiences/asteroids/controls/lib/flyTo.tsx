@@ -108,7 +108,7 @@ export default function FlyTo() {
   );
 
   const clickLink = (target: string) => {
-    let targetObject = sortedFlyTargets[target];
+    const targetObject = sortedFlyTargets[target];
     let category = "";
     switch (targetObject.type) {
       case "system":
@@ -142,7 +142,7 @@ export default function FlyTo() {
   };
 
   const ButtonList: React.FC<{ items: string[] }> = ({ items }) => {
-    let filteredItems = items.filter((item) => sortedFlyTargets[item] != null);
+    const filteredItems = items.filter((item) => sortedFlyTargets[item] != null);
     return (
       <div css={definitionListStyle}>
         {filteredItems.map((item, index) => (
