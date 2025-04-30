@@ -1,5 +1,6 @@
 /** @jsxImportSource @emotion/react */
-import React, { MouseEventHandler, useState } from "react";
+import React, { useState } from "react";
+import PropTypes from "prop-types";
 import { Box, ClickAwayListener, Dialog } from "@material-ui/core";
 import { Close, Settings } from "@material-ui/icons";
 import { useMessaging } from "@footron/controls-client";
@@ -20,20 +21,7 @@ import {
   wrapperStyle
 } from "./style";
 
-
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-interface TabProps {
-  children?: React.ReactNode;
-  onClick: MouseEventHandler;
-  selected: boolean;
-}
-
-function CustomTabPanel(props: TabPanelProps): JSX.Element {
+function CustomTabPanel(props) {
   const { children, value, index, ...other } = props;
 
   return (
@@ -49,8 +37,13 @@ function CustomTabPanel(props: TabPanelProps): JSX.Element {
     </div>
   );
 }
+CustomTabPanel.propTypes = {
+  children: PropTypes.node,
+  value: PropTypes.number,
+  index: PropTypes.number
+}
 
-const ControlsComponent = (): JSX.Element => {
+const ControlsComponent = () => {
   const { sendMessage } = useMessaging();
   const [menuOpen, setMenuOpen] = useState(false);
   const [value, setValue] = useState(2);
@@ -59,7 +52,7 @@ const ControlsComponent = (): JSX.Element => {
     setMenuOpen((prev) => !prev);
   };
 
-  const handleClickAwaySettings = (event: MouseEvent | TouchEvent) => {
+  const handleClickAwaySettings = (event) => {
     event.preventDefault();
     event.stopPropagation();
 
@@ -85,7 +78,7 @@ const ControlsComponent = (): JSX.Element => {
     setValue(4);
   };
 
-  function Tab(props: TabProps) {
+  function Tab(props) {
     const { children, onClick, selected, ...other } = props;
 
     return (
@@ -97,6 +90,11 @@ const ControlsComponent = (): JSX.Element => {
         {children}
       </Box>
     );
+  }
+  Tab.propTypes = {
+    children: PropTypes.node,
+    onClick: PropTypes.func,
+    selected: PropTypes.bool
   }
 
   // TODO: Remove footron container stuff

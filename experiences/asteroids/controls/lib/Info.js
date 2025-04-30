@@ -1,4 +1,5 @@
-import React, { ReactNode, useState } from "react";
+import React, { useState } from "react";
+import PropTypes from "prop-types";
 import {
   Dialog,
   Box,
@@ -21,27 +22,14 @@ import {
   paginationStyle,
   standardBottomUiStyle,
   topUI
-} from "./style";
-
-interface InfoObject {
-  [key: string]: definitionObject;
-}
-interface definitionObject {
-  title: string;
-  description: ReactNode;
-  relatedTerms: string[];
-}
-
-interface DefinitionOverlayProps {
-  definition: string;
-}
+} from "./style.js";
 
 export default function Info() {
   const [currentPage, setCurrentPage] = useState(1);
   const [currentDefinition, setCurrentDefinition] = useState("asteroid");
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const openDef = (word: string) => {
+  const openDef = (word) => {
     setCurrentDefinition(word);
     setMenuOpen(true);
   };
@@ -172,18 +160,18 @@ export default function Info() {
         for more information on how NASA monitors for potentially hazardous
         asteroids and comets.
       </p>
-      <br/>
+      <br />
       <b>One last secret:</b>
-      <br/>
+      <br />
       <q>
         I wonder what would happen if you spun the joysticks counterclockwise?
       </q>
-      <br/>
+      <br />
       -Christian
     </div>,
   ];
 
-  const definitions: InfoObject = {
+  const definitions = {
     asteroid: {
       title: "Asteroid",
       description: (
@@ -423,26 +411,28 @@ export default function Info() {
     },
   };
 
+
+
   const handlePageChange = (
-    _event: React.ChangeEvent<unknown>,
-    page: number
+    _event,
+    page
   ) => {
     setCurrentPage(page);
   };
 
-  const handleClickAwaySettings = (event: MouseEvent | TouchEvent) => {
+  const handleClickAwaySettings = (event) => {
     event.preventDefault();
     event.stopPropagation();
     setMenuOpen(false);
     console.log("Clicked away");
   };
 
-  const ButtonList: React.FC<{ items: string[] }> = ({ items }) => {
+  const ButtonList = ({ items }) => {
     return (
       <div
         css={definitionListStyle}
       >
-        {items.map((item, index) => (
+        {items.map((item) => (
           <Button
             key={item}
             onClick={() => openDef(item)}
@@ -456,7 +446,11 @@ export default function Info() {
     );
   };
 
-  const DefinitionOverlay: React.FC<DefinitionOverlayProps> = ({
+  ButtonList.propTypes = {
+    items: PropTypes.arrayOf(PropTypes.string)
+  }
+
+  const DefinitionOverlay = ({
     definition,
   }) => {
     return (
@@ -476,6 +470,19 @@ export default function Info() {
     );
   };
 
+  DefinitionOverlay.propTypes = {
+    definition: PropTypes.string
+  }
+
+  const paginationProps = {
+    count: pages.length,
+    page: currentPage,
+    onChange: handlePageChange,
+    color: "primary",
+    variant: "outlined",
+    css: paginationStyle
+  }
+
   return (
     <Box css={fullUIStyle}>
       {menuOpen ? (
@@ -489,15 +496,7 @@ export default function Info() {
       ) : null}
       <Box css={topUI}>{pages[currentPage - 1]}</Box>
       <Box css={standardBottomUiStyle}>
-        <Pagination
-          size="medium"
-          count={pages.length}
-          page={currentPage}
-          onChange={handlePageChange}
-          color="primary"
-          variant="outlined"
-          css={paginationStyle}
-        />
+        <Pagination inProps={paginationProps}/>
       </Box>
     </Box>
   );

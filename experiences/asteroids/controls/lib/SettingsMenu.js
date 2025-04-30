@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
+import PropTypes from "prop-types";
 import { useMessaging } from "@footron/controls-client";
 import {
   Box,
@@ -31,13 +32,7 @@ import {
   overlaySettingsMenuStyle,
 } from "./style";
 
-interface Props {
-  toggle: boolean;
-  onToggle: () => void;
-}
-
-export default function SettingsMenu({ toggle, onToggle }: Props) {
-  const [menuOpen, setMenuOpen] = useState(false);
+export default function SettingsMenu({ toggle, onToggle }) {
   const { sendMessage } = useMessaging();
   const [state, setState] = useState({
     asteroidsFilter: false,
@@ -46,11 +41,7 @@ export default function SettingsMenu({ toggle, onToggle }: Props) {
   });
   const [lighting, setLighting] = useState("none");
 
-  useEffect(() => {
-    setMenuOpen(toggle);
-  }, [toggle]);
-
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (event) => {
     sendMessage({
       type: "settings",
       setting: event.target.name,
@@ -62,20 +53,20 @@ export default function SettingsMenu({ toggle, onToggle }: Props) {
     });
   };
 
-  const toggleButton = (setting: string) => {
+  const toggleButton = (setting) => {
     sendMessage({
       type: "settings",
       setting: setting,
     });
   };
 
-  const handleLightingChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLightingChange = (event) => {
     sendMessage({
       type: "settings",
       setting: "lighting",
       value: event.target.name,
     });
-    setLighting(event.target.name as string);
+    setLighting(event.target.name);
   };
 
   return (
@@ -271,4 +262,8 @@ export default function SettingsMenu({ toggle, onToggle }: Props) {
       </List>
     </Box>
   );
+}
+SettingsMenu.propTypes = {
+  toggle: PropTypes.bool,
+  onToggle: PropTypes.func
 }
