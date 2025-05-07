@@ -1,0 +1,13 @@
+{
+	"title": "Pioneer 10",
+	"description": {
+		"blurb": "Launched in 1972, Pioneer 10 was the first spacecraft to visit Jupiter. Its mission ended in 2003, but it is one of four spacecraft (including the two Voyagers and Pioneer 11) carrying a message from Earth beyond our solar system.",
+		"more": "Pioneer 10, the first NASA mission to the outer planets, garnered a series of firsts perhaps unmatched by any other robotic spacecraft in the space era: the first vehicle placed on a trajectory to escape the solar system into interstellar space; the first spacecraft to fly beyond Mars; the first to fly through the asteroid belt; the first to fly past Jupiter; and the first to use all-nuclear electrical power."
+	},
+	"dates": {
+		"start": "1972-03-02",
+		"end": "2003-01-23",
+		"landing": ""
+	},
+	"related": ["sc_pioneer_11","sc_voyager_1","sc_voyager_2","jupiter"]
+}

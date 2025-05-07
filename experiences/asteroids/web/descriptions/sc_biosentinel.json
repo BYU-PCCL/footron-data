@@ -1,0 +1,13 @@
+{
+	"title": "BioSentinel",
+	"description": {
+		"blurb": "NASA’s BioSentinel is a shoebox-sized CubeSat that will perform the first long-duration biology experiment in deep space.",
+		"more": "The satellite launched to deep space aboard Artemis I and flew past the Moon in a direction to orbit the Sun. Once the satellite is in position beyond our planet’s protective magnetic field, it will conduct a study of the effects of deep space radiation on a living organism, yeast. Because human cells and yeast cells have many similar biological mechanisms, including DNA damage and repair, BioSentinel’s experiments can help us better understand the radiation risks for long-duration deep space human exploration. BioSentinel will carry living organisms farther into space than ever before. NASA’s Artemis missions at the Moon will prepare humans to travel on increasingly farther and longer-duration missions to destinations like Mars. Results from BioSentinel’s six- to nine-month mission will fill critical gaps in knowledge about the health risks in deep space posed by space radiation."
+	},
+	"dates": {
+		"start": "2022-11-16T11:45:33",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["moon", "sc_artemis_1", "sc_lunar_icecube"]
+}

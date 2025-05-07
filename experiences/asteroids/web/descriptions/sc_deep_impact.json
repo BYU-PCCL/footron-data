@@ -1,0 +1,21 @@
+{
+	"title": "Deep Impact",
+	"description": {
+		"blurb": "The primary mission of NASA's <a href='https://www.jpl.nasa.gov/missions/deep-impact' target='_blank'>Deep Impact</a> was to probe beneath the surface of a comet. The spacecraft delivered a special impactor into the path of Tempel 1 to reveal never before seen materials and provide clues about the internal composition and structure of a comet. The spacecraft released its impactor which collided with the comet, and then the spacecraft observed the result.",
+		"more": "On July 3, 2005, at 06:00 UT (or 06:07 UT Earth-receive time), Deep Impact released the impactor probe, which, using small thrusters, moved into the path of the comet, where it hit the following day, July 4, at 05:44:58 UT. The mission was then renamed as EPOXI, with a dual purpose to study extrasolar planets and the comet 103/P Hartley 2. The spacecraft arrived at Hartley 2 in 2010, and then planned to study an asteroid when contact was lost in August of 2013."
+	},
+	"cards": [
+		{ "storyId": "asteroids_missions" }
+	],
+	"dates": {
+		"start": "2005-01-12T20:20:08",
+		"end": "2013-08-08T00:00:00",
+		"landing": ""
+	},
+	"featuredEvents": {
+		"initial": [
+			{ "eventId": "impactor_separation", "title": "Impactor Probe Separation" }
+		]
+},
+	"related": ["sc_deep_impact_impactor", "9p_tempel_1", "103p_hartley_2", "c_2012_s1"]
+}

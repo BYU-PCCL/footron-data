@@ -1,0 +1,18 @@
+{
+	"title": "Lucy",
+	"description": {
+		"blurb": "The <a href='https://science.nasa.gov/mission/lucy/' target='_blank'>Lucy</a> spacecraft will explore a record-breaking number of asteroids, flying by two asteroids in the solar system’s main asteroid belt, and by eight Trojan asteroids that share an orbit around the Sun with Jupiter.",
+		"more": "Trojan asteroids associated with Jupiter are thought to be remnants of the primordial material that formed the outer planets. These primitive bodies may hold clues to the history of solar system formation. Lucy is the first mission to visit the Trojans."
+	},
+	"dates": {
+		"start": "2021-10-16T09:34:00",
+		"end": "",
+		"landing": ""
+	},
+	"featuredEvents": {
+		"initial": [
+			{ "eventId": "lucy_eurybates_flyby", "title": "Flyby of Eurybates" }
+		]
+	},
+	"related": ["jupiter", "152830_dinkinesh", "52246_donaldjohanson", "3548_eurybates", "15094_polymele", "11351_leucus", "21900_orus", "617_patroclus"]
+}

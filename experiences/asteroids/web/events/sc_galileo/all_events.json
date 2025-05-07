@@ -1,0 +1,55 @@
+{
+	"launch": {
+		"id": "launch",
+		"title": "Galileo Launch",
+		"start": "1989-10-18T13:28:44",
+		"target": "earth",
+		"rate": 300,
+		"distance": 0.05
+	},
+	"gaspra_flyby": {
+		"id": "gaspra_flyby",
+		"title": "A Visit to Gaspra",
+		"start": "1991-10-29T22:16:00",
+		"target": "951_gaspra",
+		"distance": 0.06,
+		"rate": 1,
+		"horizontalOffset": -8,
+		"visual": true
+	},
+	"ida_flyby": {
+		"id": "ida_flyby",
+		"title": "A Flyby of Ida",
+		"start": "1993-08-28T16:50:29",
+		"target": "243_ida",
+		"distance": 0.1,
+		"rate": 15,
+		"horizontalOffset": 8,
+		"visual": true
+	},
+	"probe_deploy": {
+		"id": "probe_deploy",
+		"title": "Atmospheric Probe Released",
+		"start": "1995-07-13T05:29:57",
+		"target": "sc_galileo_probe",
+		"distance": 0.03
+		},
+	"jupiter_arrival": {
+		"id": "jupiter_arrival",
+		"title": "Arrival at Jupiter and Orbit Insertion",
+		"start": "1995-12-07T17:36:00",
+		"target": "jupiter",
+		"distance": 0.04,
+		"rate": 1
+	},
+	"end_of_mission": {
+		"id": "end_of_mission",
+		"title": "Galileo enters Jupiter's Atmosphere",
+		"start": "2003-09-21T18:22:00",
+		"target": "jupiter",
+		"rate": 60,
+		"distance": 0.15,
+		"horizontalOffset": 10
+	}
+
+}

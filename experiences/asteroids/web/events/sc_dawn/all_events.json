@@ -1,0 +1,64 @@
+{
+	"launch": {
+		"id": "launch",
+		"title": "Dawn Launch",
+		"start": "2007-09-27T13:15:00",
+		"target": "earth",
+		"rate": 60,
+		"distance": 0.1
+	},
+	"mars_flyby": {
+		"id": "mars_flyby",
+		"title": "Mars flyby",
+		"start": "2009-02-17T16:00:00",
+		"target": "mars",
+		"rate": 3000,
+		"distance": 0.05
+	},
+	"vesta_arrival": {
+		"id": "vesta_arrival",
+		"title": "Dawn Arrives at Vesta",
+		"start": "2011-07-16T00:26:00",
+		"target": "4_vesta",
+		"rate": 3000,
+		"distance": 0.05,
+		"horizontalOffset": 5
+	},
+	"vesta_orbit": {
+		"id": "vesta_orbit",
+		"title": "Dawn Orbits Vesta",
+		"start": "2012-02-05T09:00:00",
+		"target": "4_vesta",
+		"rate": 30,
+		"distance": 0.1,
+		"visual": true
+	},
+	"vesta_departure": {
+		"id": "vesta_departure",
+		"title": "Departure from Vesta",
+		"start": "2012-09-04T16:00:00",
+		"rate": 10000,
+		"distance": 0.1,
+		"target": "4_vesta"
+	},
+	"ceres_arrival": {
+		"id": "ceres_arrival",
+		"title": "Arrival at Ceres",
+		"start": "2015-03-06T22:00:00",
+		"target": "1_ceres",
+		"rate": 3000,
+		"distance": 0.05,
+		"horizontalOffset": 5,
+		"verticalOffset": 3
+	},
+	"ceres_orbit": {
+		"id": "ceres_orbit",
+		"title": "Dawn Orbits Ceres",
+		"start": "2016-03-05T22:00:00",
+		"target": "1_ceres",
+		"rate": 100,
+		"distance": 700.0,
+		"horizontalOffset": 10,
+		"visual": true
+	}
+}

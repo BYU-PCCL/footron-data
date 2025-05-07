@@ -1,0 +1,13 @@
+{
+	"title": "Wilkinson Microwave Anisotropy Probe",
+	"description": {
+		"blurb": "The Wilkinson Microwave Anisotropy Probe (WMAP) mission reveals conditions as they existed in the early universe by measuring the properties of the cosmic microwave background radiation over the full sky.",
+		"more": "To address its key scientific questions, WMAP measures small variations in the temperature of the cosmic microwave background radiation. These measurements reveal the size, matter content, age, geometry and fate of the universe. They also reveal the primordial structure that grew to form galaxies and will test ideas about the origins of these primordial structures."
+	},
+	"dates": {
+		"start": "2001-06-30T19:46:46",
+		"end": "2010-08-19T00:00:00",
+		"landing": ""
+	},
+	"related": []
+}

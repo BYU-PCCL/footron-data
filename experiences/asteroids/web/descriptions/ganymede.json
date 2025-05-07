@@ -1,0 +1,19 @@
+{
+	"title": "Ganymede",
+	"description": {
+		"blurb": "Jupiter's moon Ganymede is the largest moon in our solar system and the only moon with its own magnetic field.",
+		"more": "The magnetic field of Ganymede causes auroras, which are ribbons of glowing, electrified gas, in regions circling the moon’s north and south poles. Ganymede has large, bright regions of ridges and grooves that slice across older, darker terrains. These grooved regions are a clue that the moon experienced dramatic upheavals in the distant past. Scientists have also found strong evidence of an underground ocean on Ganymede. Ganymede was discovered by Galileo Galilei on Jan. 7, 1610. The discovery, along with three other Jovian moons, was the first time a moon was discovered orbiting a planet other than Earth. The discovery of the four Galilean satellites eventually led to the understanding that planets in our solar system orbit the sun, instead of our solar system revolving around Earth."
+	},
+	"exploration": {
+		"initial": [
+			{ "url": "sc_pioneer_10/events/jupiter_flyby", "title": "Pioneer 10", "info": "1973 Flyby" },
+			{ "url": "sc_pioneer_11/events/jupiter_flyby", "title": "Pioneer 11", "info": "1974 Flyby" },
+			{ "url": "sc_voyager_1/events/jupiter", "title": "Voyager 1", "info": "1979 Flyby" },
+			{ "url": "sc_voyager_2/events/jupiter", "title": "Voyager 2", "info": "1979 Flyby" },
+			{ "url": "sc_galileo", "title": "Galileo Mission", "info": "1995-2003" },
+			{ "url": "sc_juno", "title": "Juno Mission", "info": "2016-present" }
+		],
+		"more": []
+	},
+	"related": ["sc_pioneer_10", "sc_pioneer_11", "sc_voyager_1", "sc_voyager_2", "sc_galileo", "sc_juno"]
+}

@@ -1,0 +1,8 @@
+{
+	"description": {
+		"blurb": "The Cassini spacecraft launched Oct. 15, 1997 atop a Titan IVB/Centaur rocket.",
+		"more": "At 4:43 a.m. EDT on Oct. 15, 1997, a Titan IVB/Centaur rocket, powered by two solid rocket motors, lifted off from Launch Complex 40 in Cape Canaveral, Florida, carrying NASA's Cassini spacecraft and the European Space Agency's Huygens probe.\nAbout two minutes into flight, the Titan first stage engine ignited, and a few seconds later the expended solid rocket motors detached and fell away. Three and a half minutes into flight, at an altitude of 363,000 feet (110,600 meters), the payload fairing (a.k.a. nose-cone) split and fell away. Just past five minutes after liftoff, the Titan first stage detached and fell away, and the second stage ignited to burn for about four minutes. About nine minutes after liftoff, the Titan second stage detached, clearing the way for the Centaur upper stage, which then executed two burns - the first to get Cassini-Huygens into Earth orbit, and the second to leave Earth for its interplanetary journey. Cassini-Huygens then detached from the Centaur stage and traveled for nearly seven years, flying by Venus twice, Earth once, and Jupiter once, before entering orbit around Saturn on July 1, 2004."
+	},
+	"related": ["earth"],
+	"layers": true
+}

@@ -1,0 +1,12 @@
+{
+	"title": "SWOT",
+	"description": {
+		"blurb": "SWOT (Surface Water & Ocean Topography) will make the first global survey of Earth's surface water, observe the fine details of the ocean's surface topography, and measure how water bodies change over time."
+	},
+	"dates": {
+		"start": "2022-12-16T13:00:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["earth"]
+}

@@ -1,0 +1,13 @@
+{
+	"title": "TDRS-9",
+	"description": {
+		"blurb": "A tracking and data relay satellite (TDRS) is a type of communications satellite that forms part of the Tracking and Data Relay Satellite System (TDRSS) used by NASA and other United States government agencies for communications to and from satellites and remote ground stations.",
+		"more": "Platforms such as satellites, balloons, aircraft, the International Space Station, and remote bases like the Amundsen-Scott South Pole Station are served by the TRDR system, which places satellites in geosynchronous orbit. It was designed to replace an existing worldwide network of ground stations that had supported all of NASA's crewed flight missions and uncrewed satellites in low-Earth orbits. The primary system design goal was to increase the amount of time that these spacecraft were in communication with the ground and improve the amount of data that could be transferred."
+	},
+	"dates": {
+		"start": "2002-03-08T22:59:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["earth","sc_tdrs_3","sc_tdrs_5","sc_tdrs_6","sc_tdrs_7","sc_tdrs_8","sc_tdrs_10","sc_tdrs_11"]
+}

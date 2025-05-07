@@ -1,0 +1,38 @@
+{
+	"philae_landing": {
+		"id": "philae_landing",
+		"title": "Landing on Comet 67P",
+		"start": "2014-11-12T15:33:00",
+		"target": "67p_churyumov_gerasimenko",
+		"distance": 0.1,
+		"horizontalOffset": -5,
+		"rate": 1,
+		"visual": true
+	},
+	"philae_launch": {
+		"id": "philae_launch",
+		"title": "Philae Leaves Rosetta",
+		"start": "2014-11-12T08:35:15",
+		"rate": 4,
+		"visual": true
+	},
+	"67p_orbit": {
+		"id": "67p_orbit",
+		"title": "Rosetta Enters Orbit Around Comet 67P",
+		"start": "2014-09-10T12:00:00",
+		"target": "67p_churyumov_gerasimenko",
+		"distance": 3.0,
+		"rate": 600,
+		"horizontalOffset": -5,
+		"visual": true
+	},
+	"lutetia_flyby": {
+		"id": "lutetia_flyby",
+		"title": "Flyby of Asteroid Lutetia",
+		"start": "2010-07-10T15:45:00",
+		"target": "21_lutetia",
+		"distance": 0.1,
+		"horizontalOffset": -3,
+		"visual": true
+	}
+}

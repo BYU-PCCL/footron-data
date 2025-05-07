@@ -1,0 +1,197 @@
+{
+    "99942_apophis": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered on June 19, 2004 at the Kitt Peak National Observatory in Arizona.</p>",
+            "rotation": 30.4
+        },
+        "approach": {
+            "fact":"<p class='long'>On April 13, 2029, the asteroid Apophis will pass less than 23,239 miles (37,399 kilometers) from our planet’s surface – just outside the distance of geosynchronous satellites, and closer to Earth than any similarly sized <span class=\"clickable underline\" data-def=\"pho\">PHO</span> in recorded history. At that time, Apophis will be visible to observers on the ground in the Eastern Hemisphere without the aid of a telescope or binoculars.</p>"
+        }
+    },
+    "4_vesta": {
+        "stats": {
+            "discovery":"<p class='long'>One of the largest and earliest known asteroids, Vesta was discovered on March 29th, 1807, and was visited by the Dawn mission in 2011.</p>",
+            "rotation": 5.342
+        }
+    },
+    "433_eros": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered on August 13th, 1898, Eros was the first near-Earth Object (<span class=\"clickable underline\" data-def=\"neo\">NEO</span>) ever found, and the first asteroid ever orbited by a spacecraft, NEAR-Shoemaker.</p>",
+            "rotation": 5.27
+        },
+        "approach": {
+            "fact":"<p class='long'>Eros will approach Earth within 0.39765 <span class=\"clickable underline\" data-def=\"au\">AU</span> on November 30th, 2025.</p>"
+        }
+    },
+    "951_gaspra": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in 1916, Gaspra is the first asteroid to be closely approached by a spacecraft, which was Galileo in 1991.</p>",
+            "rotation": 7.042
+        }
+    },
+    "243_ida": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in 1884, Ida was visited by the Galileo spacecraft in August of 1993.</p>",
+            "rotation": 4.634
+        }
+    },
+    "81p_wild_2": {
+        "stats": {
+            "discovery":"<p class='long'>This comet was discovered on January 6th, 1978, and was visited by the Stardust mission in January of 2004.</p>"
+        }
+    },
+    "9p_tempel_1": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in 1867, comet Tempel 1 was the target of the Deep Impact mission, which physically collided with the comet on July 4th, 2005.</p>",
+            "rotation": 40.7
+        }
+    },
+    "21_lutetia": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in 1852, the asteroid was visited by the European space probe Rosetta in July of 2010.</p>",
+            "rotation": 8.1655
+        }
+    },
+    "67p_churyumov_gerasimenko": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in 1969, this comet was the first to be landed upon by a robotic mission from Earth, the European Space Agency's Rosetta mission. The Philae lander touched down in November of 2014.</p>",
+            "rotation": 12.76
+        },
+        "approach": {
+            "fact":"<p class='long'>The comet approached Earth within 0.418 <span class=\"clickable underline\" data-def=\"au\">AU</span> on November 12th, 2021, and then will approach again in November of 2034 at a distance of 0.4523 <span class=\"clickable underline\" data-def=\"au\">AU</span>.</p>"
+        }
+    },
+    "1_ceres": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in January of 1801, Ceres was the first asteroid ever found, though it was initially classified as a planet. It remained an asteroid until 2006, when it was reclassified as a dwarf planet.</p>",
+            "rotation": 9.0741
+        }
+    },
+    "101955_bennu": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in September of 1999, Bennu was the subject of the OSIRIS-REx mission, which touched down on the asteroid and collected a sample of the surface on October 20th, 2020. OSIRIS-REx departed Bennu in 2021, and delivered the capsule with pieces of the asteroid to Earth on September 24, 2023.</p>",
+            "rotation": 4.296
+        },
+        "approach": {
+            "fact":"<p class='long'>Bennu is a <span class=\"clickable underline\" data-def=\"pho\">PHO</span>, and will have multiple close approaches with Earth over time. The next close approach will be in 2023, at a distance of 0.497 <span class=\"clickable underline\" data-def=\"au\">AU</span></p>"
+        }
+    },
+    "103p_hartley_2": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in 1986, Comet Hartley 2 was the target of the Deep Impact/EPOXI mission, which flew by in November of 2010.</p>",
+            "rotation": 18.1
+        },
+        "approach": {
+            "fact":"<p class='long'>103p/Hartley 2 is classified as an <span class=\"clickable underline\" data-def=\"neo\">NEO</span>, and will approach Earth within 0.3826 <span class=\"clickable underline\" data-def=\"au\">AU</span> on September 26th, 2023.</p>"
+        }
+    },
+    "25143_itokawa": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in 1998, Itokawa was the first asteroid to be the target of a sample return mission. The Japanese space probe Hayabusa took a sample from the comet in November of 2005.</p>",
+            "rotation": 12.132
+        },
+        "approach": {
+            "fact":"<p class='long'>Itokawa is classified as a <span class=\"clickable underline\" data-def=\"pho\">PHO</span>, and will next approach the Earth on March 6th, 2030, at a distance of 0.376 <span class=\"clickable underline\" data-def=\"au\">AU</span>.</p>"
+        }
+    },
+    "16_psyche": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in 1852, the Psyche asteroid is the subject of the upcoming Psyche mission which will launch no earlier than 2023.</p>",
+            "rotation": 4.196
+        }
+    },
+    "65803_didymos": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in 1996, Didymos is part of a binary asteroid system with its smaller partner, Dimorphos. The DART mission targeted this system, successfully crashing a probe into Dimorphos on September 26th, 2022.</p>",
+            "rotation": 2.2593
+        },
+        "approach": {
+            "fact":"<p class='long'>Didymos is a <span class=\"clickable underline\" data-def=\"pho\">PHO</span>, and approached Earth at a distance of 0.07123 <span class=\"clickable underline\" data-def=\"au\">AU</span> on October 4th, 2022.</p>"
+        }
+    },
+    "dimorphos": {
+        "stats": {
+            "discovery":"<p class='long'>First observed in 2003 (7 years after the discovery of Didymos), Dimorphos is the smaller twin of the Didymos binary asteroid system. The DART mission intentionally crashed into Dimorphos on September 26th, 2022, and successfully altered its orbit.</p>",
+            "rotation": 11.92
+        },
+        "approach": {
+            "fact":"<p class='long'>Dimorphos and its binary system are classifed as a <span class=\"clickable underline\" data-def=\"pho\">PHO</span>, and approached Earth at a distance of 0.07123 <span class=\"clickable underline\" data-def=\"au\">AU</span> on October 4th, 2022.</p>"
+        }
+    },
+    "52246_donaldjohanson": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in 1981, and named after the paleoanthropologist who discovered the \"Lucy\" fossil, this will be the second small body that the Lucy mission will encounter in 2025.</p>",
+            "rotation": 252
+        }
+    },
+    "3548_eurybates": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in 1973, Eurybates is the first Trojan Asteroid that the Lucy mission will visit in August of 2027. It has a small satellite named Queta.</p>",
+            "rotation": 8.7
+        }
+    },
+    "15094_polymele": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in 1999, Polymele is a Trojan Asteroid that will be visited by the Lucy mission in September of 2027.</p>",
+            "rotation": 5.86
+        }
+    },
+    "11351_leucus": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in 1997, Leucus is a Trojan Asteroid that will be visited by the Lucy mission in April of 2028.</p>",
+            "rotation": 445.73
+        }
+    },
+    "21900_orus": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in 1999, Orus is a Trojan Asteroid that will be visited by the Lucy mission in November of 2028.</p>",
+            "rotation": 13.45
+        }
+    },
+    "617_patroclus": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in 1906, Patroclus is a Trojan Asteroid that will be visited by the Lucy mission in 2033. In 2001, Patroclus was found to be part of a binary asteroid system with its smaller twin, named Menoetius.</p>",
+            "rotation": 102.8
+        }
+    },
+    "19p_borrelly": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in 1904, comet Borrelly was the target of the Deep Space 1 mission, which flew by in September of 2001.</p>"
+        }
+    },
+    "5535_annefrank": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in 1942, the main belt asteroid 5535 Annefrank was used as a practice flyby target by the Stardust mission on November 2nd, 2002.</p>",
+            "rotation": 15.12
+        }
+    },
+    "9969_braille": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in 1992, Braille was visited by the Deep Space 1 mission on July 29th, 1999. The spacecraft passed within 26 km (16 miles) of the asteroid, which was the closest asteroid flyby ever at that time.</p>",
+            "rotation": 226.4
+        }
+    },
+    "162173_ryugu": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in 1999, Ryugu was the target of the Hayabusa2 mission, which orbited the asteroid for a year and a half, landed small rovers on it, and collected samples that were returned to Earth in December of 2020.</p>",
+            "rotation": 7.63
+        },
+        "approach": {
+            "fact":"<p class='long'>Ryugu is a <span class=\"clickable underline\" data-def=\"pho\">PHO</span>, and will next approach Earth at a distance of 0.373 <span class=\"clickable underline\" data-def=\"au\">AU</span>s on June 3rd, 2025.</p>"
+        }
+    },
+    "152830_dinkinesh": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in 1999, Dinkinesh will be the Lucy mission's first flyby target in early November of 2023. It will become the smallest main-belt asteroid ever visited.</p>"
+        }
+    },
+    "73p_schwassmann_wachmann_3": {
+        "stats": {
+            "discovery":"<p class='long'>Discovered in 1930, 73P/Schwassmann-Wachmann 3 is a periodic comet that began to disintegrate as it approached the sun in 1995. Initially, it split into four distinct fragments, but later further split into more than sixty pieces.</p>"
+        },
+        "category": "Comet",
+        "id": "73p_schwassmann_wachmann_3",
+        "iauName": "73P/Schwassmann Wachmann 3",
+        "displayName": "Schwassmann Wachmann 3"
+    }
+}

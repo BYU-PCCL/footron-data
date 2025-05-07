@@ -1,0 +1,18 @@
+{
+    "stories": {
+        "asteroids_101": {
+            "id": "asteroids_101",
+            "title": "Asteroids 101"
+        },
+        "asteroids_close_approach": {
+            "id": "asteroids_close_approach",
+            "title": "What is a Close Approach?"
+        },
+        "asteroids_missions": {
+            "id": "asteroids_missions",
+            "title": "Asteroid and Comet Missions"
+        }
+    },
+    "external": {},
+    "featured": []
+}

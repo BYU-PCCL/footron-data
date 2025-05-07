@@ -1,0 +1,11 @@
+{
+	"title": "433 Eros",
+	"description": {
+		"blurb": "Eros is famous as the first asteroid to be orbited by a spacecraft, and as the first one on which a spacecraft landed.",
+		"more": "The NEAR spacecraft first flew by Eros on Dec. 23, 1998 at a distance of about 2,400 miles (about 3,800 kilometers) and found that the asteroid was smaller than expected and had two medium-sized craters, a long surface ridge and a density similar to that of Earth's crust. Afterseveral trajectory adjustments, NEAR finally moved into orbit around Eros on Valentine's Day (befitting an asteroid named for the Greek god of love), Feb. 14, 2000.\n\nAfter nearly a year in orbit, during which time the spacecraft was renamed \"NEAR Shoemaker\" in honor of astrogeology pioneer Eugene Shoemaker, the mission carried out humanity's first asteroid landing on Feb. 12, 2001. Eros was 196 million miles (315 million kilometers) from Earth at the time."
+	},
+	"cards": [
+		{ "storyId": "asteroids_missions" }
+	],
+	"related": ["sc_near_shoemaker"]
+}

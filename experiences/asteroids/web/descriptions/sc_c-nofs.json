@@ -1,0 +1,12 @@
+{
+	"title": "C/NOFS",
+	"description": {
+		"blurb": "The Communications/Navigation Outage Forecasting System (C/NOFS) is a prototype operational system designed to monitor and forecast ionospheric scintillation in real-time and on a global scale. In the space-borne segment, C/NOFS will fly a system of proven sensors on-board a three-axis stabilized satellite to detect ionospheric scintillation. This will provide data for global, real-time specification, and 4 hour forecast capability."
+	},
+	"dates": {
+		"start": "",
+		"end": "",
+		"landing": ""
+	},
+	"related": []
+}

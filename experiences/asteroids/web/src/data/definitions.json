@@ -1,0 +1,80 @@
+{
+    "asteroid": {
+        "title": "Asteroid",
+        "html": "<div><p> Sometimes called minor planets, asteroids are rocky, airless remnants left over from the early formation of our solar system about 4.6 billion years ago.</p><p>Most of this ancient space rubble can be found orbiting the Sun between Mars and Jupiter within the main asteroid belt.</p><p>Unlike <span data-def=\"comet\">comets</span>, asteroids remain solid under extreme temperatures; this is due to their formation in the high heat, high density center of the solar nebula.</p><div class=\"eyes-deepdive\" data-storyid=\"asteroids_101\">Deep Dive into Asteroids 101</div></div>",
+        "related": [
+            "comet"
+        ]
+    },
+    "comet": {
+        "title": "Comet",
+        "html": "<div><p>Comets are frozen leftovers from the formation of the solar system composed of dust, rock, and ice. They range from a few kilometers, to hundreds of kilometers wide.</p><p>As they orbit closer to the Sun, they heat up and spew gases and dust into a glowing head that can be larger than a planet. This material forms a tail that stretches millions of kilometers.</p><p>Unlike <span data-def=\"asteroid\">asteroids</span>, comets formed in areas of the solar nebula where it was cold enough for water and gases to freeze. Consequently, they are larger and rarer than asteroids, and tend to originate in the far reaches of the solar system.</p></div>",
+        "related": [
+            "asteroid"
+        ]
+    },
+    "neo": {
+        "title": "NEO",
+        "html": "<div><h5>Near-Earth object</h5><p> A near-Earth object is any small solar system body whose orbit brings it within a certain distance of Earth. This distance is defined by having the closest approach to the sun, the <span data-def=\"perihelion\">perihelion</span>, be within 1.3 <span data-def=\"au\">AU</span></p><p>A sub-category of the NEO is the <span data-def=\"pho\">PHO</span>.</p></div>",
+        "related": [
+            "perihelion",
+            "au",
+            "pho"
+        ]
+    },
+    "pho": {
+        "title": "PHO",
+        "html":"<div><h5>Potentially Hazardous Object</h5><p>To be defined as potentially hazardous, an object must be:</p><ul><li>Larger than 150 meters (almost 500 feet), roughly twice as big as the Statue of Liberty is tall.</li><li>Approach Earth's orbit to within about 7.5 million kilometers (4.6 million miles). This can also be expressed as having a <span data-def=\"moid\">MOID</span> of less than 0.05 <span data-def=\"au\">AU</span> (within 19.5 <span data-def=\"ld\">LD</span>s).</li></ul><p>PHOs can be both <span data-def=\"asteroid\">asteroids</span> and <span data-def=\"comet\">comets</span>, but the vast majority are asteroids. Learn more about the PHO, Apophis below.</p><div class=\"eyes-deepdive\" data-storyid=\"asteroids_close_approach\">Deep Dive into Close Approaches</div></div>",
+        "related": [
+            "asteroid",
+            "comet",
+            "moid",
+            "au",
+            "ld"
+        ]
+    },
+    "aphelion": {
+        "title": "Aphelion",
+        "html": "<div><p>The aphelion is the point in the orbit of an object at which it is farthest from the sun.</p><p>The opposite case is called the <span data-def=\"perihelion\">perihelion</span>.</p></div>",
+        "related": [
+            "perihelion"
+        ]
+    },
+    "perihelion": {
+        "title": "Perihelion",
+        "html": "<div><p>The perihelion is the point in the orbit of an object at which it is closest to the sun. </p><p>The opposite case is called the  <span data-def=\"aphelion\">aphelion</span>.</p></div>",
+        "related": [
+            "aphelion"
+        ]
+    },
+    "moid": {
+        "title": "MOID",
+        "html": "<div><h5>Minimum Orbit Intersection Distance</h5><p>The MOID is the minimum distance between the orbits of two objects. It indicates the closest possible approach of two objects to each other.</p><p>For Earth, an object with a MOID of less than or equal to 0.05 <span data-def=\"au\">AU</span> is considered a possible <span data-def=\"pho\">Potentially Hazardous Object</span> if it's large enough.</p></div>",
+        "related": [
+            "au",
+            "pho"
+        ]
+    },
+    "oumuamua": {
+        "title": "Oumuamua",
+        "html": "<div class=\"oumuamua-animation\"><h5>First interstellar object</h5><p>Discovered on October 19, 2017, Oumuamua is unlike any asteroid previously observed.</p><p>Although we don’t have a picture, its unusually shiny surface reflects sunlight with a variation factor of 10. This suggest a severely elongated shape, 5 to 10 times larger than its width. Along with its rapid speed and high eccentricity, it was determined to be of interstellar origin.</p><p>Passing Earth on October 14, 2017 at approximately 0.1618 <span data-def=\"au\">AU</span>, Oumuamua is now exiting our solar system, unlikely to ever return.</p></div>",
+        "related": [
+            "au"
+        ]
+    },
+    "au": {
+        "title": "AU",
+        "html": "<div><h5>Astronomical Unit</h5><p>An AU is defined as exactly 92,955,807.273 miles (149,597,871 kilometers), or roughly the distance between the Earth and the Sun.</p><p>Jupiter orbits at about 5.2 times the Sun-Earth distance, so Jupiter’s distance from the Sun can be expressed as 5.2 AU.</p><p>1 AU is equivalent to 389,174 <span data-def=\"ld\">LD</span>s.</p></div>",
+        "related": [
+            "moid",
+            "ld"
+        ]
+    },
+    "ld": {
+        "title": "LD",
+        "html":"<div><h5>Lunar Distance</h5><p>A lunar distance is defined exactly as 384,398 kilometers (238,854 miles); the average distance between the centers of the Earth and the Moon.</p><p>More technically, it's the length of the semi-major axis of the geocentric lunar orbit.</p><p>1 LD is equivalent to about 0.00257 <span data-def=\"au\">AU</span>.</p></div>",
+        "related": [
+            "au"
+        ]
+    }
+}

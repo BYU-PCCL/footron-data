@@ -1,0 +1,13 @@
+{
+	"title": "TESS",
+	"description": {
+		"blurb": "NASA’s Transiting Exoplanet Survey Satellite is an all-sky survey mission that will discover thousands of exoplanets around nearby bright stars.",
+		"more": "The Transiting Exoplanet Survey Satellite (TESS) is the next step in the search for planets outside of our solar system, including those that could support life. The mission will find exoplanets that periodically block part of the light from their host stars, events called transits. TESS will survey 200,000 of the brightest stars near the sun to search for transiting exoplanets. TESS launched on April 18, 2018, aboard a SpaceX Falcon 9 rocket.\n\n TESS scientists expect the mission will catalog thousands of planet candidates and vastly increase the current number of known exoplanets. Of these, approximately 300 are expected to be Earth-sized and super-Earth-sized exoplanets, which are worlds no larger than twice the size of Earth. TESS will find the most promising exoplanets orbiting our nearest and brightest stars, giving future researchers a rich set of new targets for more comprehensive follow-up studies."
+	},
+	"dates": {
+		"start": "2018-04-18T22:51:31",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_kepler_space_telescope","sc_spitzer", "sc_hubble_space_telescope"]
+}

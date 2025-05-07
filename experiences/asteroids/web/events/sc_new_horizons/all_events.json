@@ -1,0 +1,21 @@
+{
+	"pluto_flyby": {
+		"id": "pluto_flyby",
+		"title": "Flyby of Pluto",
+		"start": "2015-07-14T10:50:00",
+		"target": "134340_pluto",
+		"distance": 0.02,
+		"rate": 90,
+		"horizontalOffset": 1,
+		"verticalOffset": 5
+	},
+	"arrokoth_flyby": {
+		"id": "arrokoth_flyby",
+		"title": "Flyby of Arrokoth",
+		"start": "2019-01-01T05:32:00",
+		"target": "486958_arrokoth",
+		"rate": 5,
+		"distance": 0.035,
+		"horizontalOffset": -5
+	}
+}

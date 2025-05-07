@@ -1,0 +1,13 @@
+{
+	"title": "Van Allen Probe B",
+	"description": {
+		"blurb": "The Van Allen Probes were two robotic spacecraft that were used to study the Van Allen radiation belts that surround Earth.",
+		"more": "A Van Allen radiation belt is a zone of energetic charged particles, most of which originate from the solar wind, that are captured by and held around a planet by that planet's magnetic field. The Van Allen Probes were built to study these areas of \"space weather\" in more detail."
+	},
+	"dates": {
+		"start": "2012-08-30T08:05:00",
+		"end": "2019-07-19T00:00:00",
+		"landing": ""
+	},
+	"related": ["earth","sc_rbsp_a"]
+}

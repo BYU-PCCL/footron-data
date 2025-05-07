@@ -1,0 +1,13 @@
+{
+	"title": "IMAGE",
+	"description": {
+		"blurb": "IMAGE (Imager for Magnetopause-to-Aurora Global Exploration) is a NASA mission that studied the global response of the Earth's magnetosphere to changes in the solar wind.",
+		"more": "IMAGE was the first spacecraft dedicated to imaging the Earth's magnetosphere, producing comprehensive global images of plasma in the inner magnetosphere."
+	},
+	"dates": {
+		"start": "2000-03-25T20:34:43",
+		"end": "2005-12-18T07:39:00",
+		"landing": ""
+	},
+	"related": ["sc_wind"]
+}

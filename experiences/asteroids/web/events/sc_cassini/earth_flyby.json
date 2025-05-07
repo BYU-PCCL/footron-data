@@ -1,0 +1,8 @@
+{
+	"description": {
+		"blurb": "After two Venus flybys, Cassini gained a third speed boost by flying by Earth in 1999 for a gravity assist.",
+		"more": "After leaving Earth and orbiting the sun twice to perform a pair of Venus gravity assist flybys, Cassini came back, flying past Earth on Aug. 18, 1999. The flyby boosted Cassini's speed by 12,000 miles per hour (5.5 kilometers per second), and the spacecraft got within 719 miles (1,157 kilometers) of Earth, making it visible at night from some islands in the South Pacific. Nine of Cassini's 12 instruments were active when the spacecraft flew through the Earth-moon system, primarily for calibration purposes. At the time of the flyby, Cassini had traveled more than 1 billion miles (about 1.6 billion kilometers) since its 1997 launch."
+	},
+	"related": ["earth"],
+	"layers": true
+}

@@ -1,0 +1,18 @@
+{
+	"title": "Galileo",
+	"description": {
+		"blurb": "The <a href='https://solarsystem.nasa.gov/missions/galileo/overview/' target='_blank'>Galileo </a>mission was the first spacecraft to enter orbit around the planet Jupiter, arriving in December of 1995 and staying for eight years, and made close passes by all its major moons. Galileo even carried a small probe that it deployed and sent deep into the atmosphere of Jupiter, taking readings for almost an hour before the probe was crushed by overwhelming pressure.",
+		"more": "The Galileo spacecraft logged quite a few other firsts during its 14-year mission to Jupiter. Among its discoveries: an intense radiation belt above Jupiter's cloud tops, helium in about the same concentration as the Sun, extensive and rapid resurfacing of the moon Io because of volcanism and a magnetic field at Ganymede."
+	},
+	"dates": {
+		"start": "1989-10-18T16:53:40",
+		"end": "2003-09-21T18:57:18",
+		"landing": ""
+	},
+	"featuredEvents": {
+		"initial": [
+			{ "eventId": "jupiter_arrival", "title": "jupiter_arrival" }
+		]
+},
+	"related": ["jupiter", "europa", "ganymede", "io", "callisto", "amalthea","sc_galileo_probe"]
+}

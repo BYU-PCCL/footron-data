@@ -1,0 +1,13 @@
+{
+	"title": "SMART-1",
+	"description": {
+		"blurb": "SMART-1 was the European Space Agency's first mission to the Moon.",
+		"more": "The Small Missions for Advanced Research in Technology (SMART-1), spacecraft was a technology demonstrator built by the European Space Agency (ESA) to test solar-electric propulsion and other deep space technologies on a mission to the Moon. It ended its mission by crashing into the moon in 2006."
+	},
+	"dates": {
+		"start": "2003-09-27T23:14:46",
+		"end": "2006-09-03T05:42:22",
+		"landing": ""
+	},
+	"related": ["moon"]
+}

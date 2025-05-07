@@ -1,0 +1,13 @@
+{
+	"title": "ACRIMSAT",
+	"description": {
+		"blurb": "ACRIMSAT (Active Cavity Radiometer Irradiance Monitor Satellite) was a mission to monitor the levels of total solar irradiance, which is the power per square meter delivered by the sun.",
+		"more": "Launched in December 1999, the mission lasted almost 14 years, until contact was lost on December 13th, 2013. Monitoring the sun's output over a long period can help separate climate change effects of the sun's variance from other effects such as the greenhouse effect."
+	},
+	"dates": {
+		"start": "1999-12-21T00:00:00",
+		"end": "2013-12-13T00:00:00",
+		"landing": ""
+	},
+	"related": ["sun"]
+}

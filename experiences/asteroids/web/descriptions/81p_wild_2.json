@@ -1,0 +1,11 @@
+{
+	"title": "81P/Wild 2",
+	"description": {
+		"blurb": "81P/Wild (Wild 2) (Wild is pronounced vilt) is a small comet with the shape of a flattened sphere. NASA made use of this special comet, when in 2004 it sent the Stardust mission to fly by it and gather particles.",
+		"more": "Comet 81P/Wild-2 is a fresh periodic comet. Until September 10, 1974, when it passed within 0.006 AU of Jupiter, its orbit lay between Jupiter and a point near Uranus. That encounter with Jupiter, at only 10 times the distance which fragmented P/Shoemaker-Levy 9 in 1994, brought it into the inner solar system, where its perihelion now lies just beyond the distance of Mars and its aphelion near Jupiter."
+	},
+	"cards": [
+		{ "storyId": "asteroids_missions" }
+	],
+	"related": ["sc_stardust"]
+}

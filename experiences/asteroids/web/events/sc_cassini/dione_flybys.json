@@ -1,0 +1,9 @@
+{
+	"description": {
+		"blurb": "Cassini performed five flybys of Dione within a few hundred miles to study the moon closely.",
+		"more": "About 700 miles (1,100 kilometers) in diameter, Dione orbits Saturn once every 2.7 days at almost the same distance that Earth's moon orbits around our planet. Dione's density is 1.48 times that of liquid water, suggesting that about a third of Dione is made up of a dense core (probably silicate rock) with the remainder of its composition being ice. At Dione's average temperature of minus 121 degrees Fahrenheit (minus 186 degrees Celsius or 87 Kelvin), ice is hard as rock. Ice particles as fine as smoke constantly bombard Dione from Saturn's E ring, which is produced by the jets of icy material spraying from Enceladus. So while Enceladus is less than half the diameter of Dione, the smaller moon is altering the surface of the larger moon, painting it with fresh ice dust."
+	},
+	"related": ["dione", "sc_cassini"],
+	"rate": 60,
+	"distance": 0.035
+}

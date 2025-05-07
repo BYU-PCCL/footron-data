@@ -1,0 +1,13 @@
+{
+	"title": "Ingenuity Helicopter",
+	"description": {
+		"blurb": "Hitching a ride on the Perseverance rover, Ingenuity is a technology demonstration to test the first powered flight on Mars.",
+		"more": ""
+	},
+	"dates": {
+		"start": "2020-07-30T11:50:00",
+		"end": "2021",
+		"landing": ""
+	},
+	"related": ["sc_mars_2020", "mars"]
+}

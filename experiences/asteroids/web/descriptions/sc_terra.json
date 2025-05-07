@@ -1,0 +1,13 @@
+{
+	"title": "Terra",
+	"description": {
+		"blurb": "Terra explores the connections between Earth's atmosphere, land, snow and ice, ocean, and energy balance to understand Earth's climate and climate change and to map the impact of human activity and natural disasters on communities and ecosystems.",
+		"more": "Terra carries five instruments that observe Earth’s atmosphere, ocean, land, snow and ice, and energy budget. Taken together, these observations provide unique insight into how the Earth system works and how it is changing. Terra observations reveal humanity’s impact on the planet and provide crucial data about natural hazards like fire and volcanoes. Terra is an international mission carrying instruments from the United States, Japan, and Canada."
+	},
+	"dates": {
+		"start": "1999-12-18T18:57:39",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["earth"]
+}

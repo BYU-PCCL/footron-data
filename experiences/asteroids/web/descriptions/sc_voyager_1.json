@@ -1,0 +1,16 @@
+{
+	"title": "Voyager 1",
+	"description": {
+		"blurb": "No spacecraft has gone farther than NASA's Voyager 1. Launched in 1977 to fly by Jupiter and Saturn, Voyager 1 crossed into interstellar space in August 2012 and continues to collect data.",
+		"more": "NASA's Voyager 1 was launched after Voyager 2, but because of a faster route, it exited the asteroid belt earlier than its twin, having overtaken Voyager 2 on Dec. 15, 1977. The twin Voyager 1 and 2 spacecraft are exploring where no spacecraft from Earth has flown before. Continuing on their more-than-40-year journey since their 1977 launches, they each are much farther away from Earth and the sun than Pluto. In August 2012, Voyager 1 made the historic entry into interstellar space, the region between stars, filled with material ejected by the death of nearby stars millions of years ago. Voyager 2 entered interstellar space on November 5, 2018 and scientists hope to learn more about this region. Both spacecraft are still sending scientific information about their surroundings through the Deep Space Network, or DSN. The primary mission was the exploration of Jupiter and Saturn. After making a string of discoveries there — such as active volcanoes on Jupiter's moon Io and intricacies of Saturn's rings — the mission was extended. Voyager 2 went on to explore Uranus and Neptune, and is still the only spacecraft to have visited those outer planets. The adventurers' current mission, the Voyager Interstellar Mission (VIM), will explore the outermost edge of the Sun's domain. And beyond."
+	},
+	"dates": {
+		"start": "1977-09-05T12:56:00",
+		"end": "",
+		"landing": ""
+	},
+	"cards": [
+		{ "storyId": "voyager_grand_tour" }
+	],
+	"related": ["sc_voyager_2","jupiter","saturn","titan"]
+}

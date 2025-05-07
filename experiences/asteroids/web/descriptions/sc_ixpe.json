@@ -1,0 +1,12 @@
+{
+	"title": "IXPE",
+	"description": {
+		"blurb": "The Imaging X-Ray Polarimetry Explorer (IXPE) will allow astronomers to explore, for the first time, the hidden details of some of the most extreme and exotic astronomical objects, such as stellar and supermassive black holes, neutron stars and pulsars."
+	},
+	"dates": {
+		"start": "2021-12-13T06:00:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["earth"]
+}

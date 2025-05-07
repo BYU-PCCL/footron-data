@@ -1,0 +1,13 @@
+{
+	"title": "Juice",
+	"description": {
+		"blurb": "The ESA’s Jupiter Icy Moons Explorer, Juice, will make detailed observations of the giant gas planet and its three large ocean-bearing moons – Ganymede, Callisto and Europa – with a suite of remote sensing, geophysical and in situ instruments.",
+		"more": "The mission will characterize these moons as both planetary objects and possible habitats, explore Jupiter’s complex environment in depth, and study the wider Jupiter system as an archetype for gas giants across the Universe. Juice will reach the Jovian system in July 2031 after four gravity assists and eight years of travel. In December of 2034, the spacecraft will enter orbit around Ganymede for its close-up science mission."
+	},
+	"dates": {
+		"start": "2023-04-14T12:14:36",
+		"end": ""
+	},
+	
+	"related": ["jupiter", "sc_europa_clipper", "sc_juno","ganymede", "europa", "callisto"]
+}

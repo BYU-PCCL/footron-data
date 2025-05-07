@@ -1,0 +1,14 @@
+{
+	"title": "Pluto",
+	"description": {
+		"blurb": "Pluto – which is smaller than Earth’s Moon – has a heart-shaped glacier that’s the size of Texas and Oklahoma. This fascinating dwarf planet has blue skies, spinning moons, mountains as high as the Rockies, and it snows – but the snow is red.",
+		"more": "Pluto is a complex and mysterious world with mountains, valleys, plains, craters, and maybe glaciers. Discovered in 1930, Pluto was long considered our solar system's ninth planet. But after the discovery of similar intriguing worlds deeper in the distant Kuiper Belt, icy Pluto was reclassified as a dwarf planet.\n Pluto is orbited by five known moons, the largest of which is Charon. Charon is about half the size of Pluto itself, making it the largest satellite relative to the planet it orbits in our solar system. Pluto and Charon are often referred to as a \"double planet\". On July 14, 2015, NASA’s New Horizons spacecraft made its historic flight through the Pluto system – providing the first close-up images of Pluto and its moons and collecting other data that has transformed our understanding of these mysterious worlds on the solar system’s outer frontier.\n In the years since that groundbreaking flyby, nearly every conjecture about Pluto possibly being an inert ball of ice has been thrown out the window or flipped on its head."
+	},
+	"exploration": {
+		"initial": [
+			{ "url": "sc_new_horizons/events/pluto_flyby", "title": "New Horizons Pluto Flyby", "info": "2015" }
+		],
+		"more": []
+	},
+	"related": ["sc_new_horizons"]
+}

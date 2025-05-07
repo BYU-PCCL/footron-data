@@ -1,0 +1,8 @@
+{
+	"description": {
+		"blurb": "In 2008, Cassini flew through Enceladus' plume nearer to the moon's surface than ever before.",
+		"more": "By summer of 2008, Cassini had flown by the little moon Enceladus four times, starting at a distance of 783 miles (1,260 kilometers) and getting closer in each flyby. In March, the spacecraft passed within just 29 miles (47 kilometers) of Enceladus. Scientists now knew that the jets producing the plume over the moon's south polar region were made up mostly of water vapor and water ice. They also knew that the material spraying out of Enceladus was the source of most of the ions in Saturn's magnetosphere (excited atoms of oxygen in particular). But much remained unknown. The mission was scheduled to end in July, but Cassini's first mission extension gave the spacecraft two more years and six more Enceladus flybys. The first of the six flybys happened in August, and was nearly the same distance as the March flyby. But in October, the spacecraft nearly halved that distance, flying just 16 miles (25 kilometers) from Enceladus' surface. The bold flyby yielded new hints about the icy moon's active surface, as well as how the plume causes Saturn's magnetosphere to slow, locally, as it sweeps over Enceladus. This was the closest moon flyby of the entire mission, although closest approach was not over the plume region (Cassini flew deeper into the plume on October 28, 2015)."
+	},
+	"related": ["enceladus"],
+	"layers": true
+}

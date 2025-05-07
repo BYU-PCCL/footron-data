@@ -1,0 +1,20 @@
+{
+	"title": "Moon",
+	"description": {
+		"blurb": "Earth's Moon is the only place beyond Earth where humans have set foot.",
+		"more": "The brightest and largest object in our night sky, the Moon makes Earth a more livable planet by moderating our home planet's wobble on its axis, leading to a relatively stable climate. It also causes tides, creating a rhythm that has guided humans for thousands of years.\n\n Our moon is the fifth largest of the 190+ moons orbiting planets in our solar system.\n\n Earth's only natural satellite is simply called \"the Moon\" because people didn't know other moons existed until Galileo Galilei discovered four moons orbiting Jupiter in 1610. With a radius of 1,079.6 miles (1,737.5 kilometers), the Moon is less than a third the width of Earth. If Earth were the size of a nickel, the Moon would be about as big as a coffee bean.\n\n The Moon is farther away from Earth than most people realize. The Moon is an average of 238,855 miles (384,400 kilometers) away. That means 30 Earth-sized planets could fit in between Earth and the Moon.\n\n The Moon is slowly moving away from Earth, getting about an inch farther away each year. The leading theory of the Moon's origin is that a Mars-sized body collided with Earth about 4.5 billion years ago. The resulting debris from both Earth and the impactor accumulated to form our natural satellite. The newly formed Moon was in a molten state, but within about 100 million years, most of the global \"magma ocean\" had crystallized, with less-dense rocks floating upward and eventually forming the lunar crust."
+	},
+	"exploration": {
+		"initial": [
+			{ "url": "sc_lunar_reconnaissance_orbiter", "title": "Lunar Reconnaissance Orbiter", "info": "2009-present"},
+			{ "url": "sc_lcross/events/lcross_impact", "title": "LCROSS Impacts the South Pole", "info": "2009 Impact" },
+			{ "url": "sc_clementine", "title": "Clementine", "info": "1994-1995" },
+			{ "url": "sc_lunar_prospector", "title": "Lunar Prospector", "info": "1998-1999" },
+			{ "url": "sc_grail_a", "title": "GRAIL A, or \"Ebb\"", "info": "2011-2012" },
+			{ "url": "sc_grail_b", "title": "GRAIL B, or \"Flow\"", "info": "2011-2012" },
+			{ "url": "sc_ladee", "title": "LADEE", "info": "2013-2014" }
+		],
+		"more": []
+	},
+	"related": ["sc_lcross", "sc_grail_a", "sc_grail_b", "sc_ladee", "sc_clementine", "sc_lunar_prospector"]
+}

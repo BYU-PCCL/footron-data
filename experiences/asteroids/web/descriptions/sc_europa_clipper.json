@@ -1,0 +1,13 @@
+{
+	"title": "Europa Clipper",
+	"description": {
+		"blurb": "Europa Clipper will search for signs of potential habitability on Jupiter's icy ocean moon Europa.",
+		"more": "To determine if this distant moon has conditions favorable for life, NASA’s Europa Clipper mission is preparing to conduct the first dedicated and detailed study of an ocean world beyond Earth.\n The expedition’s objective is to explore Europa to investigate its habitability. The spacecraft is not being sent to find life itself, but will instead try to answer specific questions about Europa’s ocean, ice shell, composition and geology."
+	},
+	"dates": {
+		"start": "2024-10-10T01:44:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_galileo"]
+}

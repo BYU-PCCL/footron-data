@@ -1,0 +1,13 @@
+{
+    "sample_return": {
+		"id": "sample_return",
+		"title": "Sample Return Capsule Returns to Earth",
+		"start": "2023-09-24T14:34:00",
+		"target": "earth",
+		"distance": 4500,
+		"visual": true,
+		"horizontalOffset": 0,
+        "verticalOffset": 0,
+		"rate": 30
+	}
+}

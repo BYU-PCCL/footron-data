@@ -1,0 +1,13 @@
+{
+	"title": "ISS-RapidScat",
+	"description": {
+		"blurb": "RapidScat was an instrument mounted to the International Space Station's Columbus module that measured wind speeds.",
+		"more": "ISS-RapidScat was a scatterometer designed to support weather forecasting by bouncing microwaves off the ocean's surface to measure wind speed. It operated from 2014-2016."
+	},
+	"dates": {
+		"start": "",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_iss", "sc_quikscat"]
+}

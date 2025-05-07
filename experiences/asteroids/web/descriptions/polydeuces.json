@@ -1,0 +1,8 @@
+{
+	"title": "Polydeuces",
+	"description": {
+		"blurb": "Polydeuces was discovered by the Cassini mission team on Oct. 21, 2004, and upon further review of Cassini images, scientists found it in images from April 9 of the same year.",
+		"more": "Polydeuces is a small moon with a mean radius of just 0.8 miles (1.3 kilometers) orbiting Saturn at a distance of about 234,000 miles (377,000 kilometers), taking 2.7 Earth days to go around the planet. Polydeuces is an example of a so-called \"Trojan\" moon — it follows a larger moon in orbit around the planet (in the case of Polydeuces, the larger moon is Dione). Polydeuces is a trailing co-orbital of Dione, while the moon Helene is the leading co-orbital. Trojan moons are found near stable \"Lagrangian points\" — places where the gravitational pull of the planet and the larger moon become balanced. The Trojans are situated 60 degrees ahead or behind the larger moon in its orbit. It is believed that Polydeuces can get as close as 39 degrees to Dione and then drift as far as 92 degrees from it, taking over two years to complete its journey around the Lagrange point. If verified, the extent of this wandering is the largest detected so far for any Trojan moon. Originally designated S/2004 S5, Polydeuces (another name for Pollux) is named for the son of Leda and Zeus."
+	},
+	"related": ["sc_cassini"]
+}

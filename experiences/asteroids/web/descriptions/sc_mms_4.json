@@ -1,0 +1,13 @@
+{
+	"title": "MMS 4",
+	"description": {
+		"blurb": "MMS consists of four identical spacecraft that orbit around Earth through the dynamic magnetic system surrounding our planet to study a little-understood phenomenon called magnetic reconnection.",
+		"more": "The Magnetospheric Multiscale (MMS) mission is a Solar Terrestrial Probes mission comprising four identically instrumented spacecraft that will use Earth's magnetosphere as a laboratory to study the microphysics of three fundamental plasma processes: magnetic reconnection, energetic particle acceleration, and turbulence. These processes occur in all astrophysical plasma systems but can be studied in situ only in our solar system and most efficiently only in Earth's magnetosphere, where they control the dynamics of the geospace environment and play an important role in the processes known as \"space weather.\""
+	},
+	"dates": {
+		"start": "2015-03-13T02:44:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["earth", "sc_mms_1", "sc_mms_2", "sc_mms_3"]
+}

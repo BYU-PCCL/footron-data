@@ -1,0 +1,21 @@
+{
+	"launch": {
+		"id": "launch",
+		"title": "JWST Launch",
+		"start": "2021-12-25T12:20:00",
+		"target": "earth",
+		"rate": 300,
+		"distance": 0.08,
+		"horizontalOffset": -30
+	},
+	"deployment_complete": {
+		"id": "deployment_complete",
+		"title": "Deployment Complete",
+		"start": "2022-01-08T20:00:00"
+	},
+	"enters_L2_orbit": {
+		"id": "enters_L2_orbit",
+		"title": "Webb Begins to Orbit the Sun at Lagrange Point L2",
+		"start": "2022-01-24T20:00:00"
+	}
+}

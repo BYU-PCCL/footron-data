@@ -1,0 +1,19 @@
+{
+	"launch": {
+		"id": "launch",
+		"title": "DART Launch",
+		"start": "2021-11-24T07:53:19Z",
+		"target": "earth",
+		"distance": 0.2,
+		"rate": 60
+	},
+	"dimorphos_impact": {
+		"id": "dimorphos_impact",
+		"title": "Impact with Dimorphos",
+		"start": "2022-09-26T23:14:08",
+		"target": "dimorphos",
+		"distance": 0.04,
+		"verticalOffset": 3,
+		"visual": true
+	}
+}

@@ -1,0 +1,13 @@
+{
+	"title": "LunIR",
+	"description": {
+		"blurb": "LunIR is a small satellite that is launched with the Artemis 1 mission.  LunIR will perform a lunar flyby, collecting spectroscopy and thermography for surface characterization, remote sensing, and site selection.",
+		"more": ""
+	},
+	"dates": {
+		"start": "2022-11-14T02:28:44",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["moon", "sc_artemis_1","sc_lunar_icecube", "sc_biosentinel"]
+}

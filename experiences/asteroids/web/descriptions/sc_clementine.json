@@ -1,0 +1,13 @@
+{
+	"title": "Clementine",
+	"description": {
+		"blurb": "Clementine was the first U.S. spacecraft launched to the Moon in over 20 years. It was designed to test spacecraft components during extended exposure to space and to study the Moon and an asteroid.",
+		"more": "Clementine was launched in 1994 and The lunar observations included imaging at various wavelengths in the visible as well as in ultraviolet and infrared, laser ranging altimetry, gravimetry, and charged particle measurements. Clementine successfully entered an elliptical polar orbit (about 270 × 1,830 miles or 430 × 2,950 kilometers) around the Moon on Feb. 19, 1994, with a period of five days. In two months during 1994, it transmitted about 1.6 million digital images of the lunar surface, many of them with resolutions down to about 330-660 feet (100-200 meters). In the process, it provided scientists with their first look at the total lunar landscape including polar regions."
+	},
+	"dates": {
+		"start": "1994-01-25T16:34:00",
+		"end": "1995-05-10T00:00:00",
+		"landing": ""
+	},
+	"related": ["moon", "sc_lunar_reconaissance_orbiter"]
+}

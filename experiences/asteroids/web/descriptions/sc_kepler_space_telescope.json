@@ -1,0 +1,13 @@
+{
+	"title": "Kepler",
+	"description": {
+		"blurb": "NASA's Kepler spacecraft was launched to search for Earth-like planets orbiting other stars. It discovered more than 2,600 of these \"exoplanets\"—including many that are promising places for life to exist.",
+		"more": "Kepler was equipped to look for planets with size spans from one-half to twice the size of Earth (terrestrial planets) in the habitable zone of their stars where liquid water might exist in the natural state on the surface of the planet. It operated from 2009 to 2018."
+	},
+	"dates": {
+		"start": "2009-03-07T03:49:57",
+		"end": "2018-11-15T00:00:00",
+		"landing": ""
+	},
+	"related": ["sc_hubble_space_telescope", "sc_chandra", "sc_spitzer", "sc_tess"]
+}

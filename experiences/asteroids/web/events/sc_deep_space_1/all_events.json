@@ -1,0 +1,9 @@
+{
+	"borrelly_flyby": {
+		"id": "borrelly_flyby",
+		"title": "A Visit to Comet 19P/Borrelly",
+		"start": "2001-09-22T22:29:33",
+		"target": "19p_borrelly",
+		"visual": true
+	}
+}

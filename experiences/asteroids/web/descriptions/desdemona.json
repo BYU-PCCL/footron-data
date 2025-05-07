@@ -1,0 +1,8 @@
+{
+	"title": "Desdemona",
+	"description": {
+		"blurb": "Desdemona was discovered on Jan. 13 1986 in images taken by Voyager 2. It is one of the 10 Uranian satellites discovered by the Voyager science team.",
+		"more": "Desdemona is one of the small, inner moons of Uranus. Little is known about it other than its size and orbital characteristics. Neither its size nor its albedo have been measured directly, but assuming an albedo of 0.07 like Puck, its surface probably consists of the dark, unprocessed, carbon-rich material found on the C-class of asteroids. Originally called S/1986 U6, Desdemona was named after the wife of Othello in William Shakespeare's play, \"Othello, the Moor of Venice.\" Desdemona is the daughter of a Venetian senator."
+	},
+	"related": ["sc_voyager_2"]
+}

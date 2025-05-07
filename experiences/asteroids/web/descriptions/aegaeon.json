@@ -1,0 +1,8 @@
+{
+	"title": "Aegaeon",
+	"description": {
+		"blurb": "Aegaeon is the smallest known moon of Saturn and scientists imaged it on Aug. 15, 2008, and then confirmed its presence by finding it in two earlier images.",
+		"more": "The moonlet is too small to be resolved by Cassini's cameras, so its size cannot be measured directly. However, Cassini scientists estimated the moonlet's size by comparing its brightness to another small Saturnian moon, Pallene. It has also been found that the moonlet's orbit is being disturbed by the larger, nearby moon Mimas, which is responsible for keeping the ring arc together. Aegaeon is embedded within a partial ring, or ring arc, previously found by Cassini, the G ring. Debris knocked off the moon forms a bright arc near the inner edge, which in turn spreads to form the rest of the ring. Based on its interaction with the dust particles that make up the G ring arc Aegaeon is embedded in, this small moon most likely has a density around half that of water ice. But unlike ice, Aegaeon is very dark. It's the least reflective of any Saturnian moon inward of Titan. Originally designated S/2008 S1, Aegaeon is named for a fierce giant with many heads and arms who helped conquer the Titans."
+	},
+	"related": ["sc_cassini"]
+}

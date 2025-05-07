@@ -1,0 +1,13 @@
+{
+	"title": "IBEX",
+	"description": {
+		"blurb": "Interstellar Boundary Explorer (IBEX) is a NASA spacecraft mapping the boundary of our solar system.",
+		"more": "IBEX is a small satellite the size of a bus tire. It has \"telescopes\" that look out toward the edge of the solar system. However, these telescopes are different than most telescopes. They collect particles instead of light. These particles are called energetic neutral atoms (ENAs)—high-energy particles produced at the very edge of our solar system."
+	},
+	"dates": {
+		"start": "2008-10-08T17:47:23",
+		"end": "",
+		"landing": ""
+	},
+	"related": []
+}

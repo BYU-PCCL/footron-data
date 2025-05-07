@@ -1,0 +1,9 @@
+{
+	"description": {
+		"blurb": "Cassini visited Saturn's moon Rhea four times, finding it similar to Dione and Tethys, but with important exceptions.",
+		"more": "At 950 miles (about 1,500 kilometers) in diameter, Rhea is Saturn's second largest moon. It is heavily cratered, cold, and airless like sister moons Dione and Tethys. Rhea's surface temperatures are also similar to Dione and Tethys, at roughly minus 281 degrees Fahrenheit (minus 174 degrees Celsius) in sunlit areas and minus 364 degrees Fahrenheit (minus 220 degrees Celsius) in shaded areas. At 327,500 miles (527,000 kilometers) from Saturn, Rhea orbits farther from the planet than Dione and Tethys and does not receive ample tidal variation from Saturn to cause internal heating, which may be why Dione and Tethys have more areas of smooth plains than Rhea. The plains are probably areas where liquid water reached the surface and settled in depressions such as craters, forming flat surfaces before refreezing and erasing older craters."
+	},
+	"related": ["rhea", "sc_cassini"],
+	"rate": 60,
+	"distance": 0.035
+}

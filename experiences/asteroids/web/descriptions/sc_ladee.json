@@ -1,0 +1,13 @@
+{
+	"title": "LADEE",
+	"description": {
+		"blurb": "NASA's LADEE was a robotic mission that orbited the Moon to gather detailed information about the lunar atmosphere, conditions near the surface and the environmental influences on lunar dust.",
+		"more": "By studying the exosphere—an atmosphere that is so thin that its molecules do not collide with each other—the Lunar Atmosphere and Dust Environment Explorer (LADEE) helped further the study of other planetary bodies with exospheres such as Mercury and some of Jupiter’s moons."
+	},
+	"dates": {
+		"start": "2013-09-07T03:27:00",
+		"end": "2014-04-08T04:30:00",
+		"landing": ""
+	},
+	"related": ["moon", "sc_lunar_reconaissance_orbiter"]
+}
