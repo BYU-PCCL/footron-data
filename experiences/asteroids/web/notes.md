@@ -292,3 +292,12 @@ Script options
 
 `app.camaeraScrips.gotoCelestialObject()`
 `app.getManager("time").setTimeRate(1)` (takes int seconds per second)
+
+
+## TODO
+
+- [ ] Roll sensitivity should be lower.
+- [ ] Layout is all jumbled (Too tight)
+- [ ] The fly, about section is behind rest of UI
+- [ ] Learn - close approaches has a link on display
+- [ ] The learn sections should have larger buttons

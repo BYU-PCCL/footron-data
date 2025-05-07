@@ -167,6 +167,9 @@ export default function Info() {
       </q>
       <br />
       -Christian
+      <br />
+      <br />
+      v.1.0.1
     </div>,
   ];
 
