@@ -1,0 +1,13 @@
+{
+	"title": "Philae",
+	"description": {
+		"blurb": "The European Space Agency's Rosetta was the first mission designed to orbit and land on a comet. It consisted of an orbiter and a lander -- called Philae.",
+		"more": "On November 12th, 2014, the Philae probe successfully detached from Rosetta and landed on the surface of the comet 67P/Churyumov-Gerasimenko. Philae actually bounced off the surface of the comet twice, and its location was not known precisely for some time. Philae completed 80 percent of its planned first science sequence, returning spectacular images of its surroundings, showing a surface covered by dust and debris ranging in size from inches to a yard (millimeters to a meter)."
+	},
+	"dates": {
+		"start": "2004-03-02T07:17:51",
+		"end": "2016-09-30T10:39:28",
+		"landing": "2014-11-12T17:32:00"
+	},
+	"related": ["67p_churyumov_gerasimenko","sc_rosetta"]
+}

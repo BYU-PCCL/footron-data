@@ -1,0 +1,12 @@
+{
+	"title": "CYGNSS 2",
+	"description": {
+		"blurb": "The Cyclone Global Navigation Satellite System (CYGNSS) mission uses eight (currently seven due to communications issues with CYGNSS 6) micro-satellites to measure wind speeds over Earth's oceans, increasing the ability of scientists to understand and predict hurricanes. Each satellite will take information based on the signals from four GPS satellites."
+	},
+	"dates": {
+		"start": "2016-12-15T13:37:21",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_cygnss_1", "sc_cygnss_3", "sc_cygnss_4", "sc_cygnss_5", "sc_cygnss_6", "sc_cygnss_7", "sc_cygnss_8"]
+}

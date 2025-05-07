@@ -1,0 +1,16 @@
+{
+	"title": "Rosetta",
+	"description": {
+		"blurb": "<a href='https://www.esa.int/Enabling_Support/Operations/Rosetta' target='_blank'>Rosetta </a>was a European Space Agency mission that was the first spacecraft to orbit a comet, 67P/Churyumov-Gerasimenko.",
+		"more": "The mission was launched on 2 March 2004, on a 10-year journey towards comet 67P/Churyumov-Gerasimenko. En route, it passed by two asteroids, 2867 Steins (in 2008) and 21 Lutetia (in 2010), before entering deep-space hibernation mode in June 2011. On 20 January 2014, it 'woke up' and prepared for arrival at the comet in August that year. On 12 November, the mission deployed its Philae probe to the comet, the first time in history that such a feat was achieved."
+	},
+	"cards": [
+		{ "storyId": "asteroids_missions" }
+	],
+	"dates": {
+		"start": "2004-03-02T09:40:51",
+		"end": "2016-09-30T10:39:28",
+		"landing": "2014-11-12T17:32:00"
+	},
+	"related": ["67p_churyumov_gerasimenko","21_lutetia","2867_steins"]
+}

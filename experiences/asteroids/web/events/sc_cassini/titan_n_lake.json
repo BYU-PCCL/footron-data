@@ -1,0 +1,8 @@
+{
+	"description": {
+		"blurb": "In July 2006, Cassini's radar instrument detected lakes on the surface of Titan.",
+		"more": "Scientists had long suspected that Saturn's largest moon, Titan, has liquid lakes of hydrocarbons on its surface. But its atmosphere filled with a smoggy haze of suspended hydrocarbons that make the surface difficult to observe from space with imaging instruments that use visible wavelengths of light.&#x0A;&#x0A;During a flyby on July 22, 2006, however, Cassini observed Titan with its radar instrument, which can see through the moon's haze and create images from radar signals reflected off the moon's surface. The instrument found lakes in Titan's higher latitudes ranging from 0.6 miles (about a kilometer) wide to about 20 miles (32 kilometers) wide. Subsequent flybys with the radar instrument found a collection of seas equal in size and depth to the Great Lakes of North America. Titan's lakes and seas are thought to be made of almost pure methane and ethane, and they are the only known large bodies of liquid on any world in our solar system other than Earth."
+	},
+	"related": ["titan"],
+	"layers": true
+}

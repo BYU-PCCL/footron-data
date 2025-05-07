@@ -1,0 +1,7 @@
+{
+	"description": {
+		"blurb": "Cassini found that Saturn's sponge-looking moon Hyperion is the only known world aside from Earth's moon to have a statically charged surface.",
+		"more": "The largest of Saturn's irregular, nonspherical moons, Hyperion is 255 miles (410 kilometers) long and shaped like a potato. Its odd shape leads scientists to believe it may be a remnant of a larger moon that was destroyed by a collision. Cassini scientists think that Hyperion's unusual appearance may be due to the moon's unusually low density for such a large object, giving it weak surface gravity and high porosity. When other objects strike Hyperion, the moon's weak gravity, and correspondingly low escape velocity, means that what little ejecta is produced has a good chance of escaping the moon altogether. That results in less impact ejecta ending up on the moon's surface, so the original shapes of craters are preserved and sharp rather than being subdued and softened by falling ejecta."
+	},
+	"related": ["hyperion", "sc_cassini"]
+}

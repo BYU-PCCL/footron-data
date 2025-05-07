@@ -1,0 +1,19 @@
+{
+	"title": "New Horizons",
+	"description": {
+		"blurb": "New Horizons is a NASA mission to study the dwarf planet Pluto, its moons, and other objects in the Kuiper Belt, a region of the solar system that extends from about 30 AU, near the orbit of Neptune, to about 50 AU from the Sun.",
+		"more": "New Horizons was the first spacecraft to encounter Pluto, a relic from the formation of the solar system. By the time it reached the Pluto system, the spacecraft had traveled farther away and for a longer time period (more than nine years) than any previous deep space spacecraft ever launched. On July 14, 2015, New Horizons flew about 4,800 miles (7,800 kilometers) above the surface of Pluto. Besides collecting data on Pluto and Charon (the Charon flyby was at about 17,900 miles or 28,800 kilometers), New Horizons also observed Pluto’s other satellites, Nix, Hydra, Kerberos and Styx.\n\n The download of the entire set of data collected during the encounter with Pluto and Charon—about 6.25 gigabytes—took over 15 months and was officially completed at 21:48 UT Oct. 25, 2016. Such a lengthy period was necessary because the spacecraft was roughly 4.5 light-hours from Earth and it could only transmit 1-2 kilobits per second. On Jan. 1, 2019, New Horizons flew past Arrokoth (previously named 2014 MU69 and also called Ultima Thule), the most distant target in history. The New Horizons mission is currently exploring additional Kuiper Belt objects."
+	},
+	"dates": {
+		"start": "2006-01-19T19:52:00",
+		"end": "",
+		"landing": ""
+	},
+	"featuredEvents": {
+		"initial": [
+			{ "eventId": "pluto_flyby", "title": "Flyby of Pluto" },
+			{ "eventId": "arrokoth_flyby", "title": "Flyby of Arrokoth" }
+		]
+	},
+	"related": ["134340_pluto", "charon", "hydra","nix", "styx", "486958_arrokoth"]
+}

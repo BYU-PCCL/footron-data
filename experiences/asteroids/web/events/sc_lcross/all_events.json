@@ -1,0 +1,10 @@
+{
+	"lcross_impact": {
+		"id": "lcross_impact",
+		"title": "LCROSS Approaches the South Pole Impact Site",
+		"start": "2009-10-09T10:53:41",
+		"target": "moon",
+		"rate": 130,
+		"distance": 0.1
+	}
+}

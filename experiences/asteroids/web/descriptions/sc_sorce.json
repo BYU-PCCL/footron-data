@@ -1,0 +1,13 @@
+{
+	"title": "SORCE",
+	"description": {
+		"blurb": "The Solar Radiation and Climate Experiment (SORCE) was a NASA-sponsored satellite mission that measured incoming X-ray, ultraviolet, visible, near-infrared, and total solar radiation.",
+		"more": "The measurements provided by SORCE specifically address long-term climate change, natural variability and enhanced climate prediction, and atmospheric ozone and UV-B radiation. These measurements are critical to studies of the Sun; its effect on our Earth system; and its influenceon humankind. SORCE ended its mission in 2020."
+	},
+	"dates": {
+		"start": "2003-01-25T20:13:35",
+		"end": "2020-02-25T00:00:00",
+		"landing": ""
+	},
+	"related": ["earth","sun"]
+}

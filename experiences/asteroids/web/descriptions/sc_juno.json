@@ -1,0 +1,35 @@
+{
+	"title": "Juno",
+	"description": {
+		"blurb": "Juno is studying the interior and origins of giant planet Jupiter for the first time. It has been orbiting Jupiter since it arrived in 2016.",
+		"more": "Juno’s marching orders — to pick the lock on Jupiter’s secrets — have been spectacularly fulfilled. High above Jupiter’s roiling clouds, three giant blades stretch out from a cylindrical, six-sided body. Some 66 feet (20 meters) wide, the Juno spacecraft is a dynamic engineering marvel, spinning to keep itself stable as it makes sweeping elliptical (oval-shaped) orbits around Jupiter. At their widest point, these carry Juno far from the giant planet and its moons, keeping it mostly clear of heavy radiation regions. But on closer passes, every 38 days, Juno cuts within 3,100 miles (5,000 kilometers) of Jupiter’s cloud tops. Juno achieved rough, global coverage of the giant planet by the end of 2018, but at a coarse resolution; it then began a new set of orbits to fill in the details. The spacecraft’s long, looping orbits are meant to keep it mostly clear of the doughnut-shaped belts of harmful radiation close to Jupiter and its moons. Every 38 days, however, Juno makes a close pass to observe Jupiter’s gigantic clouds and titanic storms, crackling with lightning. Powerful pulses of energy — super-charged particles streaming through Jupiter’s magnetic field — create auroras. They’re similar to the northern and southern lights on Earth, that is, if you can imagine scaling them up to the size of a planet that could hold 1,300 Earths."
+	},
+	"dates": {
+		"start": "2011-08-05T16:25:00",
+		"end": "",
+		"landing": ""
+	},
+	"featuredEvents": {
+		"initial": [
+			{ "eventId": "earth_flyby", "title": "Earth Flyby" },
+			{ "eventId": "jupiter_orbit_insertion", "title": "Jupiter Orbit Insertion" },
+			{ "eventId": "joi_burn", "title": "Jupiter Orbit Insertion Burn" }
+		]
+	},
+	"cards": [],
+	"related": ["jupiter", "sc_galileo"],
+	"subviews": [
+		{ "id": "compare", "file": "juno_compare.json"},
+		{ "id": "instruments", "file": "juno_instruments.json"},
+		{ "id": "trajectory", "file": "juno_trajectory.json"}
+	],
+	"cameraviews": [
+		{ "id": "default_spacecraft", "file": "default_spacecraft_views.js"}
+	],
+	"custom": [
+		{
+			"title": "My Custom content",
+			"content": "My custom description"
+		}
+	]
+}

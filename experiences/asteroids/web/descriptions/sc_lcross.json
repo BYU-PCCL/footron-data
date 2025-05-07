@@ -1,0 +1,21 @@
+{
+	"title": "LCROSS",
+	"description": {
+		"blurb": "NASA's Lunar Crater Observation and Sensing Satellite (LCROSS) was launched with the Lunar Reconnaissance Orbiter to determine if water-ice exists in a permanently shadowed crater at the Moon's south pole.",
+		"more": "The identification of water is very important to the future of human activities on the Moon. LCROSS remained paired to its upper stage centaur until reaching the south pole of the moon. The centaur was then separated from LCROSS and intentionally crashed into the south pole of the Moon. The impact ejected material from the crater's floor to create a plume that specialized instruments have been able to analyze for the presence of water (ice and vapor), hydrocarbons and hydrated materials. About fifteeen minutes after the upper stage centaur impacted, LCROSS also intentionally crashed into the perpetually dark floor of the Moon's polar crater Cabeus."
+	},
+	"dates": {
+		"start": "2009-06-18T21:32:00",
+		"end": "2009-10-09T11:37:00",
+		"landing": ""
+	},
+	"featuredEvents": {
+		"initial": [
+			{
+				"eventId": "lcross_impact",
+				"title": "LCROSS Approaches the South Pole Impact Site"
+			}
+		]
+	},
+	"related": ["sc_lunar_reconnaissance_orbiter", "moon"]
+}

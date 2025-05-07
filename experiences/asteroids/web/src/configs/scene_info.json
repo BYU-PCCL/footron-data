@@ -1,0 +1,28 @@
+{
+    "zoomMax": 12000000000,
+    "staticEntityGroups": [
+        "stars",
+        "planets"
+    ],
+    "staticEntities": [
+        "moon",
+        "sc_osiris_rex",
+        "sc_lucy",
+        "sc_psyche",
+        "sc_deep_impact",
+        "sc_deep_impact_impactor",
+        "sc_deep_space_1",
+        "sc_near_shoemaker",
+        "sc_stardust",
+        "sc_stardust_src",
+        "sc_dawn",
+        "sc_rosetta",
+        "sc_galileo",
+        "sc_philae",
+        "sc_dart"
+    ],
+    "title": {
+        "prefix": "Eyes on Asteroids",
+        "suffix": "NASA/JPL"
+    }
+}

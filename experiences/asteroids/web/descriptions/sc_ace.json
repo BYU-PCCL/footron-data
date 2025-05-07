@@ -1,0 +1,13 @@
+{
+	"title": "ACE",
+	"description": {
+		"blurb": "NASA's Advanced Composition Explorer (ACE) collects and analyzes particles of solar, interplanetary, interstellar and galactic origins.",
+		"more": "The ACE robotic spacecraft was launched August 25, 1997, and entered an orbit close to the L1 Lagrangian point (which lies between the Sun and the Earth at a distance of some 1.5 million km from the latter) on December 12, 1997. The data contributes to our understanding of the Sun, its interaction with Earth, and the evolution of the solar system. ACE continues to provide space weather reports and warnings of geomagnetic storms that can disrupt communications on Earth and harm astronauts in space."
+	},
+	"dates": {
+		"start": "1997-08-25",
+		"end": "",
+		"landing": ""
+	},
+	"related": []
+}

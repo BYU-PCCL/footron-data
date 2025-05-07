@@ -1,0 +1,30 @@
+{
+	"wild2_flyby": {
+		"id": "wild2_flyby",
+		"title": "Flyby and Sampling of Comet Wild 2",
+		"start": "2004-01-02T19:22:00",
+		"target": "81p_wild_2",
+		"distance": 0.02,
+		"horizontalOffset": -8,
+		"visual": true
+	},
+	"tempel1_flyby": {
+		"id": "tempel1_flyby",
+		"title": "Flyby of Comet Tempel 1",
+		"start": "2011-02-15T04:42:00",
+		"target": "9p_tempel_1",
+		"distance": 500000,
+		"verticalOffset": 15,
+		"horizontalOffset": -40,
+		"visual": true
+	},
+	"collector_deployment": {
+		"id": "collector_deployment",
+		"title": "Dust Collector Deployment",
+		"start": "2000-02-21T23:59:31",
+		"target": "81p_wild_2",
+		"rate": 60,
+		"distance": 0.005,
+		"visual": true
+	}
+}

@@ -1,0 +1,21 @@
+{
+	"title": "Enceladus",
+	"description": {
+		"blurb": "One of Saturn's most surprising moons, Enceladus has altered views about where life might exist.",
+		"more": "Few worlds in our solar system are as compelling as Saturn’s icy ocean moon Enceladus. A handful of worlds are thought to have liquid water oceans beneath their frozen shell, but Enceladus sprays its ocean out into space where a spacecraft can sample it. From these samples, scientists have determined that Enceladus has most of thechemical ingredients needed for life, and likely has hydrothermal vents spewing out hot, mineral-rich water into its ocean. About as wide as Arizona, Enceladus also has the whitest,most reflective surface in the solar system. The moon creates a ring of its own as it orbits Saturn—its spray of icy particles spreads out into the space around its orbit, circling the planet to form Saturn’s E ring. In 2005, NASA’s Cassini spacecraft discovered that icy water particles and gas gush from the moon’s surface at approximately 800 miles per hour (400 meters per second). The eruptions appear to be continuous, generating an enormous halo of fine ice dust around Enceladus, which supplies material to Saturn's E-ring. Only a small fraction of the material ends up in the ring, however, with most of it falling like snow back to the moon’s surface, which helps keep Enceladus bright white.The water jets come from relatively warm fractures in the crust, which scientists informally call the “tiger stripes.” Several gases, including water vapor, carbon dioxide, methane, perhaps a little ammonia and either carbon monoxide or nitrogen gas make up the gaseous envelope of the plume, along with salts and silica. And the density of organic materials in the plume was about 20 times denser than scientists expected. From gravity measurements based on the Doppler effect and the magnitude of the moon’s very slight wobble as it orbits Saturn, scientists determined that the jets were being supplied by a global ocean inside the moon. Scientists think that the moon’s ice shell may be as thin as half a mile to 3 miles (1 to 5 kilometers) at the south pole. The average global thickness of the ice is thought to be about 12 to 16 miles (20 to 25 kilometers). Since the ocean in Enceladus supplies the jets, and the jets produce Saturn’s E ring, to study material in the E ring is to study Enceladus’ ocean. The E ring is mostly made of ice droplets, but among them are peculiar nanograins of silica, which can only be generated where liquid water and rock interact at temperatures above about 200 degrees Fahrenheit (90 degrees Celsius). This, among other evidence, points to hydrothermal vents deep beneath Enceladus’ icy shell, not unlike the hydrothermal vents that dot Earth’s ocean floor. With its global ocean, unique chemistry and internal heat, Enceladus has become a promising lead in our search for worlds where life could exist."
+	},
+	"cards": [
+		{ "storyId": "enceladus_discovery" }
+	],
+	"exploration": {
+		"initial": [
+			{ "url": "sc_cassini", "title": "Cassini mission", "info": "2004-2017"},
+			{ "url": "sc_cassini/events/enceladus_e-21", "title": "Cassini Car Wash - Deepest Dive Into the Plumes", "info": "2015" },
+			{ "url": "sc_voyager_1/events/saturn", "title": "Voyager 1", "info": "1980 Flyby" },
+			{ "url": "sc_voyager_2/events/saturn", "title": "Voyager 2", "info": "1981 Flyby" }
+
+		],
+		"more": []
+	},
+	"related": ["sc_cassini"]
+}

@@ -1,0 +1,49 @@
+{
+	"title": "Cassini",
+	"description": {
+		"blurb": "For more than a decade, NASA’s Cassini spacecraft shared the wonders of Saturn and its family of icy moons—taking us to astounding worlds where methane rivers run to a methane sea and where jets of ice and gas are blasting material into space from a liquid water ocean that might harbor the ingredients for life. Cassini revealed in great detail the true wonders of Saturn, a giant world ruled by raging storms and delicate harmonies of gravity.",
+		"more": "Cassini was one of the most ambitious efforts ever mounted in planetary exploration. A joint endeavor of NASA, ESA (the European Space Agency) and the Italian space agency (ASI), Cassini was a sophisticated robotic spacecraft sent to study Saturn and its complex system of rings and moons in unprecedented detail. Cassini carried a probe called Huygens to the Saturn system. The probe, which was built by ESA, parachuted to the surface of Saturn’s largest moon, Titan, in January 2005—the most distant landing to date in our solar system. Huygens returned spectacular images and other science results during a two-and-a-half-hour descent through Titan’s hazy atmosphere, before coming to rest amid rounded cobbles of ice on a floodplain damp with liquid methane.Cassini completed its initial four-year mission in June 2008 and earned two mission extensions that enabled the team to delve even deeper into Saturn’s mysteries. Key discoveries during its 13 years at Saturn included a global ocean with strong indications of hydrothermal activity within Enceladus, and liquid methane seas on Titan. After 20 years in space — 13 of those years exploring Saturn — Cassini exhausted its fuel supply. And so, to protect moons of Saturn that could have conditions suitable for life, Cassini was sent on a daring final mission that would seal its fate. After a series of nearly two dozen nail-biting dives between the planet and its icy rings, Cassini plunged into Saturn’s atmosphere on Sept. 15, 2017, returning science data to the very end."
+	},
+	"dates": {
+		"start": "1997-10-15T09:26:00Z",
+		"end": "2017-09-15T11:55:14Z",
+		"landing": ""
+	},
+	"featuredEvents": {
+		"initial": [
+			{ "eventId": "launch", "title": "Cassini Launch" },
+			{ "eventId": "jupiter_flyby", "title": "Jupiter Flyby" },
+			{ "eventId": "saturn_orbit_insertion", "title": "Saturn Orbit Insertion" },
+			{ "eventId": "descent_to_titan", "title": "Descent to Titan" },
+			{ "eventId": "closest_enceladus_flyby", "title": "Closest Enceladus Flyby" },
+			{ "eventId": "grand_finale", "title": "The Grand Finale" }
+		],
+		"more": [
+			{ "eventId": "earth_flyby", "title": "Earth Flyby" },
+			{ "eventId": "venus_flyby_1", "title": "First Venus Flyby" },
+			{ "eventId": "huygens", "title": "Huygens Deployment" },
+			{ "eventId": "enceladus_discovery", "title": "Discovery at Enceladus" },
+			{ "eventId": "titan_n_lake", "title": "Titan Northern Lakes" },
+			{ "eventId": "backlit_saturn", "title": "Backlit Saturn" },
+			{ "eventId": "wave_saturn", "title": "The Wave at Saturn" }
+		]
+	},
+	"cards": [
+		{ "storyId": "enceladus_discovery" }
+	],
+	"related": ["saturn", "titan", "jupiter", "enceladus"],
+	"subviews": [
+		{ "id": "compare", "file": "saturn_compare.json"},
+		{ "id": "instruments", "file": "saturn_instruments.json"},
+		{ "id": "trajectory", "file": "saturn_trajectory.json"}
+	],
+	"cameraviews": [
+		{ "id": "default_spacecraft", "file": "default_spacecraft_views.js"}
+	],
+	"custom": [
+		{
+			"title": "My Custom content",
+			"content": "My custom description"
+		}
+	]
+}

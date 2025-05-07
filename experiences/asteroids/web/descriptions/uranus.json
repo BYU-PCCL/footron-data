@@ -1,0 +1,21 @@
+{
+	"title": "Uranus",
+	"description": {
+		"blurb": "The seventh planet from the Sun with the third largest diameter in our solar system, Uranus is very cold and windy.",
+		"more": "The ice giant is surrounded by 13 faint rings and 27 small moons as it rotates at a nearly 90-degree angle from the plane of its orbit. This unique tilt makes Uranus appear to spin on its side, orbiting the Sun like a rolling ball. Uranus is the only planet whose equator is nearly at a right angle to its orbit, with a tilt of 97.77 degrees—possibly the result of a collision with an Earth-sized object long ago. This unique tilt causes the most extreme seasons in the solar system. For nearly a quarter of each Uranian year, the Sun shines directly over each pole, plunging the other half of the planet into a 21-year-long, dark winter.\n Uranus is also one of just two planets that rotate in the opposite direction than most of the planets (Venus is the other one), from east to west."
+	},
+	"exploration": {
+		"initial": [
+			{ "url": "sc_voyager_2/events/uranus", "title": "Voyager 2", "info": "1986 Flyby" }
+		],
+		"more": []
+	},
+	"subviews": [
+		{ "id": "moons", "file": "uranus_moons.json"}
+	],
+	"featuredMoons": [
+		"titania",
+		"oberon"
+	],
+	"related": ["sc_voyager_2"]
+}

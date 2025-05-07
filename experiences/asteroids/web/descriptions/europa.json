@@ -1,0 +1,23 @@
+{
+	"title": "Europa",
+	"description": {
+		"blurb": "Europa may be the most promising place in our solar system to find present-day environments suitable for some form of life beyond Earth.",
+		"more": "Scientists are almost certain that hidden beneath the icy surface of Europa is a salty-water ocean thought to contain twice as much water as Earth’s oceans combined. Slightly smaller than Earth's Moon, Europa’s water-ice surface is crisscrossed by long, linear fractures, cracks, ridges, and bands. The moon’s ice shell is probably 10 to 15 miles (15 to 25 kilometers) thick, beneath which the ocean is estimated to be 40 to 100 miles (60 to 150 kilometers) deep. Like Earth, Europa is thought to also contain a rocky mantle and iron core. Europa’s water-ice surface is crisscrossed by long, linear fractures. Based on the small number of observable craters, the surface of this moon appears to be no more than 40 to 90 million years old, which is youthful in geologic terms (the surface of Callisto, another of Jupiter’s moons, is estimated to be a few billion years old). Along Europa's many fractures, and in splotchy patterns across its surface, is a reddish-brown material whose composition is not known for certain, but likely contains salts and sulfur compounds that have been mixed with the water ice and modified by radiation. This surface composition may hold clues to the moon's potential as a habitable world."
+	},
+	"exploration": {
+		"initial": [
+
+			{ "url": "sc_voyager_1/events/jupiter", "title": "Voyager 1", "info": "1979 Flyby" },
+			{ "url": "sc_voyager_2/events/jupiter", "title": "Voyager 2", "info": "1979 Flyby" },
+			{ "url": "sc_galileo", "title": "Galileo Mission", "info": "1995-2003" },
+			{ "url": "sc_juno", "title": "Juno Mission", "info": "2016-present" },
+			{ "url": "sc_europa_clipper", "title": "Europa Clipper Mission", "info": "October 2024" }
+
+		],
+		"more": [
+			{ "url": "sc_pioneer_10/events/jupiter_flyby", "title": "Pioneer 10", "info": "1973 Flyby" },
+			{ "url": "sc_pioneer_11/events/jupiter_flyby", "title": "Pioneer 11", "info": "1974 Flyby" }
+		]
+	},
+	"related": ["sc_europa_clipper","sc_pioneer_10", "sc_pioneer_11", "sc_voyager_1", "sc_voyager_2", "sc_galileo"]
+}

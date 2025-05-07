@@ -1,0 +1,13 @@
+{
+	"title": "Mariner 2",
+	"description": {
+		"blurb": "NASA's Mariner 2 was the world's first successful interplanetary spacecraft. The spacecraft flew by Venus, sending back valuable new information about interplanetary space and the Venusian atmosphere.",
+		"more": "During a 42 minute scan of the planet, Mariner 2 gathered significant data on the Venusian atmosphere and the surface before continuing on to heliocentric orbit. The radiometers, in particular, were able to conduct five scans of the night side of the planet, eight across the terminator, and five on the daylight side. NASA maintained contact until 07:00 UT Jan. 3, 1963, when the spacecraft was 53.9 million miles (86.7 million kilometers) from Earth, a new distance record for a deep space probe."
+	},
+	"dates": {
+		"start": "1962-08-27T06:53:14",
+		"end": "1963-01-03T07:00:00",
+		"landing": ""
+	},
+	"related": []
+}

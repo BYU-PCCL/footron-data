@@ -1,0 +1,13 @@
+{
+	"title": "QuikSCAT",
+	"description": {
+		"blurb": "The NASA QuikSCAT (Quick Scatterometer) was an Earth observation satellite designed to measure wind speeds over the ocean.",
+		"more": "Its primary mission was to measure the surface wind speed and direction over the ice-free global oceans. Observations from QuikSCAT had a wide array of applications, and contributed to climatological studies, weather forecasting, meteorology, oceanographic research, marine safety, commercial fishing, tracking large icebergs, and studies of land and sea ice, among others."
+	},
+	"dates": {
+		"start": "1999-06-19T02:15:00",
+		"end": "2018-10-02T00:00:00",
+		"landing": ""
+	},
+	"related": ["earth", "sc_iss_rapidscat"]
+}

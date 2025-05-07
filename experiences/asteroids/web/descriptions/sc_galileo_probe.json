@@ -1,0 +1,18 @@
+{
+	"title": "Galileo Probe",
+	"description": {
+		"blurb": "The Galileo orbiter carried a small probe that became the first to sample the atmosphere of a gas planet.",
+		"more": "The probe measured temperature, pressure, chemical composition, cloud characteristics, sunlight and energy internal to the planet, and lightning. During its 58-minute life, the probe penetrated 124 miles (200 kilometers) into Jupiter's violent atmosphere before it was crushed, melted and/or vaporized by the intense pressure and temperature."
+	},
+	"dates": {
+		"start": "1995-07-13T05:30:00",
+		"end": "",
+		"landing": ""
+	},
+	"featuredEvents": {
+		"initial": [
+			{ "eventId": "probe_entry", "title": "Descent Into Jupiter" }
+		]
+},
+	"related": ["sc_galileo", "jupiter"]
+}

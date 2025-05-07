@@ -1,0 +1,38 @@
+{
+	"title": "Jupiter",
+	"description": {
+		"blurb": "Jupiter is the fifth planet from our Sun and is, by far, the largest planet in the solar system – more than twice as massive as all the other planets combined.",
+		"more": "Jupiter's stripes and swirls are actually cold, windy clouds of ammonia and water, floating in an atmosphere of hydrogen and helium. Jupiter’s iconic Great Red Spot is a giant storm bigger than Earth that has raged for hundreds of years. Jupiter is surrounded by dozens of moons. Jupiter also has several rings, but unlike the famous rings of Saturn, Jupiter’s rings are very faint and made of dust, not ice. Jupiter has the shortest day in the solar system. One day on Jupiter takes only about 10 hours (the time it takes for Jupiter to rotate or spin around once), and Jupiter makes a complete orbit around the Sun (a year in Jovian time) in about 12 Earth years (4,333 Earth days). Its equator is tilted with respect to its orbital path around the Sun by just 3 degrees. This means Jupiter spins nearly upright and does not have seasons as extreme as other planets do. Jupiter took shape when the rest of the solar system formed about 4.5 billion years ago, when gravity pulled swirling gas and dust in to become this gas giant. Jupiter took most of the mass left over after the formation of the Sun, ending up with more than twice the combined material of the other bodies in the solar system. In fact, Jupiter has the same ingredients as a star, but it did not grow massive enough to ignite."
+	},
+	"news": [],
+	"exploration": {
+		"initial": [
+			{ "url": "sc_juno/events/jupiter_orbit_insertion", "title": "Juno", "info": "Juno Orbit Insertion - 2016" },
+			{ "url": "sc_voyager_1/events/jupiter", "title": "Voyager 1", "info": "1979 Flyby" },
+			{ "url": "sc_voyager_2/events/jupiter", "title": "Voyager 2", "info": "1979 Flyby" },
+			{ "url": "sc_galileo/events/jupiter_arrival", "title": "Galileo", "info": "Galileo Orbit Insertion - 1995" }
+		],
+		"more": []
+	},
+	"cards": [],
+	"related": ["sc_juno", "sc_cassini", "sc_voyager_1","sc_voyager_2", "sc_galileo", "sc_pioneer_10", "sc_ulysses", "sc_new_horizons"],
+	"cameraviews": [
+		{ "id": "minor_moons", "file": "minor_moons.js"},
+		{ "id": "major_moons", "file": "major_moons.js"}
+	],
+	"subviews": [
+		{ "id": "moons", "file": "jupiter_moons.json"},
+		{ "id": "science", "file": "jupiter_science.json"}
+	],
+	"featuredMoons": [
+		"io",
+		"ganymede",
+		"europa"
+	],
+	"custom": [
+		{
+			"title": "My custom title",
+			"content": "My custom content"
+		}
+	]
+}

@@ -1,0 +1,13 @@
+{
+	"title": "GRIFEX",
+	"description": {
+		"blurb": "GRIFEX, the Geo-cape Roic In-Flight performance Experiment, was a CubeSat technology validation test for the proposed GEO-CAPE mission.",
+		"more": "GRIFEX advanced the technology required for future space-borne measurements of atmospheric composition from geostationary orbit that are relevant to climate change. The size of GRIFEX was three CubeSat units, or 30 x 10 x 10 cm."
+	},
+	"dates": {
+		"start": "2015-01-31",
+		"end": "2024-02-22",
+		"landing": ""
+	},
+	"related": []
+}

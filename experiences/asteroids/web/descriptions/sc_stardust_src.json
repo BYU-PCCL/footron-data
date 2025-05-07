@@ -1,0 +1,16 @@
+{
+	"title": "Stardust Return Capsule",
+	"description": {
+		"blurb": "The 100-pound (45.7-kilogram) sample return capsule is shaped like a blunt-nosed cone, and separated from Stardust in 2006.",
+		"more": "Jan. 15, 2006, Stardust’s Sample Return Capsule (SRC) separated from the main vehicle and four hours later, it entered Earth’s atmosphere. Slowed down by the drogue and main parachutes, the capsule landed at 10:10 UT within a 19 x 52-mile (30 × 84-kilometer) landing zone at the U.S. Air Force Test and Training Range in Utah.Because of high winds, the capsule drifted north of the ground track, but fortunately, a locator beacon allowed recovery teams to find the capsule 44 minutes after landing.The capsule had returned more than 10,000 particles larger than 1 micrometer from Wild 2."
+	},
+	"cards": [
+		{ "storyId": "asteroids_missions" }
+	],
+	"dates": {
+		"start": "",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_stardust", "81p_wild_2", "earth", "9p_tempel_1"]
+}

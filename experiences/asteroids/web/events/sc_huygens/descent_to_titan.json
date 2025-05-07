@@ -1,0 +1,8 @@
+{
+	"description": {
+		"blurb": "On Jan. 14, 2005, the Huygens probe parachuted through Titan's atmosphere and landed on the moon's surface.",
+		"more": "After detaching from Cassini, the European Space Agency's Huygens probe coasted for about three weeks. Then, on Jan. 14, 2005, Huygens descended through the dense atmosphere of Titan, Saturn's largest moon for about two and a half hours. Titan is the only moon in the solar system with a thick atmosphere and open bodies of liquid on its surface. Huygens was about 9 feet (2.7 meters) wide and weighed roughly 700 pounds (318 kilograms). The probe slowed itself once it was in Titan's atmosphere, at first using a heat shield, and then using a series of three parachutes.\nDuring and after descent, Huygens studied the temperatures, pressures, and composition of Titan's atmosphere, and collected images of the surface. When Huygens safely touched down on the surface of Titan, it became the first probe to land on a world in the outer solar system. The probe survived more than an hour on Titan's surface and continued to transmit its observations to Cassini until its batteries died. Cassini write-protected the data until it had transmitted it back to Earth 16 times, to ensure scientists had a complete and accurate copy of the data."
+	},
+	"related": ["titan"],
+	"layers": true
+}

@@ -1,0 +1,13 @@
+{
+	"title": "Chandra X-ray Observatory",
+	"description": {
+		"blurb": "Chandra allows scientists from around the world to obtain X-ray images of exotic environments to help understand the structure and evolution of the universe.",
+		"more": "The Chandra X-ray Observatory is part of NASA's ﬂeet of \"Great Observatories\" along with the Hubble Space Telescope, Spitizer Space Telescope and the now deorbited Compton Gamma Ray Observatory.\n The Chandra X-ray Observatory, which was launched by Space Shuttle Columbia in 1999, can better define the hot, turbulent regions of space. This increased clarity can help scientists answer fundamental questions about the origin, evolution, and destiny of the universe."
+	},
+	"dates": {
+		"start": "1999-07-23T04:30:59.984",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_hubble_space_telescope", "sc_spitzer"]
+}

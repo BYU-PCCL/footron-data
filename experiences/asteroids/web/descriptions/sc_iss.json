@@ -1,0 +1,13 @@
+{
+	"title": "International Space Station (ISS)",
+	"description": {
+		"blurb": "The International Space Station (ISS) is a permanently crewed on-orbit laboratory that enables scientific research supporting innovation on Earth and future deep space exploration.",
+		"more": "From design to launch, 15 countries collaborated to assemble the world's only permanently crewed orbital facility, which can house a crew of six and 150 ongoing experiments annually across an array of disciplines. The ISS represents a global effort to expand our knowledge and improve life on Earth while testing technology that will extend our reach to the moon, Mars and beyond."
+	},
+	"dates": {
+		"start": "1998-11-20",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_iss_oco_3", "sc_iss_rapidscat", "sc_iss_ecostress", "sc_iss_emit"]
+}

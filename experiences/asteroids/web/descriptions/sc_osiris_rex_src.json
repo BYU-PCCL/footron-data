@@ -1,0 +1,21 @@
+{
+	"title": "OSIRIS-REx Sample Return Capsule",
+	"description": {
+		"blurb": "On September 24th, 2023, the OSIRIS-REx sample return capsule re-entered Earth's atmosphere and landed using a parachute in the state of Utah in the United States.",
+		"more": "The OSIRIS-REx Sample Return Capsule (SRC) is an aeroshell design container with a heat shield and parachutes. The capsule contains 121.6 grams of material from the surface of the asteroid Bennu.  The capsule containing the material from Bennu was the only part of the spacecraft to return to Earth. The spacecraft itself then changed to a new mission called OSIRIS-APEX and will proceed to study the asteroid Apophis. Lockheed Martin developed the SRC from a heritage design; the Stardust mission utilized a similar design to return tail material from Comet Wild 2 to Earth in 2006."
+	},
+	"cards": [
+		{ "storyId": "asteroids_missions" }
+	],
+	"dates": {
+		"start": "",
+		"end": "",
+		"landing": ""
+	},
+	"featuredEvents": {
+		"initial": [
+			{ "eventId": "sample_return", "title": "Sample Return Capsule Returns to Earth" }
+		]
+	},
+	"related": ["101955_bennu", "sc_osiris_rex"]
+}

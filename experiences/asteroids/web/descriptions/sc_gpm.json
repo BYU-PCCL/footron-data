@@ -1,0 +1,13 @@
+{
+	"title": "GPM",
+	"description": {
+		"blurb": "Global Precipitation Measurement (GPM) is an international satellite mission to provide next-generation observations of rain and snow worldwide every three hours.",
+		"more": "NASA and the Japanese Aerospace Exploration Agency (JAXA) launched the GPM Core Observatory satellite on February 27th, 2014, carrying advanced instruments that set a new standard for precipitation measurements from space. The data they provide is used to unify precipitation measurements made by an international network of partner satellites to quantify when, where, and how much it rains or snows around the world.\n\n The GPM mission contributes to advancing our understanding of Earth's water and energy cycles, improves the forecasting of extreme events that cause natural disasters, and extends current capabilities of using satellite precipitation information to directly benefit society."
+	},
+	"dates": {
+		"start": "2014-02-27T18:37:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["earth"]
+}

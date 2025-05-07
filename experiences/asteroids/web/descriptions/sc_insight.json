@@ -1,0 +1,16 @@
+{
+	"title": "InSight",
+	"description": {
+		"blurb": "NASA's InSight lander (Interior Exploration using Seismic Investigations, Geodesy and Heat Transport) is the first mission to study the deep interior of Mars.",
+		"more": "InSight is the first outer space robotic explorer to study in-depth the \"inner space\" of Mars: its crust, mantle, and core. Studying Mars' interior structure answers key questions about the early formation of rocky planets in our inner solar system - Mercury, Venus, Earth, and Mars - more than 4 billion years ago, as well as rocky exoplanets. InSight also measures tectonic activity and meteorite impacts on Mars today. The lander uses cutting edge instruments, to delve deep beneath the surface and seek the fingerprints of the processes that formed the terrestrial planets. It does so by measuring the planet's \"vital signs\": its \"pulse\" (seismology), \"temperature\" (heat flow), and \"reflexes\" (precision tracking)."
+	},
+	"dates": {
+		"start": "2018-05-05T11:05:00",
+		"end": "",
+		"landing": "2018-11-26T19:52:59"
+	},
+	"cards": [
+		{ "storyId": "experience_insight" }
+	],
+	"related": ["mars"]
+}

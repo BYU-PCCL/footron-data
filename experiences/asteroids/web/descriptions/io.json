@@ -1,0 +1,19 @@
+{
+	"title": "Io",
+	"description": {
+		"blurb": "Jupiter's moon Io is the most volcanically active world in the Solar System, with hundreds of volcanoes, some erupting lava fountains dozens of miles (or kilometers) high.",
+		"more": "Io’s remarkable activity is the result of a tug-of-war between Jupiter's powerful gravity and smaller but precisely timed pulls from two neighboring moons that orbit farther from Jupiter – Europa and Ganymede. A bit larger than Earth's Moon, Io is the third largest of Jupiter's moons, and the fifth one in distance from the planet. Although Io always points the same side toward Jupiter in its orbit around the giant planet, the large moons Europa and Ganymede perturb Io's orbit into an irregularly elliptical one. Thus, in its widely varying distances from Jupiter, Io is subjected to tremendous tidal forces.\n\n These forces cause Io's surface to bulge up and down (or in and out) by as much as 330 feet (100 meters). Compare these tides on Io's solid surface to the tides on Earth's oceans. On Earth, in the place where tides are highest, the difference between low and high tides is only 60 feet (18 meters), and this is for water, not solid ground.\n\n Io's orbit, keeping it at more or less a cozy 262,000 miles (422,000 kilometers) from Jupiter, cuts across the planet's powerful magnetic lines of force, thus turning Io into an electric generator. Io can develop 400,000 volts across itself and create an electric current of 3 million amperes. This current takes the path of least resistance along Jupiter's magnetic field lines to the planet's surface, creating lightning in Jupiter's upper atmosphere."
+	},
+	"exploration": {
+		"initial": [
+			{ "url": "sc_pioneer_10/events/jupiter_flyby", "title": "Pioneer 10", "info": "1973 Flyby" },
+			{ "url": "sc_pioneer_11/events/jupiter_flyby", "title": "Pioneer 11", "info": "1974 Flyby" },
+			{ "url": "sc_voyager_1/events/jupiter", "title": "Voyager 1", "info": "1979 Flyby" },
+			{ "url": "sc_voyager_2/events/jupiter", "title": "Voyager 2", "info": "1979 Flyby" },
+			{ "url": "sc_galileo/events/jupiter_arrival", "title": "Galileo Orbit Insertion", "info": "1995" },
+			{ "url": "sc_juno", "title": "Juno Mission", "info": "2016-present" }
+		],
+		"more": []
+	},
+	"related": ["sc_pioneer_10", "sc_pioneer_11", "sc_voyager_1", "sc_voyager_2", "sc_galileo", "sc_cassini"]
+}

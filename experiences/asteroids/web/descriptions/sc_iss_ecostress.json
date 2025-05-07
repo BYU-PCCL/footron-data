@@ -1,0 +1,13 @@
+{
+	"title": "ECOSTRESS",
+	"description": {
+		"blurb": "The ECOsystem Spaceborne Thermal Radiometer Experiment on Space Station (ECOSTRESS) will measure the temperature of plants and use that information to better understand how much water plants need and how they respond to stress.",
+		"more": "ECOSTRESS will address three overarching science questions: How is the terrestrial biosphere responding to changes in water availability? How do changes in diurnal vegetation water stress impact the global carbon cycle? Can agricultural vulnerability be reduced through advanced monitoring of agricultural water consumptive use and improved drought estimation?\n One of the core products that will be produced by ECOSTRESS team is the Evaporative Stress Index (ESI). ESI is a leading drought indicator - it can indicate that plants are stressed and that a drought is likely to occur providing the option for decision makers to take action."
+	},
+	"dates": {
+		"start": "2018-06-30",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_iss"]
+}

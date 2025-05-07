@@ -1,0 +1,14 @@
+{
+	"title": "Mars Reconnaissance Orbiter",
+	"description": {
+		"blurb": "Mars Reconnaissance Orbiter (MRO) is a large orbiter, modeled in part on NASA’s highly successful Mars Global Surveyor spacecraft, designed to photograph Mars from orbit.",
+		"more": "Mars Reconnaissance Orbiter is designed to track changes in the water and dust in Mars' atmosphere, look for more evidence of ancient seas and hot springs and peer into past Martian climate changes by studying surface minerals and layering. The orbiter carries a powerful camera capable of taking sharp images of surface features the size of a beach ball. The orbiter also serves as a data relay station for other Mars missions."
+
+	},
+	"dates": {
+		"start": "2005-08-12T11:43:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["mars","sc_mars_global_surveyor"]
+}

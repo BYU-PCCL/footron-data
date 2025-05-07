@@ -1,0 +1,13 @@
+{
+	"title": "Landsat 9",
+	"description": {
+		"blurb": "The Landsat program offers the longest continuous global record of the Earth’s surface, supplying more than 40 years of imagery of the entire surface of Earth.",
+		"more": "It is the ninth satellite in the Landsat program; the eigth to reach orbit successfully. Originally called the Landsat Data Continuity Mission (LDCM), it is a collaboration between NASA and the United States Geological Survey (USGS). NASA Goddard Space Flight Center in Greenbelt, Maryland, provided development, mission systems engineering, and acquisition of the launch vehicle while the USGS provided for development of the ground systems and will conduct on-going mission operations. It comprises the camera of the Operational Land Imager (OLI) and the Thermal Infrared Sensor (TIRS) which can be used to study earth surface temperature and is used to study global warming."
+	},
+	"dates": {
+		"start": "2021-09-27T18:11:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_landsat_4", "sc_landsat_5", "sc_landsat_7","sc_landsat_8"]
+}

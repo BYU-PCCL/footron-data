@@ -1,0 +1,14 @@
+{
+	"title": "Ariel",
+	"description": {
+		"blurb": "Ariel is a moon of Uranus.",
+		"more": "All of Uranus' larger moons, including Ariel, are thought to consist mostly of roughly equal amounts of water ice and silicate rock. Carbon dioxide has also been detected on Ariel.\n\n Ariel's surface appears to be the youngest of all the moons of Uranus. It has few large craters and many small ones, indicating that fairly recent low-impact collisions wiped out the large craters that would have been left by much earlier, bigger strikes. Ariel is also thought to have had the most recent geologic activity of Uranus' larger moons. It is transected by grabens, which are fault-bounded valleys.\n\n Ariel has the brightest surface of the five largest Uranian moons, but none of them reflect more than about a third of the sunlight that strikes them. This suggests that their surfaces have been darkened by a carbonaceous material. Ariel's brightness increases dramatically when it is in opposition―that is, when the observer is directly between it and the Sun. This indicates that its surface is porous, casting reflectivity-decreasing shadows when illuminated at other angles."
+	},
+	"exploration": {
+		"initial": [
+			{ "url": "sc_voyager_2/events/uranus", "title": "Voyager 2", "info": "1986 Flyby" }
+		],
+		"more": []
+	},
+	"related": ["sc_voyager_2"]
+}

@@ -1,0 +1,19 @@
+{
+	"title": "Sun",
+	"description": {
+		"blurb": "The Sun—the heart of our solar system—is a yellow dwarf star, a hot ball of glowing gases.",
+		"more": "Its gravity holds the solar system together, keeping everything from the biggest planets to the smallest particles of debris in its orbit. Electric currents in the Sun generate a magnetic field that is carried out through the solar system by the solar wind—a stream of electrically charged gas blowing outward from the Sun in all directions.\n\n The connection and interactions between the Sun and Earth drive the seasons, ocean currents, weather, climate, radiation belts and aurorae. Though it is special to us, there are billions of stars like our Sun scattered across the Milky Way galaxy. The Sun, and everything that orbits it, is located in the Milky Way galaxy. More specifically, our Sun is in a spiral arm called the Orion Spur that extends outward from the Sagittarius arm. From there, the Sun orbits the center of the Milky Way Galaxy, bringing the planets, asteroids, comets and other objects along with it. Our solar system is moving with an average velocity of 450,000 miles per hour (720,000 kilometers per hour). But even at this speed, it takes us about 230 million years to make one complete orbit around the Milky Way.\n\n The Sun rotates as it orbits the center of the Milky Way. Its spin has an axial tilt of 7.25 degrees with respect to the plane of the planets’ orbits. Since the Sun is not a solid body, different parts of the Sun rotate at different rates. At the equator, the Sun spins around once about every 25 days, but at its poles the Sun rotates once on its axis every 36 Earth days."
+	},
+	"exploration": {
+		"initial": [
+			{ "url": "sc_parker_solar_probe", "title": "Parker Solar Probe mission", "info": "2018-present"},
+			{ "url": "sc_sdo", "title": "Solar Dynamics Observatory mission", "info": "2010-present"},
+			{ "url": "sc_ulysses", "title": "Ulysses mission", "info": "1990-2009"},
+			{ "url": "sc_stereo_ahead", "title": "STEREO Ahead mission", "info": "2006-present"},
+			{ "url": "sc_stereo_behind", "title": "STEREO Behind mission", "info": "2006-2016"},
+			{ "url": "sc_soho", "title": "SOHO mission", "info": "1995-present"}
+		],
+		"more": []
+	},
+	"related": ["sc_ulysses", "sc_parker_solar_probe", "sc_soho", "sc_stereo_ahead", "sc_stereo_behind", "sc_sdo", "sc_acrimsat"]
+}

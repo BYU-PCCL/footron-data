@@ -1,0 +1,13 @@
+{
+	"title": "Lunar Prospector",
+	"description": {
+		"blurb": "NASA's Lunar Prospector orbited the Moon for almost 19 months to map its surface composition and to look for polar ice.",
+		"more": "The probe found evidence suggesting water ice at both poles. The mission ended in July of 1999 with the spacecraft impacting the lunar surface, creating a dust cloud that was studied from Earth."
+	},
+	"dates": {
+		"start": "1998-01-07T02:28:44",
+		"end": "1999-07-31T09:52:02",
+		"landing": ""
+	},
+	"related": ["moon"]
+}

@@ -1,0 +1,13 @@
+{
+	"title": "Ulysses",
+	"description": {
+		"blurb": "The Ulysses mission made nearly three complete orbits of the Sun during more than 18 years in service.",
+		"more": "Ulysses was launched in 1990 and made three \"fast latitude scans\" of the Sun in 1994/1995, 2000/2001, and 2007/2008. In addition, the probe studied several comets. The vehicle was designed to fly a unique trajectory that would use a gravity assist from Jupiter to take it out of the plane of the solar system. Ulysses found that the solar wind has become progressively weaker over the last 50 years."
+	},
+	"dates": {
+		"start": "1990-10-06T11:47:16",
+		"end": "2009-06-30T00:00:00",
+		"landing": ""
+	},
+	"related": ["sun","jupiter", "sc_parker_solar_probe"]
+}

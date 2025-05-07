@@ -1,0 +1,13 @@
+{
+	"title": "Lunar Flashlight",
+	"description": {
+		"blurb": "Roughly the size of a briefcase, Lunar Flashlight is a very small satellite that uses near-infrared lasers and an onboard spectrometer to map ice in permanently shadowed regions near the Moon's south pole.",
+		"more": "The observations made by the low-cost mission provide unambiguous information about the presence of water ice deposits inside craters that would be an valuable in-situ resource for future Artemis missions to the lunar surface. As a technology demonstration mission, Lunar Flashlight showcases several technological firsts, including being the first mission to look for water ice using a laser reflectometer and the first planetary CubeSat mission to use \"green\" propulsion - a propellant that is less toxic and safer than hydrazine, a common propellant used by spacecraft."
+	},
+	"dates": {
+		"start": "2022-11-30T09:45:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["moon", "sc_artemis_1"]
+}

@@ -1,0 +1,13 @@
+{
+	"title": "Mars Global Surveyor",
+	"description": {
+		"blurb": "Mars Global Surveyor was a global mapping mission that examined the entire planet, from the ionosphere down through the atmosphere to the surface.",
+		"more": "During its mission, Mars Global Surveyor also produced the first three-dimensional profiles of Mars’ North Pole using laser altimeter readings. In addition, the laser altimeter essentially mapped almost all of the planet, by firing approximately 500 billion pulses at the surface, providing topographical data that was more detailed than many places on Earth. The spacecraft’s primary mission concluded on Feb. 1, 2001, by which time it had returned 83,000 images of Mars, more than all previous missions to Mars combined. It continued to operate until late 2006."
+	},
+	"dates": {
+		"start": "1996-11-07T17:00:00",
+		"end": "2006-11-02T00:00:00",
+		"landing": ""
+	},
+	"related": ["mars"]
+}

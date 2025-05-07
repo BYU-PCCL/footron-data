@@ -1,0 +1,13 @@
+{
+	"title": "OCO-3",
+	"description": {
+		"blurb": "The Orbiting Carbon Observatory 3 (OCO-3) is a space instrument on the International Space Station that investigates important questions about the distribution of carbon dioxide on Earth as it relates to growing urban populations and changing patterns of fossil fuel combustion.",
+		"more": "OCO-3 explores, for the first time, daily variations in the release and uptake of carbon dioxide by plants and trees in the major tropical rain forests of South America, Africa, and South-East Asia, the largest stores of above ground carbon on our planet. Measuring the daily variations in these major carbon systems addresses an important missing component in our knowledge and is crucial for explaining global variations in atmospheric carbon dioxide levels."
+	},
+	"dates": {
+		"start": "2019-05-04T06:48",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_iss", "sc_oco2"]
+}

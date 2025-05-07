@@ -1,0 +1,21 @@
+{
+	"descent_to_titan": {
+		"id": "descent_to_titan",
+		"title": "Descent to Titan",
+		"start": "2005-01-13T09:00:00",
+		"end": "2005-01-14T11:25:00",
+		"target": "titan",
+		"distance": 0.03,
+		"rate": 3600,
+		"horizontalOffset": -6
+	},
+	"huygens": {
+		"id": "huygens",
+		"title": "Huygens Deployment",
+		"start": "2004-12-25T01:46:00",
+		"end": "2004-12-25T02:46:00",
+		"target": "sc_cassini",
+		"distance": 0.02,
+		"rate": 1
+	}
+}

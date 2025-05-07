@@ -1,0 +1,16 @@
+{
+	"title": "Psyche",
+	"description": {
+		"blurb": "The <a href='https://www.jpl.nasa.gov/missions/psyche' target='_blank'>Psyche</a> mission launched on October 13th, 2023, and will explore the origin of planetary cores by studying the metallic asteroid of the same name.",
+		"more": "Deep within the terrestrial planets, including Earth, scientists infer the presence of metallic cores, but these lie unreachably far below the planets’ rocky mantles and crusts. The asteroid Psyche offers a unique window into these building blocks of planet formation and the opportunity to investigate a previously unexplored type of world."
+	},
+	"dates": {
+		"start": "2023-10-12T15:26:00",
+		"end": "",
+		"landing": ""
+	},
+	"cards": [
+		{ "storyId": "asteroids_missions" }
+	],
+	"related": []
+}

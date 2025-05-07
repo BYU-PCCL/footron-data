@@ -1,0 +1,13 @@
+{
+	"title": "Deep Space 1",
+	"description": {
+		"blurb": "NASA's <a href='https://www.jpl.nasa.gov/missions/deep-space-1-ds1' target='_blank'>Deep Space 1</a> was an engineering test flight for a dozen new technologies, including highly-efficient ion engines and autonomous navigation software. It also flew by a comet and an asteroid.",
+		"more": "DS1 passed the near-Earth asteroid 9660 Braille on July 29th, 1999, at a range of about 16 miles (26 kilometers) and at a velocity of about 10 miles per second (15.5 kilometers per second). On Sept. 22, 2001, DS1 entered the coma of Comet Borrelly, making its closest approach of about 1,350 miles (2,171 kilometers) to the nucleus. Traveling at about 10 miles per second (16.58 kilometers per second) relative to the nucleus at the time, it returned some of the best images of a comet to date, as well as other significant data. It was the first NASA mission to use an ion propulsion engine."
+	},
+	"dates": {
+		"start": "1998-10-24T12:08:00",
+		"end": "2001-12-18T20:00:00",
+		"landing": ""
+	},
+	"related": ["19p_borrelly"]
+}
