@@ -15,19 +15,9 @@
 	<meta property="og:image" content="$OG_IMAGE" />
 	<meta name="robots" content="noarchive" />
 	<link rel="canonical" href="https://eyes.nasa.gov/apps/asteroids" />
-	<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
-	<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png" />
-	<link rel="preload" as="image" href="./assets/images/splash_bennu.png">
-	<link rel="preload" as="font" type="font/woff" href="./assets/default/fonts/Metropolis-Light.woff" crossorigin>
-	<link rel="preload" as="font" type="font/woff" href="./assets/default/fonts/Metropolis-SemiBold.woff" crossorigin>
- 	<link rel="icon" type="image/png" sizes="194x194" href="./favicon-194x194.png" />
-	<link rel="icon" type="image/png" sizes="192x192" href="./android-chrome-192x192.png" />
 	<link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png" />
 	<link rel="manifest" href="./site.webmanifest" />
-	<link rel="mask-icon" href="./safari-pinned-tab.svg" color="#2b5797" />
 	<link rel="shortcut icon" href="./favicon.ico" />
-	<meta name="msapplication-TileColor" content="#2b5797" />
-	<meta name="msapplication-config" content="./browserconfig.xml" />
 	<meta name="theme-color" content="#000000" />
 	<style>
 		html,
@@ -197,21 +187,6 @@
 	</div>
 </body>
 <footer>
-	<script>
-		// Create random stars for the loading screen
-		// NOTE: window.innerWidth may cause problems if we're embedding (there are also other window.<size> uses (eg. time slider and splash screen) that we should test for embeds)
-		let starsBoxShadow1 = '';
-		for (let i = 0; i < 8; i++) {
-			starsBoxShadow1 += `${parseInt(Math.random() * window.innerWidth)}px ${parseInt(Math.random() * window.innerHeight)}px hsl(0deg, 0%, ${parseInt(Math.random() * 80) + 20}%), `;
-		}
-		document.getElementById('loading-screen-stars1').style.boxShadow = starsBoxShadow1.slice(0, -2);
-
-		let starsBoxShadow2 = '';
-		for (let i = 0; i < 24; i++) {
-			starsBoxShadow2 += `${parseInt(Math.random() * window.innerWidth)}px ${parseInt(Math.random() * window.innerHeight)}px hsl(0deg, 0%, ${parseInt(Math.random() * 80) + 20}%), `;
-		}
-		document.getElementById('loading-screen-stars1').style.boxShadow = starsBoxShadow2.slice(0, -2);
-	</script>
 	<link rel="stylesheet" type="text/css" href="./vendors.css" />
 	<link rel="stylesheet" type="text/css" href="./app.css" />
 	<script src="vendors.js"></script>
