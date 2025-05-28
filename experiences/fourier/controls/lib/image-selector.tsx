@@ -54,8 +54,8 @@ const ImageSelector = ({ onSelect }: ImageSelectorProps): JSX.Element => {
           </NativeSelect> */}
         <InputLabel>Image</InputLabel>
         <Select onChange={select}>
-          {images.map((img) => (
-            <MenuItem value={img}>{img}</MenuItem>
+          {images.map((img, index) => (
+            <MenuItem value={img} key={index}>{img}</MenuItem>
           ))}
         </Select>
       </FormControl>
