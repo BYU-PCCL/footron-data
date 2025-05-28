@@ -1,5 +1,5 @@
 /** @jsxImportSource @emotion/react */
-import React, { useState, JSX, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { IconButton, Slider } from "@material-ui/core";
 import { ChevronLeft, ChevronRight } from "@material-ui/icons";
 import TermCanvas from "./term-canvas";
@@ -38,7 +38,7 @@ function formattedAmplitude(amplitude: number) {
     : amplitude.toFixed(2);
 }
 
-const TermEditor = ({ onChange }: TermSliderProps): JSX.Element => {
+const TermEditor = ({ onChange }: TermSliderProps): React.ReactNode => {
   const [maxTerm, setMaxTerm] = useState<number>(1);
   const [term, setTerm] = useState<number>(1);
   const [phase, setPhase] = useState<number>(0);

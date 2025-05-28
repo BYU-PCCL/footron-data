@@ -1,4 +1,4 @@
-import React, { useState, JSX } from "react";
+import React, { useState } from "react";
 import { IconButton, Slider, SvgIcon } from "@material-ui/core";
 import { useMessaging } from "@footron/controls-client";
 import {
@@ -10,7 +10,7 @@ type TermSliderProps = {
   onChange: (num: number) => void;
 };
 
-const TermSlider = ({ onChange }: TermSliderProps): JSX.Element => {
+const TermSlider = ({ onChange }: TermSliderProps): React.ReactNode => {
   const [maxNumTerms, setMaxNumTerms] = useState<number>(-1);
   const [numTermsPercentage, setNumTermsPercentage] = useState<number>(1);
   const [helpUsed, setHelpUsed] = useState<boolean>(false);

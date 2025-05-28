@@ -5,7 +5,7 @@ import {
   MenuItem,
   Select,
 } from "@material-ui/core";
-import React, { JSX } from "react";
+import React from "react";
 
 const images = [
   "Peace",
@@ -27,7 +27,7 @@ type ImageSelectorProps = {
   onSelect: (choice: string) => Promise<void>;
 };
 
-const ImageSelector = ({ onSelect }: ImageSelectorProps): JSX.Element => {
+const ImageSelector = ({ onSelect }: ImageSelectorProps): React.ReactNode => {
   const select = (event: any) => {
     const image = event.target.value;
     onSelect(image);

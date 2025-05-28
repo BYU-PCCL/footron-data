@@ -17,10 +17,10 @@ import { ExpandMore } from "@material-ui/icons";
 type AccordionProps = {
   title: string;
   sectionKey: string;
-  children: JSX.Element;
+  children: React.ReactNode;
 };
 
-const ControlsComponent = (): JSX.Element => {
+const ControlsComponent = (): React.ReactNode => {
   const [maxNumTerms, setMaxNumTerms] = useState<number>(-1);
   const [expanded, setExpanded] = useState<string>("animation");
 

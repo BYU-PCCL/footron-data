@@ -1,4 +1,4 @@
-import React, { useState, JSX } from "react";
+import React, { useState } from "react";
 import { Button, Slider } from "@material-ui/core";
 import { useMessaging } from "@footron/controls-client";
 
@@ -8,7 +8,7 @@ type ZoomSliderProps = {
   onToggleOriginal: () => void;
 };
 
-const ZoomSlider = ({ onChange, onToggleZoom: onToggle, onToggleOriginal }: ZoomSliderProps): JSX.Element => {
+const ZoomSlider = ({ onChange, onToggleZoom: onToggle, onToggleOriginal }: ZoomSliderProps): React.ReactNode => {
   const [currentValue, setValue] = useState<number>(60);
   const [helpUsed, setHelpUsed] = useState<boolean>(false);
   const [helpHidden, setHelpHidden] = useState<boolean>(false);

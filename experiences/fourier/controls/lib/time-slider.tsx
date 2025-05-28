@@ -1,4 +1,4 @@
-import React, { useState, JSX } from "react";
+import React, { useState } from "react";
 import { Slider } from "@material-ui/core";
 
 type TimeSliderProps = {
@@ -24,7 +24,7 @@ function formatTime(seconds: number) {
   return timeStr.trim();
 }
 
-const TimeSlider = ({ onChange }: TimeSliderProps): JSX.Element => {
+const TimeSlider = ({ onChange }: TimeSliderProps): React.ReactNode => {
   const [currentValue, setValue] = useState<number>(60);
   const [helpUsed, setHelpUsed] = useState<boolean>(false);
   const [helpHidden, setHelpHidden] = useState<boolean>(false);
