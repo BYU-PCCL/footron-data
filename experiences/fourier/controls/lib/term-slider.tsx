@@ -1,11 +1,9 @@
-import { useState, JSX } from "react";
+import React, { useState, JSX } from "react";
 import { IconButton, Slider, SvgIcon } from "@material-ui/core";
 import { useMessaging } from "@footron/controls-client";
 import {
-  ChevronLeft,
   ChevronRight,
   KeyboardArrowLeft,
-  SkipPrevious,
 } from "@material-ui/icons";
 
 type TermSliderProps = {

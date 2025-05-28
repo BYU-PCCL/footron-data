@@ -110,7 +110,7 @@ const ControlsComponent = (): JSX.Element => {
             <p>
               The Fourier transform is so useful accross so many disparate
               fields it is almost like magic. Luckily for us, this mathematical
-              tool is far from sorcery; it's relatively easy to understand its
+              tool is far from sorcery; it&apos;s relatively easy to understand its
               basic principles and even easier to apply.
             </p>
             <p>
@@ -121,9 +121,9 @@ const ControlsComponent = (): JSX.Element => {
             <p>-Christian</p>
             <h3>Further resources</h3>
             <p>
-              This demonstration owes much of it's implimentation to{" "}
+              This demonstration owes much of it&apos;s implimentation to{" "}
               <a href="https://www.jezzamon.com/fourier/index.html">
-                Jez Swanson's amazing article
+                Jez Swanson&apos;s amazing article
               </a>{" "}
               on the topic. Both his article and the{" "}
               <a href="https://www.youtube.com/watch?v=r6sGWTCMz2k">

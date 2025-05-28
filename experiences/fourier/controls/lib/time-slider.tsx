@@ -1,4 +1,4 @@
-import { useState, JSX } from "react";
+import React, { useState, JSX } from "react";
 import { Slider } from "@material-ui/core";
 
 type TimeSliderProps = {

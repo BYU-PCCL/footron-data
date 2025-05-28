@@ -3,10 +3,9 @@ import {
   FormControl,
   InputLabel,
   MenuItem,
-  NativeSelect,
   Select,
 } from "@material-ui/core";
-import { JSX } from "react";
+import React, { JSX } from "react";
 
 const images = [
   "Peace",
