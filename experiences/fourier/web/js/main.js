@@ -5,7 +5,6 @@ import { sailorData } from "./fourier-data/sailor.js";
 import { yLogoData } from "./fourier-data/y-logo.js";
 
 import "./message-handler.js";
-import "./dev.js";
 import { palette } from "./color.js";
 import Slideshow from "./slideshow.js";
 import { slides } from "./slides.js";
@@ -19,7 +18,6 @@ import { fourierData } from "./fourier-data/fourier.js";
 import { pentagonData } from "./fourier-data/pentagon.js";
 import { hexagonData } from "./fourier-data/hexagon.js";
 import { isAprilFools } from "./util.js";
-import { trianglePoints } from "./points/triangle-points.js";
 
 const controller = new EpicyclesController("standardCanvas");
 const show = new Slideshow("slideDisplay", slides, setImage);
@@ -102,7 +100,7 @@ function init() {
   setImage(null, true);
 
   controller.start();
-  show.startShow()
+  // show.startShow()
 }
 
 // control methods
@@ -135,7 +133,8 @@ export function setImage(image, fromZero = false, transition = false) {
 }
 
 export function setImageFromPoints() {
-  controller.setPathFromPoints(trianglePoints)
+  return
+  // controller.setPathFromPoints(trianglePoints)
 }
 
 export function query() {
