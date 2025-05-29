@@ -1,7 +1,7 @@
 {
     "id": "fourier",
     "title": "Drawing with The Fourier Transform",
-    "description": "Explore BYU campus with a real-time, interactive 3D model. You can pilot a virtual drone as it flies around campus. See what amazing details you can find!",
+    "description": "Explore the Fourier transform by drawing out any path with nothing but circles.",
     "action_hints": ["Change the image", "Change the circles", "Build intuition"],
     "artist": "Christian Price",
     "type": "web",

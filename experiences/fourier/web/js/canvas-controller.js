@@ -1,5 +1,4 @@
 import { palette } from "./color.js";
-import PerfPanel from "./perf-panel.js";
 import InfoPanel from "./info-panel.js";
 
 import { basicStyle } from "./color.js";
