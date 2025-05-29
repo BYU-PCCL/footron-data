@@ -10,7 +10,7 @@ type TermSliderProps = {
   onChange: (num: number) => void;
 };
 
-export default function TermSlider({ onChange }: TermSliderProps): React.ReactNode {
+export default function TermSlider({ onChange }: TermSliderProps) {
   const [maxNumTerms, setMaxNumTerms] = useState<number>(-1);
   const [numTermsPercentage, setNumTermsPercentage] = useState<number>(1);
   const [helpUsed, setHelpUsed] = useState<boolean>(false);

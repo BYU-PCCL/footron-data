@@ -20,7 +20,7 @@ type AccordionProps = {
   children?: React.ReactNode;
 };
 
-export default function ControlsComponent(): React.ReactNode {
+export default function ControlsComponent() {
   const [maxNumTerms, setMaxNumTerms] = useState<number>(-1);
   const [expanded, setExpanded] = useState<string>("animation");
 

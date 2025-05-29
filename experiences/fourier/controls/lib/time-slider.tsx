@@ -24,7 +24,7 @@ function formatTime(seconds: number) {
   return timeStr.trim();
 }
 
-export default function TimeSlider({ onChange }: TimeSliderProps): React.ReactNode {
+export default function TimeSlider({ onChange }: TimeSliderProps) {
   const [currentValue, setValue] = useState<number>(60);
   const [helpUsed, setHelpUsed] = useState<boolean>(false);
   const [helpHidden, setHelpHidden] = useState<boolean>(false);
