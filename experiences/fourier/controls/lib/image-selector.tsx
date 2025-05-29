@@ -61,4 +61,4 @@ export default function ImageSelector({ onSelect }: ImageSelectorProps) {
       </FormControl>
     </div>
   );
-};
+}

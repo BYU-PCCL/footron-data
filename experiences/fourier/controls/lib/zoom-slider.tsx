@@ -79,4 +79,4 @@ export default function ZoomSlider({ onChange, onToggleZoom: onToggle, onToggleO
       </div>
     </div>
   );
-};
+}

@@ -113,4 +113,4 @@ export default function TermSlider({ onChange }: TermSliderProps): React.ReactNo
       </div>
     </div>
   );
-};
+}

@@ -137,4 +137,4 @@ export default function ControlsComponent(): React.ReactNode {
       </div>
     </div>
   );
-};
+}

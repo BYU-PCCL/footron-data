@@ -223,4 +223,4 @@ export default function TermEditor({ onChange }: TermSliderProps): React.ReactNo
       </div>
     </div>
   );
-};
+}

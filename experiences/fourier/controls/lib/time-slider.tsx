@@ -69,4 +69,4 @@ export default function TimeSlider({ onChange }: TimeSliderProps): React.ReactNo
       />
     </div>
   );
-};
+}
