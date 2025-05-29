@@ -8,7 +8,7 @@ type ZoomSliderProps = {
   onToggleOriginal: () => void;
 };
 
-const ZoomSlider = ({ onChange, onToggleZoom: onToggle, onToggleOriginal }: ZoomSliderProps): React.ReactNode => {
+export default function ZoomSlider({ onChange, onToggleZoom: onToggle, onToggleOriginal }: ZoomSliderProps): React.ReactNode {
   const [currentValue, setValue] = useState<number>(60);
   const [helpUsed, setHelpUsed] = useState<boolean>(false);
   const [helpHidden, setHelpHidden] = useState<boolean>(false);
@@ -80,5 +80,3 @@ const ZoomSlider = ({ onChange, onToggleZoom: onToggle, onToggleOriginal }: Zoom
     </div>
   );
 };
-
-export default ZoomSlider;

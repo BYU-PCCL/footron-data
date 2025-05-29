@@ -38,7 +38,7 @@ function formattedAmplitude(amplitude: number) {
     : amplitude.toFixed(2);
 }
 
-const TermEditor = ({ onChange }: TermSliderProps): React.ReactNode => {
+export default function TermEditor({ onChange }: TermSliderProps): React.ReactNode {
   const [maxTerm, setMaxTerm] = useState<number>(1);
   const [term, setTerm] = useState<number>(1);
   const [phase, setPhase] = useState<number>(0);
@@ -224,5 +224,3 @@ const TermEditor = ({ onChange }: TermSliderProps): React.ReactNode => {
     </div>
   );
 };
-
-export default TermEditor;

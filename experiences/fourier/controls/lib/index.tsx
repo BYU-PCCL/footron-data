@@ -17,10 +17,10 @@ import { ExpandMore } from "@material-ui/icons";
 type AccordionProps = {
   title: string;
   sectionKey: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 };
 
-const ControlsComponent = (): React.ReactNode => {
+export default function ControlsComponent(): React.ReactNode {
   const [maxNumTerms, setMaxNumTerms] = useState<number>(-1);
   const [expanded, setExpanded] = useState<string>("animation");
 
@@ -110,8 +110,8 @@ const ControlsComponent = (): React.ReactNode => {
             <p>
               The Fourier transform is so useful accross so many disparate
               fields it is almost like magic. Luckily for us, this mathematical
-              tool is far from sorcery; it&apos;s relatively easy to understand its
-              basic principles and even easier to apply.
+              tool is far from sorcery; it&apos;s relatively easy to understand
+              its basic principles and even easier to apply.
             </p>
             <p>
               Feel free to explore this demonstration and build a better
@@ -138,5 +138,3 @@ const ControlsComponent = (): React.ReactNode => {
     </div>
   );
 };
-
-export default ControlsComponent;

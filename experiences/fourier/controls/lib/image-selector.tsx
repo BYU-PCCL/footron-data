@@ -27,7 +27,7 @@ type ImageSelectorProps = {
   onSelect: (choice: string) => Promise<void>;
 };
 
-const ImageSelector = ({ onSelect }: ImageSelectorProps): React.ReactNode => {
+export default function ImageSelector({ onSelect }: ImageSelectorProps) {
   const select = (event: any) => {
     const image = event.target.value;
     onSelect(image);
@@ -62,5 +62,3 @@ const ImageSelector = ({ onSelect }: ImageSelectorProps): React.ReactNode => {
     </div>
   );
 };
-
-export default ImageSelector;
