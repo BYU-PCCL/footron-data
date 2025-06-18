@@ -5,6 +5,7 @@
     "action_hints": ["Change the image", "Change the circles", "Build intuition"],
     "artist": "Christian Price",
     "type": "web",
-    "lifetime": 300,
+    "layout": "full",
+    "lifetime": 180,
     "queueable": true
 }
