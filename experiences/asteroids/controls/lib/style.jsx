@@ -17,6 +17,8 @@ export const overlayMenuStyle = css`
 display: flex;
 flex-flow: column;
 overflow: auto;
+opacity: 1;
+background-color: white;
 `;
 
 export const overlaySettingsMenuStyle = css`
