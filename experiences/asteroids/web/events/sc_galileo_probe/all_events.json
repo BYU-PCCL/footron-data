@@ -1,0 +1,19 @@
+{
+	"probe_entry": {
+		"id": "probe_entry",
+		"title": "Descent into Jupiter",
+		"start": "1995-12-07T06:00:00",
+		"target": "jupiter",
+		"distance": 0.03,
+		"rate": 3000,
+		"horizontalOffset": 10
+	},
+	"probe": {
+		"id": "probe",
+		"title": "Atmospheric Probe Deployment",
+		"start": "1995-07-13T05:29:55",
+		"target": "sc_galileo",
+		"distance": 0.02,
+		"rate": 1
+	}
+}

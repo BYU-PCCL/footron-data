@@ -1,0 +1,13 @@
+{
+	"title": "OCO-2",
+	"description": {
+		"blurb": "The Orbiting Carbon Observatory 2, or OCO-2, is an Earth satellite mission designed to study the sources and sinks of carbon dioxide globally and provide scientists with a better idea of how carbon is contributing to climate change.",
+		"more": "The OCO-2 Project primary science objective is to collect the first space-based measurements of atmospheric carbon dioxide with the precision, resolution and coverage needed to characterize its sources and sinks and quantify their variability over the seasonal cycle.OCO-2 flies in a sun-synchronous, near-polar orbit with a group of Earth-orbiting satellites with synergistic science objectives. Near-global coverage of the sunlit portion of Earth is provided in this orbit over a 16-day (233-revolution) repeat cycle. OCO-2’s single instrument incorporates three high-resolution grating spectrometers, designed to measure the near-infrared absorption of reflected sunlight by carbon dioxide and molecular oxygen."
+	},
+	"dates": {
+		"start": "2014-07-02T09:56:23",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["earth", "sc_iss_oco3"]
+}

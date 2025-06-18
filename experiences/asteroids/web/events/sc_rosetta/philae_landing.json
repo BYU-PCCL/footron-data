@@ -1,0 +1,6 @@
+{
+	"description": {
+		"blurb": "The robotic lander Philae detatched from the Rosetta spacecraft on November 12th, 2014, initiating a seven-hour descent to the comet at a relative velocity of about 3 feet per second (1 meter per second). Philae landed on the comet at 15:34 UT, but actually bounced twice because two harpoons did not fire as intended. The lander bounced into a shadowed area, preventing the solar panels from collecting power, and the battery drained after two days. The lander collected data and did manage to send it back to Rosetta. This was the first spacecraft to ever land on a comet."
+	},
+	"related": ["sc_rosetta"]
+}

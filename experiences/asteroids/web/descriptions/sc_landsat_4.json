@@ -1,0 +1,13 @@
+{
+	"title": "LANDSAT 4",
+	"description": {
+		"blurb": "",
+		"more": ""
+	},
+	"dates": {
+		"start": "",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_landsat_5", "sc_landsat_7", "sc_landsat_8"]
+}

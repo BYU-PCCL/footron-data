@@ -1,0 +1,60 @@
+{
+	"lucy_eurybates_flyby": {
+		"id": "lucy_eurybates_flyby",
+		"title": "Flyby of Eurybates",
+		"start": "2027-08-12T09:36:26",
+		"target": "3548_eurybates",
+		"distance": 0.2,
+		"horizontalOffset": 5,
+		"visual": true
+	},
+	"lucy_donaldjohanson_flyby": {
+		"id": "lucy_donaldjohanson_flyby",
+		"title": "Flyby of Donaldjohanson",
+		"start": "2025-04-20T18:16:07",
+		"target": "52246_donaldjohanson",
+		"distance": 0.3
+	},
+	"lucy_polymele_flyby": {
+		"id": "lucy_polymele_flyby",
+		"title": "Flyby of Polymele",
+		"start": "2027-09-15T14:30:25",
+		"target": "15094_polymele",
+		"distance": 0.2,
+		"horizontalOffset": 5
+	},
+	"lucy_dinkinesh_flyby": {
+		"id": "lucy_dinkinesh_flyby",
+		"title": "Flyby of Dinkinesh",
+		"start": "2023-11-01T16:54:45",
+		"target": "152830_dinkinesh",
+		"distance": 0.2,
+		"horizontalOffset": 5,
+		"visual": true
+	},
+	"lucy_leucus_flyby": {
+		"id": "lucy_leucus_flyby",
+		"title": "Flyby of Leucus",
+		"start": "2028-04-18T17:29:08",
+		"target": "11351_leucus",
+		"horizontalOffset": 5,
+		"distance": 0.2
+	},
+	"lucy_orus_flyby": {
+		"id": "lucy_orus_flyby",
+		"title": "Flyby of Orus",
+		"start": "2028-11-11T16:26:13",
+		"target": "21900_orus",
+		"horizontalOffset": 5,
+		"distance": 0.2
+	},
+	"lucy_patroclus_menoetius_flyby": {
+		"id": "lucy_patroclus_menoetius_flyby",
+		"title": "Flyby of Patroclus and Menoetius",
+		"start": "2033-03-02T14:08:49",
+		"target": "617_patroclus",
+		"horizontalOffset": 5,
+		"distance": 0.2,
+		"rate": 3
+	}
+}

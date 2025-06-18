@@ -1,0 +1,8 @@
+{
+	"description": {
+		"blurb": "In order to be captured by Jupiter's gravity and enter a stable orbit around Jupiter, the Juno spacecraft performed a 35 minute burn of the main engine.",
+		"more": "The engine burn is a do-or-die moment. If the main engine does not burn long enough, the spacecraft doesn’t slow down enough to go into orbit around Jupiter. Had that happened, Juno would have passed right by the planet and entered into its own long orbit around the sun, and probably never see Jupiter again. The burn was successful and Juno entered a 53.5 day orbit around Jupiter"
+	},
+	"related": ["jupiter"],
+	"layers": true
+}

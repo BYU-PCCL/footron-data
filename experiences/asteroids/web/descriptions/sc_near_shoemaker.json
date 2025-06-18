@@ -1,0 +1,16 @@
+{
+	"title": "NEAR Shoemaker",
+	"description": {
+		"blurb": "NASA's <a href='https://solarsystem.nasa.gov/missions/near-shoemaker/in-depth/' target='_blank'>NEAR Shoemaker spacecraft </a>was the first human-made object to orbit and the first to land an asteroid.",
+		"more": "The NEAR mission studied the near-Earth asteroid Eros from close orbit over a period of a year, and also flew by the asteroid Mathilde. The mission succeeded in closing in with the asteroid and orbited it several times, finally ending by touching down on the asteroid on February 12, 2001."
+	},
+	"cards": [
+		{ "storyId": "asteroids_missions" }
+	],
+	"dates": {
+		"start": "1996-02-17T20:43:27",
+		"end": "2001-02-28T00:00:00",
+		"landing": "2001-02-12T12:56:00"
+	},
+	"related": ["433_eros","253_mathilde"]
+}

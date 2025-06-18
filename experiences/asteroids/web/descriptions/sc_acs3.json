@@ -1,0 +1,11 @@
+{
+	"title": "ACS3",
+	"description": {
+		"blurb": "The Advanced Composite Solar Sail System (ACS3) technology demonstration mission uses a twelve-unit (12U) CubeSat orbiting Earth to test a new composite boom made from flexible polymer and carbon fiber materials that are stiffer and lighter than previous boom designs.",
+		"more": "The mission’s primary objective is to successfully demonstrate new boom deployment, but once deployed, assessment of sail performance is expected. The solar sail employs the pressure of sunlight for propulsion, eliminating the need for rocket propellant."
+	},
+	"dates": {
+		"start": "2024-04-23T12:00:00",
+		"end": ""
+	}
+}

@@ -1,0 +1,13 @@
+{
+	"title": "CATS",
+	"description": {
+		"blurb": "",
+		"more": "The Cloud-Aerosol Transport System (CATS) investigation uses a light detection and ranging system to measure the location, composition and distribution of pollution, dust, smoke, aerosols and other particulates in the atmosphere. CATS is mounted on the Japanese Experiment Module's Exposed Facility on the International Space Station. An improved understanding of Earth's cloud and aerosol coverage will allow scientists to create a better model of the Earth's climate feedback processes."
+	},
+	"dates": {
+		"start": "",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_iss"]
+}

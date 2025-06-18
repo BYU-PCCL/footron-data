@@ -1,0 +1,13 @@
+{
+	"title": "TOPEX/POSEIDON",
+	"description": {
+		"blurb": "",
+		"more": ""
+	},
+	"dates": {
+		"start": "1992-08-10T00:08:07",
+		"end": "2006-01-18T17:14:18",
+		"landing": ""
+	},
+	"related": ["sc_jason_1", "sc_jason_2", "sc_jason_3"]
+}

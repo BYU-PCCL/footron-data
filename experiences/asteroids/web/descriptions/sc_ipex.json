@@ -1,0 +1,13 @@
+{
+	"title": "IPEX",
+	"description": {
+		"blurb": "IPEX was a CubeSat mission that was an \"Intelligent Payload EXperiment.\"",
+		"more": "The purpose of the mission was to validate onboard instrument processing and autonomous payload operations that could be used in the future on the proposed NASA HYperSPectral Infra-Red Instrument (HyspIRI) mission."
+	},
+	"dates": {
+		"start": "2013-12-06T07:13:40",
+		"end": "",
+		"landing": ""
+	},
+	"related": []
+}

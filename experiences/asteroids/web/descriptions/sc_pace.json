@@ -1,0 +1,13 @@
+{
+	"title": "PACE",
+	"description": {
+		"blurb": "Plankton, Aerosol, Cloud, ocean Ecosystem (PACE) is a NASA Earth-observing satellite mission that will continue and advance observations of global ocean color, biogeochemistry, and ecology, as well as the carbon cycle, aerosols and clouds.",
+		"more": "PACE will advance the assessment of ocean health by measuring the distribution of phytoplankton, tiny plants and algae that sustain the marine food web. It will also continue systematic records of key atmospheric variables associated with air quality and Earth's climate. PACE's data will help us better understand how the ocean and atmosphere exchange carbon dioxide. Novel uses of PACE data will benefit our economy and society; for example, it will help identify the extent and duration of harmful algal blooms. PACE will extend and expand NASA's long-term observations of our living planet. By doing so, it will take Earth's pulse in new ways for decades to come."
+	},
+	"dates": {
+		"start": "2024-02-08T06:33:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["earth"]
+}

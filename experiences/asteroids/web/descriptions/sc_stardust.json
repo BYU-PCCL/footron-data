@@ -1,0 +1,16 @@
+{
+	"title": "Stardust",
+	"description": {
+		"blurb": "NASA's <a href='https://solarsystem.nasa.gov/missions/stardust/in-depth/'target='_blank'>Stardust</a> was the first spacecraft to bring samples from a comet to Earth.",
+		"more": "Its primary goal was to fly by the Comet Wild 2, collect samples of dust from the coma of the comet as well as additional interstellar particles, and then bring the samples to Earth. In 2006, the sample return capsule re-entered Earth's atmosphere and landed in Utah, and the sampes have been studied ever since. After dropping off the samples at Earth, the spacecraft visited Comet Tempel 1 in 2011, and then the mission ended shortly thereafter."
+	},
+	"cards": [
+		{ "storyId": "asteroids_missions" }
+	],
+	"dates": {
+		"start": "1999-02-07T22:10:00",
+		"end": "2011-03-24T23:33:00",
+		"landing": "2006-01-15T10:12:00"
+	},
+	"related": ["81p_wild_2", "earth", "9p_tempel_1", "sc_stardust_src"]
+}

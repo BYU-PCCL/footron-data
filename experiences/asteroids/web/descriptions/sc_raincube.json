@@ -1,0 +1,13 @@
+{
+	"title": "RainCube",
+	"description": {
+		"blurb": "RainCube is a CubeSat (a type of miniature satellite) that is designed to test technology and monitor precipitation.",
+		"more": "RainCube has three main objectives: Develop, launch, and operate the first radar instrument on a CubeSat (6U), demonstrate new technologies and provide space validation for a Ka-band (35.75 GHz) precipitation profiling radar, and enable future precipitation profiling Earth  science missions on a low-cost, quick-turnaround platform. RainCube was launched directly from the International Space Station."
+	},
+	"dates": {
+		"start": "2018-05-21T00:00:00",
+		"end": "2020-12-24T00:00:00",
+		"landing": ""
+	},
+	"related": ["earth"]
+}

@@ -1,0 +1,13 @@
+{
+	"title": "ICESat-2",
+	"description": {
+		"blurb": "The Ice, Cloud, and land Elevation Satellite-2, or ICESat-2, will measure the height of a changing Earth – one laser pulse at a time, 10,000 laser pulses a second.",
+		"more": "ICESat-2 (short for Ice, Cloud, and land Elevation Satellite), launched Sept. 15, 2018, uses lasers and a very precise detection instrument to measure the elevation of Earth’s surface. By timing how long it takes laser beams to travel from the satellite to Earth and back, scientists can calculate the height of glaciers, sea ice, forests, lakes and more – including the changing ice sheets of Greenland and Antarctica. Our planet's frozen and icy areas, called the cryosphere, are a key focus of NASA's Earth science research. ICESat-2 will help scientists investigate why, and how much, our cryosphere is changing in a warming climate. The satellite will also measure heights across Earth's temperate and tropical regions, and take stock of the vegetation in forests worldwide."
+	},
+	"dates": {
+		"start": "2018-09-15T13:02:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["earth"]
+}

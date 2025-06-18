@@ -1,0 +1,10 @@
+{
+	"description": {
+		"blurb": "Through close flybys of Saturn's largest moon Titan, Cassini revealed the moon's surface and discovered liquid lakes and seas there.",
+		"more": "Cassini performed 127 flybys of Titan, one of the mission's highest-priority science targets. These flybys gave scientists their first views of Titan's surface. In the Earth-like world's northern regions, Cassini found seas roughly the size of the U.S. Great Lakes but full of nearly-pure liquid methane. Cassini data also suggest that below Titan's water-ice crust is likely a global liquid water ocean. In addition to providing the first close study of the hazy moon, Cassini's Titan flybys provided the trajectory changes that allowed the spacecraft to change course to achieve amazing observations of other features of the Saturn system. Cassini's navigation team describes Titan as the engine of the mission; because a single flyby of Titan at an altitude of 620 miles (about 1,000 kilometers) gives Cassini a change in velocity equivalent to one-third of Cassini's total propellant at launch. In all, Titan flybys have provided Cassini with more than 30 times the velocity change that it could have achieved by propellant alone."
+	},
+	"related": ["titan", "sc_cassini"],
+	"layers": true,
+	"rate": 100,
+	"distance": 0.035
+}

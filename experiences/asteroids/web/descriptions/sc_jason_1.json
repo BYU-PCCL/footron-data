@@ -1,0 +1,13 @@
+{
+	"title": "Jason-1",
+	"description": {
+		"blurb": "Jason-1 was a satellite altimeter oceanography mission. It sought to monitor global ocean circulation, study the ties between the ocean and the atmosphere, improve global climate forecasts and predictions, and monitor events such as El Niño and ocean eddies.",
+		"more": "Jason-1 is the successor to the TOPEX/Poseidon mission, which measured ocean surface topography from 1992 through 2005. Like its predecessor, Jason-1 is a joint project between the NASA (United States) and CNES (France) space agencies. Jason-1 has led to Jason-2 and Jason-3, and then the Sentinel-6 Michael Freilich mission."
+	},
+	"dates": {
+		"start": "2001-12-07T15:07:00",
+		"end": "2013-07-01T00:00:00",
+		"landing": ""
+	},
+	"related": ["sc_topex-poseidon", "sc_jason_2", "sc_jason_3", "sc_sentinel_6"]
+}

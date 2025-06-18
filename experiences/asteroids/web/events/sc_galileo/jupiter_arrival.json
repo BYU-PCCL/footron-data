@@ -1,0 +1,7 @@
+{
+	"description": {
+		"blurb": "On July 7th, 1995, Galileo arrived at Jupiter. To get into orbit, the spacecraft had to use its main engine. An error could send Galileo sailing past the planet, and there was just one chance to get it right. After hours of anxious waiting, mission controllers confirmed that the spacecraft was safely in orbit; Galileo was alive and well and had begun its primary mission. That very day, the spacecraft made close flybys of both Europa and Io."
+	},
+	"related": ["sc_galileo"],
+	"layers": true
+}

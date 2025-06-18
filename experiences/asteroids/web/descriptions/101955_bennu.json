@@ -1,0 +1,11 @@
+{
+	"title": "101955 Bennu",
+	"description": {
+		"blurb": "An ancient relic of our solar system’s early days, Bennu has seen more than 4.5 billion years of history. Scientists think that within 10 million years of our solar system’s formation, Bennu’s present-day composition was already established.",
+		"more": "Bennu likely broke off from a much larger carbon-rich asteroid about 700million to 2 billion years ago. It likely formed in the Main Asteroid Belt between Mars and Jupiter, and has drifted much closer to Earth since then. Because its materials are so old, Bennu may contain organic molecules similar to those that could have been involved with the start of life on Earth. NASA’s OSIRIS-REx mission, which launched in 2016, performed the most in-depth exploration of Bennu to date and returned a sample of its material to Earth in 2023. This spacecraft’s data will also help scientists better understand the likelihood of Bennu striking Earth someday."
+	},
+	"cards": [
+		{ "storyId": "asteroids_missions" }
+	],
+	"related": ["sc_osiris_rex"]
+}

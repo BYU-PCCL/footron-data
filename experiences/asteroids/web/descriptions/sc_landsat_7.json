@@ -1,0 +1,13 @@
+{
+	"title": "Landsat 7",
+	"description": {
+		"blurb": "The Landsat program offers the longest continuous global record of the Earth’s surface, supplying more than 40 years of imagery of the entire surface of Earth.",
+		"more": "Landsat 7 is the seventh satellite of the Landsat program. Launched on 15 April 1999, Landsat 7's primary goal is to refresh the global archive of satellite photos, providing up-to-date and cloud-free images. The Landsat program is managed and operated by the United States Geological Survey, and data from Landsat 7 is collected and distributed by the USGS."
+	},
+	"dates": {
+		"start": "1999-04-15T18:32:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_landsat_4", "sc_landsat_5", "sc_landsat_8"]
+}

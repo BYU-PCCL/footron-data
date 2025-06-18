@@ -1,0 +1,13 @@
+{
+	"title": "Suomi NPP",
+	"description": {
+		"blurb": "The Suomi National Polar-orbiting Partnership, or Suomi NPP, is a weather satellite operated by the United States National Oceanic and Atmospheric Administration.",
+		"more": "NPP represents a critical first step in building the next-generation Earth-observing satellite system that will collect data on long-term climate change and short-term weather conditions. NPP is the result of a partnership between NASA, the National Oceanic and Atmospheric Administration, and the Department of Defense.\n\n NPP will extend and improve upon the Earth system data records established by NASA's Earth Observing System fleet of satellites that have provided critical insights into the dynamics of the entire Earth system: clouds, oceans, vegetation, ice, solid Earth and atmosphere."
+	},
+	"dates": {
+		"start": "2011-10-28T09:48:01.828",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["earth"]
+}

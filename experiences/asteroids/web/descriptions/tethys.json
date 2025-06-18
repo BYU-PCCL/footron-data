@@ -1,0 +1,8 @@
+{
+	"title": "Tethys",
+	"description": {
+		"blurb": "Tethys is Saturn's fifth largest moon.",
+		"more": "This cold, airless and heavily scarred body is very similar to sister moons Dione and Rhea except that Tethys is not as heavily cratered as the other two. Tethys appeared as a tiny dot to astronomers until the Voyager (1 and 2) encounters in 1980 and 1981. The Voyager images showed a major impact crater and a great chasm. The Cassini spacecraft has added details including a great variety of colors at small scales suggesting a variety of materials not seen elsewhere."
+	},
+	"related": ["sc_pioneer_11", "sc_voyager_1", "sc_voyager_2", "sc_cassini"]
+}

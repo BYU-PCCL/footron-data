@@ -1,0 +1,21 @@
+{
+	"impact": {
+		"id": "impact",
+		"title": "Impact on Tempel 1",
+		"start": "2005-07-04T05:44:20",
+		"target": "9p_tempel_1",
+		"distance": 0.02,
+		"horizontalOffset": 3,
+		"visual": true
+	},
+	"impactor_separation": {
+		"id": "impactor_separation",
+		"title": "Impactor Probe Separation",
+		"start": "2005-07-03T05:59:56",
+		"target": "sc_deep_impact",
+		"distance": 0.01,
+		"horizontalOffset": 10,
+		"verticalOffset": 10,
+		"visual": true
+	}
+}

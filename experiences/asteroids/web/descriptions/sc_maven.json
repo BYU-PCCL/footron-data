@@ -1,0 +1,13 @@
+{
+	"title": "MAVEN",
+	"description": {
+		"blurb": "NASA's MAVEN is currently orbiting Mars studying the structure and composition of the upper atmosphere of the Red Planet.",
+		"more": "The Mars Atmosphere and Volatile Evolution Mission (MAVEN) is the first mission dedicated to studying Mars’ upper atmosphere. The goal is to use this data to determine how the loss of volatiles from the Martian atmosphere has affected the Martian climate over time, and thus contribute to a better understanding of terrestrial climatology."
+	},
+	"dates": {
+		"start": "2013-11-18T18:28:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["mars"]
+}

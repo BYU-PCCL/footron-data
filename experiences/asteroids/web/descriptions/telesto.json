@@ -1,0 +1,8 @@
+{
+	"title": "Telesto",
+	"description": {
+		"blurb": "Telesto was discovered in 1980 using ground-based observations by Brad Smith, Harold Reitsema, Stephen Larson, and John Fountain.",
+		"more": "Telesto is known as a \"Tethys Trojan\" because, together with Calypso, it circles Saturn in the same orbit as the moon Tethys. At a distance of about 183,000 miles (295,000 kilometers) from Saturn, the moon takes 45.3 hours to make one trip around the planet. Telesto orbits about 60 degrees ahead of Tethys, while Calypso orbits behind Tethys by about 60 degrees. Because Telesto is in the front of this three-moon group, it is called the \"leading Trojan.\" Telesto is 7.7 miles (12.4 kilometers) in mean radius and appears to have a smooth, icy surface. It does not show the signs of intense cratering seen on many of Saturn's other moons. Telesto is a daughter of the Titans Oceanus and Tethys in Greek mythology. It was originally designated S/1981 S13."
+	},
+	"related": ["sc_cassini"]
+}

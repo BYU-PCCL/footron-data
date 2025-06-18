@@ -1,0 +1,13 @@
+{
+	"title": "Aquarius",
+	"description": {
+		"blurb": "The Aquarius mission, also known as SAC-D, has an instrument also called Aquarius that measured sea surface salinity.",
+		"more": "The Aquarius instrument's surface salinity measurements contributed to a better understanding of ocean dynamics and advancing climate and ocean models, both from season to season and year to year."
+	},
+	"dates": {
+		"start": "2011-06-10T14:20:00",
+		"end": "2015-06-07T00:00:00",
+		"landing": ""
+	},
+	"related": []
+}

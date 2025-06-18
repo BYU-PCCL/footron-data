@@ -1,0 +1,13 @@
+{
+	"title": "CALIPSO",
+	"description": {
+		"blurb": "The CALIPSO satellite provided new insight into the role that clouds and atmospheric aerosols (airborne particles) play in regulating Earth's weather, climate, and air quality.",
+		"more": "CALIPSO (Cloud-Aerosol Lidar and Infrared Pathfinder Satellite Observation) combined an active lidar instrument with passive infrared and visible imagers to probe the vertical structure and properties of thin clouds and aerosols over the globe. CALIPSO was launched on April 28, 2006. CALIPSO, along with the CloudSat mission, were highly complementary and together provided new, never-before-seen 3-D perspectives of how clouds and aerosols form, evolve, and affect weather and climate."
+	},
+	"dates": {
+		"start": "2006-04-28T10:02:16",
+		"end": "2023-08-01T12:00:00",
+		"landing": ""
+	},
+	"related": ["sc_cloudsat"]
+}

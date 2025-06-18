@@ -1,0 +1,8 @@
+{
+	"title": "Callisto",
+	"description": {
+		"blurb": "Callisto is Jupiter’s second largest moon and the third largest moon in our solar system.",
+		"more": "Callisto is about the same size as Mercury. In the past, some scientists thought of Callisto as a boring “ugly duckling moon” and a “hunk of rock and ice.” That’s because the crater-covered world didn’t seem to have much going on—no active volcanoes or shifting tectonic plates. But data from NASA’s Galileo spacecraft in the 1990s revealed Callisto may have a secret: a salty ocean beneath its surface. That finding put the once seemingly dead moon on the list of worlds that could possibly harbor life."
+	},
+	"related": ["sc_voyager_1", "sc_voyager_2", "sc_galileo", "sc_cassini"]
+}

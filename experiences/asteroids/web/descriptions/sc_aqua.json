@@ -1,0 +1,13 @@
+{
+	"title": "Aqua",
+	"description": {
+		"blurb": "Aqua is a NASA Earth Science satellite mission named for the large amount of information that the mission is collecting about the Earth's water cycle.",
+		"more": "The Aqua mission collects data about evaporation from the oceans, water vapor in the atmosphere, clouds, precipitation, soil moisture, sea ice, land ice, and snow cover on the land and ice. Additional variables also being measured by Aqua include radiative energy fluxes, aerosols, vegetation cover on the land, phytoplankton and dissolved organic matter in the oceans, and air, land, and water temperatures. Aqua was launched on May 4, 2002, and has six Earth-observing instruments on board, collecting a variety of global data sets. Aqua was originally developed for a six-year design life but has now far exceeded that original goal. It continues transmitting high-quality data from four of its six instruments, AIRS, AMSU, CERES, and MODIS, and reduced quality data from a fifth instrument, AMSR-E. The sixth Aqua instrument, HSB, collected approximately nine months of high quality data but failed in February 2003. Aqua was the first member launched of a group of satellites termed the Afternoon Constellation, or sometimes the A-Train."
+	},
+	"dates": {
+		"start": "2002-05-04T09:54:58",
+		"end": "",
+		"landing": ""
+	},
+	"related": []
+}

@@ -1,0 +1,13 @@
+{
+	"title": "Aura",
+	"description": {
+		"blurb": "Aura (Latin for breeze) obtains measurements of ozone, aerosols and key gases throughout the atmosphere using technologically innovative space instrumentation. Scientists use these data to gain revolutionary insights into the chemistry of our atmosphere.",
+		"more": "Aura's instruments measure trace gases in the atmosphere by detecting their unique spectral signatures. MLS observes the faint microwave emissions from rotating and vibrating molecules. HIRDLS  and TES  observe the infrared thermal emissions also due to molecular vibrations and rotations. OMI detects the molecular absorption of backscattered sunlight in the visible and ultraviolet wavelengths.\n\n Horizon viewing (limb) instruments (MLS, TES and HIRDLS slice through the atmosphere, profiling gases. Down-looking instruments (OMI and TES) stare at the Earth. Since MLS looks out the front of the spacecraft, it is the first to profile the atmosphere. The OMI and TES instruments then look at the same air mass as it passes beneath the spacecraft. As the spacecraft then moves on in its orbit, HIRDLS and TES profile the atmosphere again. This unique observing geometry allows the Aura instruments to combine their measurements to get a better picture of the atmospheric chemistry."
+	},
+	"dates": {
+		"start": "2004-07-15T10:01:51",
+		"end": "",
+		"landing": ""
+	},
+	"related": []
+}

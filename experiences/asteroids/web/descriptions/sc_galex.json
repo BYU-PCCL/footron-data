@@ -1,0 +1,12 @@
+{
+	"title": "GALEX",
+	"description": {
+		"blurb": "The Galaxy Evolution Explorer (GALEX) is an orbiting space telescope observing galaxies in ultraviolet light across 10 billion years of cosmic history. A Pegasus rocket launched GALEX into orbit at 8 a.m. EDT on April 28th, 2003. Although originally planned as a 29-month mission, the NASA Senior Review Panel in 2006 recommended that the mission lifetime be extended.\n\nGALEX's observations are telling scientists how galaxies, the basic structures of our Universe, evolve and change. Additionally, GALEX observations are investigating the causes of star formation during a period when most of the stars and elements we see today had their origins."
+	},
+	"dates": {
+		"start": "2003-04-28T12:00:00",
+		"end": "2013-06-28T19:09:00",
+		"landing": ""
+	},
+	"related": []
+}

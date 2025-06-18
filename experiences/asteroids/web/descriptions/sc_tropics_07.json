@@ -1,0 +1,13 @@
+{
+	"title": "TROPICS-07",
+	"description": {
+		"blurb": "The Time-Resolved Observations of Precipitation structure and storm Intensity with a Constellation of Smallsats (TROPICS) mission is a constellation of five CubeSats. The primary mission objective of TROPICS is to relate temperature, humidity, and precipitation structure to the evolution of tropical cyclone intensity.",
+		"more": "TROPICS makes measurements over the tropical latitudes to observe the thermodynamics and precipitation structures of Tropical Cyclones (TCs) over much of the storm systems’ lifecycles. TROPICS observations include the temperature within the atmosphere, spatially and vertically resolved, as well as humidity, cloud ice, precipitation horizontal structure, and instantaneous surface rain rates. These measurements and the increased temporal resolution provided by the constellation is contributing to a better understanding of the TC lifecycles and the environmental factors that affect the intensification of TCs."
+	},
+	"dates": {
+		"start": "2023-05-26T04:30:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_tropics_05","sc_tropics_06", "sc_tropics_01", "sc_tropics_03"]
+}

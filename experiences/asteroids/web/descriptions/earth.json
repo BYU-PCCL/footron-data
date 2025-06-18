@@ -1,0 +1,23 @@
+{
+	"title": "Earth",
+	"description": {
+		"blurb": "Earth—our home planet—is the only place we know of so far that’s inhabited by living things. It's also the only planet in our solar system with liquid water on the surface.",
+		"more": "Earth is only the fifth largest planet in the solar system, just slightly larger than nearby Venus. Earth is the biggest of the four planets closest to the Sun, all of which are made of rock and metal. NASA has the most missions of all operating on our home planet. NASA’s Earth Observing System (EOS) is a coordinated series of polar-orbiting and low inclination satellites for long-term global observations of the land surface, biosphere, solid Earth, atmosphere, and oceans."
+	},
+	"exploration": {
+		"initial": [
+			{ "url": "sc_iss", "title": "International Space Station", "info": "1998-Present" },
+			{ "url": "sc_landsat_9", "title": "Landsat 9", "info": "2021-Present" },
+			{ "url": "sc_grace_fo1", "title": "GRACE-FO mission", "info": "2018-Present" },
+			{ "url": "sc_aqua", "title": "Aqua mission", "info": "2002-Present" }
+		],
+		"more": []
+	},
+	"subviews": [
+		{ "id": "moons", "file": "earth_moons.json"}
+	],
+	"featuredMoons": [
+		"moon"
+	],
+	"related": ["sc_iss", "sc_eo_1", "sc_landsat_4", "sc_acrimsat", "sc_jason_1", "sc_explorer_1", "moon" ]
+}

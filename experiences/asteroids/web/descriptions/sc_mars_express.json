@@ -1,0 +1,13 @@
+{
+	"title": "Mars Express",
+	"description": {
+		"blurb": "The Mars Express mission is exploring the planet Mars, and is the first planetary mission attempted by the European Space Agency (ESA).",
+		"more": "NASA is participating in a mission of the European Space Agency and the Italian Space Agency called Mars Express, which has been exploring the atmosphere and surface of Mars from polar orbit since arriving at the red planet on December 26, 2003. The mission's main objective is to search for sub-surface water from orbit. Seven scientific instruments on the orbiting spacecraft have conducted rigorous investigations to help answer fundamental questions about the geology, atmosphere, surface environment, history of water, and potential for life on Mars. Examples of discoveries - still debated by scientists -- by Mars Express are evidence of recent glacial activity, explosive volcanism, and methane gas.\n\nMars Express is so called because it will be built more quickly than any other comparable planetary mission."
+	},
+	"dates": {
+		"start": "2003-06-02T17:45:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["mars"]
+}

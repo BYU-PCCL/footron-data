@@ -1,0 +1,8 @@
+{
+	"title": "Adrastea",
+	"description": {
+		"blurb": "Adrastea was discovered in July 1979 by the Voyager science team.",
+		"more": "Orbiting within Io's orbit, which is the innermost of the four largest moons of Jupiter (called the Galilean moons), are four smaller moons named Metis, Adrastea, Amalthea, and Thebe.\n\nAll the moons within this grouping are oddly shaped, lacking either the mass and/or fluidity of composition to pull themselves into a reasonably spherical shape. The Galileo spacecraft has revealed some surface features, including impact craters, hills and valleys.\n\nAdrastea is the smallest within this group having a mean radius of about 8.2 &#177; 2.0 km. Adrastea orbits 129,000 km from its parent planet Jupiter and it takes 0.298 Earth days for Adrastea to complete one orbit. We do not know the rotational period for Adrastea, but its orbital period is 7 hours.\n\nSince Io orbits about 422,000 km above Jupiter and, at this close distance, is subjected to extreme tidal flexing from Jupiter's gravity, one would imagine that this even closer satellite would be pulled to pieces. However, because it is so small Adrastea is relatively immune to the effects of tidal forces. Adrastea is one of the two closest moons (the other is Metis) that orbit inside what is called the synchronous orbit radius of Jupiter. That is, Adrastea orbits Jupiter faster than Jupiter rotates on its axis. At this distance, Adrastea's orbit will eventually decay and it will fall into the planet.\n\nAdrastea and Metis also orbit inside Jupiter's main ring and are undoubtedly the source of the material for this ring. Amalthea and Thebe provide the material for the Gossamer ring."
+	},
+	"related": ["sc_voyager_2"]
+}

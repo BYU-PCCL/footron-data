@@ -1,0 +1,10 @@
+{
+	"description": {
+		"blurb": "Cassini's Enceladus flybys have altered perceptions about where to search for habitable worlds.",
+		"more": "The Saturn system is nearly 10 times farther from the sun than Earth is, so Saturn's sixth-largest moon Enceladus receives only about one-hundredth the sunlight that Earth receives. Since Enceladus is so small -- only about 300 miles (about 500 kilometers) in diameter -- the tiny moon should have cooled long ago, causing its internal ocean to freeze. In all, scientists had every reason to expect Enceladus to be frozen solid. But Cassini found it to be otherwise. Cassini's 23 flybys of Enceladus first revealed a bending of Saturn's magnetic field near the tiny moon, as if it had an atmosphere. The bending was caused by a plume of gas and particles above the moon's south polar region. In subsequent flybys, Cassini found that the plume was produced by water jets spraying from enormous fractures that run across the moon's southern surface. Cassini also found that the particles in the plume were water ice with a surprising amount of salt, and then gravitational measurements indicated that the jets are supplied by a global subsurface ocean. Tiny silica grains, also found in the plume, suggest that Enceladus' ocean likely contains hydrothermal vents - one of the places scientists suspect life could have begun on Earth"
+	},
+	"related": ["enceladus", "sc_cassini"],
+	"layers": true,
+	"rate": 30,
+	"distance": 0.035
+}

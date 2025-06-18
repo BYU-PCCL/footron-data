@@ -1,0 +1,17 @@
+{
+	"title": "Mimas",
+	"description": {
+		"blurb": "Crater-covered Mimas is the smallest and innermost of Saturn's major moons.",
+		"more": "Its most distinguishing feature is a giant impact crater – named Herschel after the moon's discoverer – which stretches a third of the way across the face of the moon, making it look like the Death Star from \"Star Wars\" The Herschel Crater is 80 miles (130 kilometers) across – one third of the diameter of the moon itself – with outer walls about 3 miles (5 kilometers) high and a central peak 3.5 miles (6 km) high. The impact that blasted this crater out of Mimas probably came close to breaking the moon apart. Shock waves from the Herschel impact may have caused the fractures, also called chasmata, on the opposite side of Mimas. That Mimas appears to be frozen solid is puzzling because Mimas is closer to Saturn and has a much more eccentric (elongated) orbit than Enceladus, which should mean that Mimas has more tidal heating than Enceladus. Yet Enceladus displays geysers of water, which implies internal heat, while Mimas has one of the most heavily cratered surfaces in the solar system, which suggests a frozen surface that has persisted for enough time to preserve all those craters. This paradox has prompted the \"Mimas Test\" by which any theory that claims to explain the partially thawed water of Enceladus must also explain the entirely frozen water of Mimas."
+	},
+	"exploration": {
+		"initial": [
+			{ "url": "sc_cassini", "title": "Cassini mission", "info": "2004-2017"},
+			{ "url": "sc_pioneer_11/events/saturn_flyby", "title": "Pioneer 11", "info": "1979 Flyby" },
+			{ "url": "sc_voyager_1/events/saturn", "title": "Voyager 1", "info": "1980 Flyby" },
+			{ "url": "sc_voyager_2/events/saturn", "title": "Voyager 2", "info": "1981 Flyby" }
+		],
+		"more": []
+	},
+	"related": ["sc_cassini", "sc_voyager_1", "sc_voyager_2"]
+}

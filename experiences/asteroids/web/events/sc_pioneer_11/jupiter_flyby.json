@@ -1,0 +1,7 @@
+{
+	"description": {
+		"blurb": "The spacecraft’s closest approach to Jupiter occurred at 05:22 UT on Dec. 3, 1974, at a range of about 26,400 miles (42,500 kilometers) from the planet’s cloud tops, three times closer than Pioneer 10. By this time, it was traveling faster than any human-made object at the time, more than 106,000 miles per hour (171,000 kilometers per hour). Because of its high speed during the encounter, the spacecraft’s exposure to Jupiter’s radiation belts spanned a shorter time than its predecessor although it was actually closer to the planet. Pioneer 11 repeatedly crossed Jupiter’s bow shock, indicating that the Jovian magnetosphere changes its boundaries as it is buffeted by the solar wind. Besides the many images of the planet (and better pictures of the Great Red Spot), Pioneer 11 took about 200 images of the moons of Jupiter. The vehicle then used Jupiter’s massive gravitational field to swing back across the solar system to set it on a course to Saturn"
+	},
+	"related": ["sc_pioneer_10"],
+	"layers": true
+}

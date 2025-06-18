@@ -1,0 +1,12 @@
+{
+	"title": "Spitzer Space Telescope",
+	"description": {
+		"blurb": "The Spitzer Space Telescope (formerly SIRTF, the Space Infrared Telescope Facility) was launched into space by a Delta rocket from Cape Canaveral, Florida on 25 August 2003. Consisting of a 0.85-meter telescope and three cryogenically-cooled science instruments, Spitzer was the largest infrared telescope ever launched into space at the time.\n\nSpitzer is the final mission in NASA's Great Observatories Program - a family of four orbiting observatories, each observing the Universe in a different kind of light (visible, gamma rays, X-rays, and infrared). Other missions in this program include the Hubble Space Telescope (HST), Compton Gamma-Ray Observatory (CGRO), and the Chandra X-Ray Observatory(CXO). Spitzer is also a part of NASA's Astronomical Search for Origins Program, designed to provide information which will help us understand our cosmic roots, and how galaxies, stars and planets develop and form."
+	},
+	"dates": {
+		"start": "2003-08-25T05:35:39",
+		"end": "2020-01-30T00:00:00",
+		"landing": ""
+	},
+	"related": ["sc_hubble_space_telescope","sc_chandra"]
+}

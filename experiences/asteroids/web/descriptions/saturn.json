@@ -1,0 +1,45 @@
+{
+	"title": "Saturn",
+	"description": {
+		"blurb": "Saturn is the sixth planet from the Sun and the second largest planet in our solar system. Adorned with thousands of beautiful ringlets, Saturn is unique among the planets. It is not the only planet to have rings—made of chunks of ice and rock—but none are as spectacular or as complicated as Saturn's. Like fellow gas giant Jupiter, Saturn is a massive ball made mostly of hydrogen and helium.",
+		"more": "Surrounded by more than 140 known moons, Saturn is home to some of the most fascinating landscapes in our solar system. From the jets of water that spray from Enceladus to the methane lakes on smoggy Titan, the Saturn system is a rich source of scientific discovery and still holds many mysteries.The farthest planet from Earth discovered by the unaided human eye, Saturn has been known since ancient times. The planet is named for the Roman god of agriculture and wealth, who was also the father of Jupiter. Saturn's rings are thought to be pieces of comets, asteroids or shattered moons that broke up before they reached the planet, torn apart by Saturn's powerful gravity. They are made of billions of small chunksof ice and rock coated with another material such as dust. The ring particles mostly range from tiny, dust-sized icy grains to chunks as big as a house. A few particles are as large as mountains. The rings would look mostly white if you looked at them from the cloud tops of Saturn, and interestingly, each ring orbits at a different speed around the planet."
+	},
+	"news": [],
+	"exploration": {
+		"initial": [
+			{ "url": "sc_pioneer_11/events/saturn_flyby", "title": "Pioneer 11", "info": "1979 Flyby" },
+			{ "url": "sc_voyager_1/events/saturn", "title": "Voyager 1", "info": "1980 Flyby" },
+			{ "url": "sc_voyager_2/events/saturn", "title": "Voyager 2", "info": "1981 Flyby" },
+			{ "url": "sc_cassini", "title": "Cassini mission", "info": "2004-2017" }
+		],
+		"more": []
+	},
+	"cards": [
+		{ "storyId": "enceladus_discovery" }
+	],
+	"related": ["sc_cassini", "sc_voyager_1", "sc_voyager_2", "sc_pioneer_11"],
+	"cameraviews": [
+		{ "id": "minor_moons", "file": "minor_moons.js"},
+		{ "id": "major_moons", "file": "major_moons.js"}
+	],
+	"subviews": [
+		{ "id": "moons", "file": "saturn_moons.json"},
+		{ "id": "science", "file": "saturn_science.json"},
+		{ "id": "rings", "file": "saturn_rings.json"}
+	],
+	"featuredMoons": [
+		"titan",
+		"enceladus",
+		"mimas"
+	],
+	"custom": [
+		{
+			"title": "Saturn's Moon",
+			"entries": [
+				{ "id": "", "title": "Mimas" },
+				{ "id": "", "title": "Dione" },
+				{ "id": "", "title": "Iapetus" }
+			]
+		}
+	]
+}

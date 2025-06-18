@@ -1,0 +1,27 @@
+{
+	"title": "Mercury",
+	"description": {
+		"blurb": "The smallest planet in our solar system and nearest to the Sun, Mercury is only slightly larger than Earth's Moon.",
+		"more": "Mercury's surface temperatures are both extremely hot and cold. Because the planet is so close to the Sun, day temperatures can reach highs of 800°F (430°C). Without an atmosphere to retain that heat at night, temperatures can dip as low as -290°F (-180°C). From the surface of Mercury, the Sun would appear more than three times as large as it does when viewed from Earth, and the sunlight would be as much as seven times brighter. Despite its proximity to the Sun, Mercury is not the hottest planet in our solar system – that title belongs to nearby Venus, thanks to its dense atmosphere. But Mercury is the fastest planet, zipping around the Sun every 88 Earth days. Mercury's surface resembles that of Earth's moon, scarred by many impact craters resulting from collisions with meteoroids and comets. The first spacecraft to visit Mercury was Mariner 10, which imaged about 45 percent of the surface. NASA's MErcury Surface, Space ENvironment, GEochemistry, and Ranging (MESSENGER) mission flew by Mercury three times in 2008-2009 and orbited the planet from 2011 to 2015, mapping the entire surface."
+	},
+	"exploration": {
+		"initial": [
+			{ "url": "sc_messenger", "title": "MESSENGER mission", "info": "2004-2015" }
+		],
+		"more": []
+	},
+	"related": ["sc_messenger"],
+	"data": {
+		"distance": 57909227,
+		"radius": 2439.7,
+		"volume": 60827208742,
+		"density": 5.427,
+		"mass": 3.30104E+23,
+		"area": 74797000,
+		"gravity": 3.7,
+		"eccentricity": 0.20563593,
+		"inclination": 0,
+		"velocity": 15300,
+		"circumference": 15329.1
+	}
+}

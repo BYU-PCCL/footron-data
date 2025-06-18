@@ -1,0 +1,8 @@
+{
+	"title": "Hartley 2",
+	"description": {
+		"blurb": "Comet Hartley 2 is a small, oval-shaped comet -- its nucleus measures approximately one mile (1.6 kilometers) in diameter. It takes Hartley 2 about 6.47 years to orbit the Sun once.n  It was visited by NASA's Deep Impact (EPOXI) mission in 2010.",
+		"more": "Comet 103P/Hartley 2 was discovered by Malcolm Hartley in 1986 at the Siding Springs Observatory in Australia. The Deep Impact spacecraft flew past Hartley 2 in its extended mission called EPOXI in November 2010.\n\nDuring the spacecraft's flyby of the comet - with closest approach of 694 kilometers - carbon-dioxide-driven jets were seen at the ends of the comet, with most occurring at the small end. In the middle region, or waist of the comet, water was released as vapor with very little carbon dioxide or ice. The latter findings indicate that material in the waist likely came off the ends of the comet and was redeposited."
+	},
+	"related": ["sc_deep_impact"]
+}

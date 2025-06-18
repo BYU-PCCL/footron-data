@@ -1,0 +1,13 @@
+{
+	"title": "Polar",
+	"description": {
+		"blurb": "The Polar satellite was a NASA science spacecraft designed to study the polar magnetosphere and aurorae.",
+		"more": "Launched in 1996, the Polar mission gathered multi-wavelength imaging of the aurora, measured the entry of plasma into the polar magnetosphere and the geomagnetic tail, the flow of plasma to and from the ionosphere, and the deposition of particle energy in the ionosphere and upper atmosphere."
+	},
+	"dates": {
+		"start": "1996-02-24T11:24:00",
+		"end": "2008-04-28T00:00:00",
+		"landing": ""
+	},
+	"related": ["earth"]
+}

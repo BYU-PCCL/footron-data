@@ -1,0 +1,14 @@
+{
+	"title": "Charon",
+	"description": {
+		"blurb": "At half the size of Pluto, Charon is the largest of Pluto's moons and the largest known satellite relative to its parent body.",
+		"more": "The little moon is so big that Pluto and Charon are sometimes referred to as a double dwarf planet system. The distance between them is 19,640 km (12,200 miles). Pluto-Charon is our solar system's only known double planetary system. The same surfaces of Charon and Pluto always face each other, a phenomenon called mutual tidal locking. Charon orbits Pluto every 6.4 Earth days."
+	},
+	"exploration": {
+		"initial": [
+			{ "url": "sc_new_horizons/events/pluto_flyby", "title": "New Horizons Charon Flyby", "info": "2015" }
+		],
+		"more": []
+	},
+	"related": ["sc_new_horizons"]
+}

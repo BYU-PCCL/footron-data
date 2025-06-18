@@ -1,0 +1,8 @@
+{
+	"description": {
+		"blurb": "In 2005, Cassini's instruments found the first hints of a global subsurface water ocean in the moon Enceladus.",
+		"more": "In February 2005, Cassini made its first close flyby of Enceladus, one of Saturn's several dozen moons, and the mission's scientists were in for a surprise. As Cassini passed within 725 miles (1,167 kilometers) of the 300-mile (500-kilometer) wide Enceladus, the spacecraft's magnetometer detected a localized bending of Saturn's magnetic field in the space above the icy moon -- almost like it had an atmosphere. This was the first clue that Enceladus was much more than just a cratered ball of ice. Over the following couple of encounters with Enceladus, scientists realized that the magnetometer data had revealed not an atmosphere, but a plume of ice particles and gas over Enceladus' south polar region. Observations by several of Cassini's other instruments over the following months and years led Cassini scientists to conclude that the plume is produced by jets that spray out through cracks in Enceladus' ice shell, and that the water originates from a global ocean of salty water whose seafloor might have hydrothermal vents. Thanks to Cassini, Enceladus has become one of the prime targets in the quest to find environments beyond Earth where life might have evolved."
+	},
+	"related": ["enceladus"],
+	"layers": true
+}

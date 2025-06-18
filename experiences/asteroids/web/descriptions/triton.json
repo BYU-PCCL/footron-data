@@ -1,0 +1,14 @@
+{
+	"title": "Triton",
+	"description": {
+		"blurb": "Triton is the largest of Neptune's 13 moons. It is unusual because it is the only large moon in our solar system that orbits in the opposite direction of its planet's rotation―a retrograde orbit.",
+		"more": "Scientists think Triton is a Kuiper Belt Object captured by Neptune's gravity millions of years ago. It shares many similarities with Pluto, the best known world of the Kuiper Belt.\n\n Like our own moon, Triton is locked in synchronous rotation with Neptune―one side faces the planet at all times. But because of its unusual orbital inclination both polar regions take turns facing the Sun. Triton's thin atmosphere is composed mainly of nitrogen with small amounts of methane. This atmosphere most likely originates from Triton's volcanic activity, which is driven by seasonal heating by the Sun. Triton, Io and Venus are the only bodies in the solar system besides Earth that are known to be volcanically active at the present time.\n\n Triton is one of the coolest objects in our solar system. It is so cold that most of Triton's nitrogen is condensed as frost, giving its surface an icy sheen that reflects 70 percent of the sunlight that hits it.\n\n NASA's Voyager 2―the only spacecraft to fly past Neptune and Triton―found surface temperatures of -391degrees Fahrenheit (-235 degrees Celsius). During its 1989 flyby, Voyager 2 also found Triton has active geysers, making it one of the few geologically active moons in our solar system."
+	},
+	"exploration": {
+		"initial": [
+			{ "url": "sc_voyager_2/events/neptune", "title": "Voyager 2", "info": "1989 Flyby" }
+		],
+		"more": []
+	},
+	"related": ["sc_voyager_2"]
+}
