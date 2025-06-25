@@ -1,0 +1,13 @@
+{
+	"title": "WISE",
+	"description": {
+		"blurb": "NASA's WISE (Wide-field Infrared Survey Explorer) spacecraft was an infrared-wavelength astronomical space telescope active from December 2009 to February 2011. In September 2013 the spacecraft was assigned a new mission as NEOWISE to help find near-Earth asteroids and comets.",
+		"more": "Launched in 2009, WISE surveyed the full sky in four infrared wavelength bands until the frozen hydrogen cooling the telescope was depleted in September 2010. In late 2013, the spacecraft was reactivated and assigned a new mission as NEOWISE to help NASA identify and characterize the population of near-Earth objects (NEOs). NEOs are comets and asteroids that have been nudged into orbits that allow them to enter Earth's neighborhood."
+	},
+	"dates": {
+		"start": "2009-12-14T14:09:33",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_spitzer"]
+}

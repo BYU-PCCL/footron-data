@@ -6,5 +6,5 @@
     "queueable": false,
     "action_hints": ["find your name"],
     "layout": "full",
-    "lifetime": 520
+    "lifetime": 670
 }

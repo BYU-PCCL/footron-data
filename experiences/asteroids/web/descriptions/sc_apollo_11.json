@@ -1,0 +1,12 @@
+{
+	"title": "Apollo 11",
+	"description": {
+		"blurb": "The Apollo 11 Lunar Module (LM) separated from the Command/Service Module (CSM) at 18:11:53 UT. After a visual inspection by Collins, the LM descent engine fired for 30 seconds at 19:08 UT, putting the craft into a descent orbit with a closest approach 14.5 km above the Moon's surface. At 20:05 the LM descent engine fired for 756.3 seconds and descent to the lunar surface began. The LM landed at 20:17:40 UT (4:17:40 p.m. EDT) on 20 July 1969 in the region known as Mare Tranquilitatis (the Sea of Tranquility) at 0.6741 degrees N latitude, 23.4730 degrees E longitude (IAU Mean Earth Polar Axis coordinate system), Armstrong reporting, \"Houston, Tranquility Base here - the Eagle has landed\"."
+	},
+	"dates": {
+		"start": "1969-07-16T13:32:00",
+		"end": "1969-07-24T16:50:35",
+		"landing": ""
+	},
+	"related": ["moon"]
+}

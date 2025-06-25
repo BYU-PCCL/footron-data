@@ -1,0 +1,8 @@
+{
+	"title": "Proteus",
+	"description": {
+		"blurb": "Proteus was discovered in 1989 by the Voyager 2 spacecraft.",
+		"more": "Proteus is one of the largest of Neptune's known moons, although it is not as big as Triton. The moon has an odd box-like shape and if it had just a little more mass it would be able to transform into a sphere. Proteus orbits Neptune about every 27 hours."
+	},
+	"related": ["sc_voyager_2"]
+}

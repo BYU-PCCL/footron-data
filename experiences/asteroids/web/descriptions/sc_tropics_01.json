@@ -1,0 +1,13 @@
+{
+	"title": "TROPICS-01",
+	"description": {
+		"blurb": "The Time-Resolved Observations of Precipitation structure and storm Intensity with a Constellation of Smallsats (TROPICS) mission is a constellation of five CubeSats. The primary mission objective of TROPICS is to relate temperature, humidity, and precipitation structure to the evolution of tropical cyclone intensity.",
+		"more": "TROPICS-01, also called TROPICS Pathfinder, was launched nearly two years before the other CubeSats in June of 2021, which allowed preliminary results to be produced and communications systems and data processing algorithms to be tested prior to constellation launch."
+	},
+	"dates": {
+		"start": "2021-06-30T23:00:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_tropics_06","sc_tropics_07", "sc_tropics_03", "sc_tropics_05"]
+}

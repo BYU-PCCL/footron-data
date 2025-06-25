@@ -1,0 +1,13 @@
+{
+	"title": "INTEGRAL",
+	"description": {
+		"blurb": "",
+		"more": ""
+	},
+	"dates": {
+		"start": "2002-10-17T01:33:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_nustar", "sc_fgrst"]
+}

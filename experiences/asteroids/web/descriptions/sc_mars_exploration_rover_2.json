@@ -1,0 +1,13 @@
+{
+	"title": "Mars Exploration Rover A (Spirit)",
+	"description": {
+		"blurb": "NASA's Spirit rover—and its twin Opportunity—studied the history of climate and water at sites on Mars where conditions may once have been favorable to life.",
+		"more": "The Spirit and Opportunity rovers together represented NASA's Mars Exploration Rover Mission (MER), Spirit and Opportunity were sent to opposite sides of Mars to locations that were suspected of having been affected by liquid water in the past. The plan was for the rovers to move from place to place, to perform geological investigations and to take photographs with mast-mounted cameras (about 5 feetor 1.5 meters off the ground) providing 360-degree stereoscopic views of the terrain. Spirit operated until 2010."
+	},
+	"dates": {
+		"start": "2003-06-10T08:58:47",
+		"end": "2011-05-25",
+		"landing": "2004-01-04T04:35:00"
+	},
+	"related": ["mars","sc_mars_exploration_rover_1"]
+}

@@ -1,0 +1,9 @@
+{
+	"description": {
+		"blurb": "Cassini's trajectory to Saturn and time of arrival were specifically chosen to permit a close flyby of the moon Phoebe.",
+		"more": "Phoebe was Cassini's gateway to Saturn. When the spacecraft reached the Saturn system in 2004, Phoebe was the first moon it encountered. Scientists suspect that, unlike most of Saturn's moons, Phoebe didn't form around Saturn. A roughly spherical moon, Phoebe is about 130 miles (210 kilometers) in diameter and rotates on its axis every nine hours. Phoebe also takes 1.5 Earth years to orbit Saturn once because it's about 8 million miles (13 million kilometers) from its planet -- almost four times the distance from Saturn than Phoebe's nearest neighbor Iapetus. Phoebe and Iapetus are the only major moons in the Saturn system that do not orbit near Saturn's equatorial plane. Phoebe's irregular, elliptical orbit is highly inclined with respect to Saturn's equator and is also retrograde, meaning it goes around Saturn in the opposite direction than most other moons. Its backward orbit, along with being far darker than most of Saturn's moons, suggest Phoebe most likely came from much farther out in the solar system, in the Kuiper Belt region beyond Neptune. It likely passed too close to Saturn, whose gravity captured the dark, cratered world and placed it in its unusual orbit."
+	},
+	"related": ["phoebe", "sc_cassini"],
+	"rate": 90,
+	"distance": 0.05
+}

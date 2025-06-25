@@ -1,0 +1,14 @@
+{
+	"title": "Arrokoth",
+	"description": {
+		"blurb": "The small Kuiper Belt object officially known as Arrokoth is the most distant and most primitive object ever explored by a spacecraft.",
+		"more": "Arrokoth is in a region of space beyond Neptune called the Kuiper Belt that is swarming with small, icy and ancient objects. Because they are so far from the Sun, Kuiper Belt objects have only been slightly heated since forming, and are thought to be well-preserved, frozen samples of what the outer solar system was like after its birth more than 4.5 billion years ago.\n\n  It was discovered in 2014 by NASA’s New Horizons science team, using the Hubble Space Telescope. New Horizons flew by Arrokoth on Jan. 1, 2019, snapping images that showed a double-lobed object that looked like a partially flattened snowman. It’s also very red — even redder than Pluto. The object's strange shape — unlike any ever seen — was the biggest surprise of the flyby. Arrokoth means means “sky” in the Powhatan/Algonquian language."
+	},
+	"exploration": {
+		"initial": [
+			{ "url": "sc_new_horizons/events/arrokoth_flyby", "title": "New Horizons Arrokoth Flyby", "info": "2019" }
+		],
+		"more": []
+	},
+	"related": ["sc_new_horizons"]
+}

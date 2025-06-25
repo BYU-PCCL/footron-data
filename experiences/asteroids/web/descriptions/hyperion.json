@@ -1,0 +1,8 @@
+{
+	"title": "Hyperion",
+	"description": {
+		"blurb": "Hyperion is the largest of Saturn's irregular, nonspherical moons.",
+		"more": "Hyperion's mean radius is 83.9 miles (135 kilometers), but since Hyperion is rather potato-shaped, its shape can be described in terms of its diameter along its three axes: 255 x 163 x 137 miles (410 x 260 x 220 kilometers, respectively). Considering its odd shape, Hyperion is probably a remnant of a larger moon that was destroyed by a major impact. Hyperion's density is slightly more than half that of water. This could be due to water ice with gaps (porosity) of more than 40 percent. Also, lighter materials, such as frozen methane or carbon dioxide, could make up part of Hyperion. This is consistent with the concept of Hyperion accreting from a number of smaller ice and rock bodies, but not having enough gravity to compact them. Thus, Hyperion might be similar to a large rubble pile. Hyperion rotates chaotically, tumbling unpredictably through space as it orbits Saturn. The most noticeable close-up feature of Hyperion is its deeply cratered surface. Hyperion and its sister outer moons, Phoebe and Iapetus, all show extensive cratering because they are Saturn's most distant moons and have experienced very little tidal warming that might blur or erase earlier features. However, the Hyperion craters are particularly deep and do not have significant rays of ejecta (although there appears to have been slumping or landslides inside many of the bigger craters). The result is a curiously punched-in look, somewhat like the surface of a sponge or a wasp nest. Planetary geologists have theorized that Hyperion's high-porosity and low density would crater more by compression than excavation."
+	},
+	"related": ["sc_cassini"]
+}

@@ -1,0 +1,13 @@
+{
+	"title": "TRMM",
+	"description": {
+		"blurb": "The Tropical Rainfall Measuring Mission (TRMM) was a joint mission between NASA and the Japan Aerospace Exploration (JAXA) Agency to study rainfall for weather and climate research.",
+		"more": "TRMM delivered a unique 17-year dataset of global tropical rainfall and lightning. The TRMM dataset became the space standard for measuring precipitation, and led to research that improved our understanding of tropical cyclone structure and evolution, convective system properties, lightning-storm relationships, climate and weather modeling, and human impacts on rainfall."
+	},
+	"dates": {
+		"start": "1997-11-27T21:27:00",
+		"end": "2015-04-15T00:00:00",
+		"landing": ""
+	},
+	"related": ["earth"]
+}

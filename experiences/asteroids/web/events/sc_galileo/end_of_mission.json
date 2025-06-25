@@ -1,0 +1,7 @@
+{
+	"description": {
+		"blurb": " After 34 Jupiter orbits and 35 flybys of the moons of Jupiter, and many important scientific discoveries, the Galileo spacecraft was intentionally sent into the atmosphere of Jupiter to end the mission. Once a spacecraft loses power, it could stay in orbit around Jupiter, but there is a danger of impacting one of the Jovian moons over time. The spacecraft could potentially be contaminated with microbes from Earth, so to protect the moons from a possible contamination event years later, Galileo was sent directly into Jupiter to be vaporized in the intense heat and pressure of Jupiter, like the Galileo probe was years before. Galileo entered Jupiter's atmosphere on September 21st, 2003."
+	},
+	"related": ["sc_galileo_probe"],
+	"layers": true
+}

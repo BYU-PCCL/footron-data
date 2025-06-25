@@ -1,0 +1,13 @@
+{
+	"title": "ARTEMIS P2",
+	"description": {
+		"blurb": "The separate spacecraft ARTEMIS P1 and P2 together comprise the THEMIS-ARTEMIS mission, which studies the moon's interaction with the Sun. It is an offshoot of the THEMIS mission.",
+		"more": "Launched in 2007, the THEMIS mission was originally five satellites designed to study the Earth's magnetosphere and the storms it creates. Three of the satellites orbit the Earth within the magnetosphere, while two have been moved into orbit around the Moon. Those two were renamed ARTEMIS for Acceleration, Reconnection, Turbulence and Electrodynamics of the Moon's Interaction with the Sun. THEMIS B became ARTEMIS P1 and THEMIS C became ARTEMIS P2. ARTEMIS P1 and P2 together comprise the THEMIS-ARTEMIS mission. They currently are in stable long-term orbits of the moon."
+	},
+	"dates": {
+		"start": "2007-02-17T23:01:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["earth","sc_themis_a","sc_themis_b","sc_themis_d","sc_themis_e"]
+}

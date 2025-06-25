@@ -1,0 +1,39 @@
+{
+	"launch": {
+		"id": "launch",
+		"title": "Voyager 1 Launch",
+		"start": "1977-09-05T13:58:17",
+		"end": "1977-09-05T15:00:00",
+		"target": "earth",
+		"rate": 60,
+		"distance": 0.03
+	},
+	"jupiter": {
+		"id": "jupiter",
+		"title": "Voyager 1 at Jupiter",
+		"start": "1979-03-05T00:00:00",
+		"end": "1979-03-05T16:30:00",
+		"rate": 700,
+		"horizontalOffset": -8,
+		"distance": 0.08,
+		"target": "jupiter"
+	},
+	"saturn": {
+		"id": "saturn",
+		"title": "Voyager 1 at Saturn",
+		"start": "1980-11-11T18:00:00",
+		"end": "1980-11-14T00:00:00",
+		"rate": 5000,
+		"horizontalOffset": -3,
+		"distance": 0.08,
+		"target": "saturn"
+	},
+	"heliosphere": {
+		"id": "heliosphere",
+		"title": "Voyager 1 Leaves the Heliosphere",
+		"start": "2012-08-25T23:00:00",
+		"distance": 10000000000,
+		"target": "sun",
+		"horizontalOffset": 20
+	}
+}

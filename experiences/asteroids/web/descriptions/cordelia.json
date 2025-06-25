@@ -1,0 +1,8 @@
+{
+	"title": "Cordelia",
+	"description": {
+		"blurb": "Cordelia was discovered on Jan. 20, 1986 in images taken by Voyager 2. It is one of the 10 Uranian satellites discovered by the Voyager science team.",
+		"more": "Of the moons known to orbit Uranus, Cordelia is closest to the planet. It and Ophelia are shepherd moons whose gravity keeps the particles that constitute Uranus' Epsilon ring from dispersing. Neither its size nor its albedo have been measured directly, but assuming an albedo of 0.07 like Puck, its surface probably consists of the dark, unprocessed, carbon-rich material found on the C-class of asteroids. Originally called S/1986 U7, Cordelia was named for one of the youngest daughters of King Lear in William Shakespeare's play of the same name. King Lear disowns Cordelia for her refusal to flatter him. Others think highly of her, and the King of France marries her for her virtue alone. Cordelia forgives her father in spite of his cruelty toward her and remains loyal to him."
+	},
+	"related": ["sc_voyager_2"]
+}

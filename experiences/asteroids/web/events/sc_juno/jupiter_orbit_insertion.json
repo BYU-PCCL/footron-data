@@ -1,0 +1,8 @@
+{
+	"description": {
+		"blurb": "Jupiter Orbit Insertion, or JOI, lasts from July 1st until one hour after the insertion maneuver, or until July 5th, 2016, at 03:30 UTC.",
+		"more": "This phase was extremely critical: it was the transition from flying through space to orbiting another planet. This was accomplished by slowing down the spacecraft by performing a main engine burn for 35 minutes when the spacecraft is at its closest approach to Jupiter. This slowdown allowed the craft to be captured by Jupiter's gravity, which means the spacecraft can then begin to settle into a final orbit. The settling process takes a long time; the next two orbits took 53.5 days each. The spacecraft was supposed to settle into its planned 14-day orbits after that, but a problem with the engine meant that Juno reamained in the 53.5 day orbits rather than risking another engine burn."
+	},
+	"related": ["jupiter"],
+	"layers": true
+}

@@ -1,0 +1,7 @@
+{
+	"description": {
+		"blurb": "The Deep Impact mission launched on January 12th, 2005, with the spectacular goal of impacting a comet with an impactor probe and flying through the subsequent debris field to study the interior composition of Comet Tempel 1."
+	},
+	"related": ["earth"],
+	"layers": true
+}

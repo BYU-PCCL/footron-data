@@ -1,0 +1,114 @@
+[
+    {
+        "class": "HomeView",
+        "name": "home",
+        "components": [
+            "asteroid_menu_top",
+            "asteroid_menu_bottom",
+            "asteroid_modals",
+            "breadcrumb",
+            "clock",
+            "clockShortcut",
+            "timeSlider",
+            "settings",
+            "layerPanel",
+            "search",
+            "definitionOverlay",
+            "splashScreen",
+            "tutorialOverlay"
+        ]
+    },
+    {
+        "class": "AsteroidView",
+        "name": "asteroid",
+        "components": [
+            "asteroid_menu_top",
+            "asteroid_menu_bottom",
+            "asteroid_modals",
+            "homeButton",
+            "breadcrumb",
+            "clock",
+            "clockShortcut",
+            "timeSlider",
+            "settings",
+            "layerPanel",
+            "asteroidPanel",
+            "search",
+            "loadIcon",
+            "definitionOverlay"
+        ]
+    },
+    {
+        "class": "WatchView",
+        "name": "watch",
+        "components": [
+            "asteroid_menu_top",
+            "asteroid_menu_bottom",
+            "homeButton",
+            "watchPanel",
+            "breadcrumb",
+            "clock",
+            "clockShortcut",
+            "timeSlider",
+            "settings",
+            "layerPanel",
+            "search",
+            "definitionOverlay",
+            "tutorialOverlay"
+        ]
+    },
+    {
+        "class": "MissionView",
+        "name": "mission",
+        "components": [
+            "asteroid_menu_top",
+            "asteroid_menu_bottom",
+            "asteroid_modals",
+            "homeButton",
+            "breadcrumb",
+            "clock",
+            "clockShortcut",
+            "timeSlider",
+            "settings",
+            "layerPanel",
+            "missionPanel",
+            "search",
+            "loadIcon",
+            "definitionOverlay"
+        ]
+    },
+    {
+        "class": "FollowingView",
+        "name": "following",
+        "components": [
+            "asteroid_menu_top",
+            "asteroid_menu_bottom",
+            "asteroid_modals",
+            "homeButton",
+            "breadcrumb",
+            "clock",
+            "clockShortcut",
+            "timeSlider",
+            "settings",
+            "layerPanel",
+            "followingPanel",
+            "search",
+            "loadIcon",
+            "definitionOverlay"
+        ]
+    },
+    {
+        "class": "StoryView",
+        "name": "story",
+        "components": [
+            "clock",
+            "settings",
+            "layerPanel",
+            "breadcrumb",
+            "timeSlider",
+            "story",
+            "overlay",
+            "definitionOverlay"
+        ]
+    }
+]

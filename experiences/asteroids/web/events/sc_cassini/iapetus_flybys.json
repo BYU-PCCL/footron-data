@@ -1,0 +1,7 @@
+{
+	"description": {
+		"blurb": "Giovanni Cassini, the spacecraft's namesake, noted the two-toned brightness pattern of Iapetus in 1671, but until the Cassini spacecraft flew by, the cause of the coloring was a mystery.",
+		"more": "Saturn's third largest moon Iapetus is about 900 miles (1,500 kilometers) in diameter and orbits 2,213,000 miles (3,561,000 kilometers) from Saturn. With a density only 1.2 times that of liquid water, Iapetus may be, like Rhea, three-quarters ice and one-quarter rock. Cassini solved the centuries-old puzzle about why Iapetus has one snow-white hemisphere while the other is nearly as dark as charcoal. Iapetus is tidally locked, so one side always faces the direction in which it's orbiting. It turns out that dark material falls on Iapetus' leading side. The dark dust is from Saturn's distant moon Phoebe, and Iapetus is flying through that debris. The dark material coats the leading side of Iapetus, causing ice there to sublimate, or turn to gas, as the surface warms. This vapor then refreezes on the moon's opposite side as bright, white ice."
+	},
+	"related": ["iapetus", "sc_cassini"]
+}

@@ -1,0 +1,21 @@
+{
+	"philae_landing": {
+		"id": "philae_landing",
+		"title": "Landing on Comet 67P",
+		"start": "2014-11-12T15:30:00",
+		"target": "67p_churyumov_gerasimenko",
+		"verticalOffset": -50,
+		"distance": 1.0,
+		"visual": true
+	},
+	"philae_launch": {
+		"id": "philae_launch",
+		"title": "Philae Leaves Rosetta",
+		"start": "2014-11-12T08:35:15",
+		"target": "67p_churyumov_gerasimenko",
+		"distance": 0.03,
+		"rate": 4,
+		"horizontalOffset": -10,
+		"visual": true
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"jupiter_flyby": {
+		"id": "jupiter_flyby",
+		"title": "Jupiter flyby",
+		"start": "1973-11-30T21:00:00",
+		"end": "1979-03-05T16:30:00",
+		"target": "jupiter",
+		"rate": 10000,
+		"distance": 0.06,
+		"horizontalOffset": -4
+	}
+}

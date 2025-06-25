@@ -1,0 +1,7 @@
+{
+	"description": {
+		"blurb": " On December 7th, 1995, the probe sliced into Jupiter's atmosphere at 106,000 mph (47 kilometers per second). It slowed, released its parachute, and dropped its heat shield. As the probe descended through 95 miles (153 kilometers) of the top layers of the atmosphere, it collected 58 minutes of data on the local weather. The data were sent to the spacecraft overhead, then transmitted back to Earth. It appeared that Jupiter's atmosphere is drier than had been previously thought. Measurements from the probe showed few clouds, and lightning only in the distance. It was only later that we discovered that the probe had entered an area called a \"hot spot.\" Towards the end of the 58-minute descent, the probe measured winds of 450 mph (724 kilometers per hour)—stronger than anything on Earth. The probe was finally melted and vaporized by the intense heat of the atmosphere."
+	},
+	"related": ["jupiter", "sc_galileo"],
+	"layers": true
+}

@@ -1,0 +1,14 @@
+{
+	"title": "951 Gaspra",
+	"description": {
+		"blurb": "951 Gaspra was the first asteroid ever to be closely approached when it was visited by the Galileo spacecraft, which flew by on its way to Jupiter on 29 October 1991.",
+		"more": "Gaspra orbits the Sun at an average distance of about 2.21 astronomical units. Gaspra completes one orbit around the Sun in 3.29 years. Galileo flew by Gaspra on 29 October 1991, passing within 1,600 km (990 mi) at a relative speed of about 8 km/s (18,000 mph). 57 images were returned to Earth, the closest taken from a distance of 5,300 km (3,300 mi). The best images have a resolution of about 54 meters per pixel (177.16 ft). The area around the southern pole was not seen during the flyby, but the remaining 80% of the asteroid was imaged."
+	},
+	"exploration": {
+		"initial": [
+			{ "url": "sc_galileo/events/gaspra_flyby?rate=1&time=1991-10-29T22:16:00.000+00:00", "title": "Galileo", "info": "Galileo Flyby - 1991" }
+		],
+		"more": []
+	},
+	"related": ["sc_galileo"]
+}

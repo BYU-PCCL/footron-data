@@ -1,0 +1,13 @@
+{
+	"title": "DSCOVR",
+	"description": {
+		"blurb": "DSCOVR (Deep Space Climate Observatory) is an American space weather station that monitors changes in the solar wind, providing space weather alerts and forecasts for geomagnetic storms that could disrupt power grids, satellites, telecommunications, aviation and GPS.",
+		"more": "DSCOVR was launched on Feb.11, 2015, and 100 days later it reached the Sun–Earth L1 Lagrange point and began orbiting about 1 million miles (1.5 million kilometers) from Earth.\n The satellite has a continuous view of the Sun and the sunlit side of Earth. It takes full Earth pictures about every 2 hours using the Earth Polychromatic Imaging Camera (EPIC) instrument. In October 2015, a website was launched that posts at least a dozen new color images every day from EPIC."
+	},
+	"dates": {
+		"start": "2015-02-11T23:03:02",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sun", "earth"]
+}

@@ -1,0 +1,21 @@
+{
+	"title": "Deep Impact Impactor",
+	"description": {
+		"blurb": "The Impactor was a part of the Deep Impact spacecraft that would detatch and intentionally collide with the Comet Tempel 1.",
+		"more": "On July 3, 2005, at 06:00 UT (or 06:07 UT Earth-receive time), Deep Impact released the impactor probe, which, using small thrusters, moved into the path of the comet, where it hit the following day, July 4, at 05:44:58 UT. The probe was traveling at a relative velocity of about 23,000 miles per hour (37,000 kilometers per hour) at the time of impact. The impact generated an explosion the equivalent of 4.7 tons of TNT and a crater estimated to be about 490 feet (150 meters) in diameter. The impact generated an explosion the equivalent of 4.7 tons of TNT and a crater estimated to be about 490 feet (150 meters) in diameter."
+	},
+	"cards": [
+		{ "storyId": "asteroids_missions" }
+	],
+	"dates": {
+		"start": "2005-01-12T18:47:08",
+		"end": "2005-07-04T06:05:00",
+		"landing": ""
+	},
+	"featuredEvents": {
+		"initial": [
+			{ "eventId": "impact", "title": "Impact on Tempel 1" }
+		]
+},
+	"related": ["sc_deep_impact", "9p_tempel_1"]
+}

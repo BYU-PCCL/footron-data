@@ -1,0 +1,7 @@
+{
+	"description": {
+		"blurb": "Pioneer 10’s closest approach to Jupiter was at 02:26 UT Dec. 4, 1973, when the spacecraft raced by the planet at a range of 81,000 miles (130,354 kilometers) at a velocity of approximately 78,000 miles per hour (126,000 kilometers/hour). Of the spacecraft’s 11 scientific instruments, 6 operated continuously through the encounter. The spacecraft passed by a series of Jovian moons, obtaining photos of Callisto, Ganymede, and Europa (but not of Io, as the photopolarimeter succumbed to radiation by that time). Approximately 78 minutes after the closest approach, Pioneer 10 passed behind Jupiter’s limb for a radio occultation experiment. In addition, the infrared radiometer provided further information on the planet’s atmosphere. Between November 6th and December 31st, the spacecraft took about 500 pictures of Jupiter’s atmosphere with the highest resolution of about 200 miles (320 kilometers), clearly showing such landmarks as the Great Red Spot. The Jupiter encounter was declared over Jan. 2, 1974."
+	},
+	"related": ["sc_pioneer_11"],
+	"layers": true
+}

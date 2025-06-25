@@ -1,0 +1,12 @@
+{
+	"title": "Starling-3",
+	"description": {
+		"blurb": "NASA’s Starling mission is advancing the readiness of various technologies for cooperative groups of spacecraft – also known as distributed missions, clusters, or swarms. Starling will demonstrate technologies to enable multipoint science data collection by several small spacecraft flying in swarms.  The six-month mission will use four CubeSats in low-Earth orbit to test four technologies that let spacecraft operate in a synchronized manner without resources from the ground."
+	},
+	"dates": {
+		"start": "2023-07-18T02:00:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_starling_2", "sc_starling_1", "sc_starling_4"]
+}

@@ -1,0 +1,13 @@
+{
+	"title": "MESSENGER",
+	"description": {
+		"blurb": "MESSENGER was a NASA robotic space probe that orbited the planet Mercury between 2011 and 2015, studying Mercury's chemical composition, geology, and magnetic field.",
+		"more": "MESSENGER (Mercury Surface, Space Environment, Geochemistry and Ranging) was the first spacecraft to orbit Mercury. Among its accomplishments, the mission determined Mercury’s surface composition, revealed its geological history, discovered details about its internal magnetic field, and verified its polar deposits are dominantly water-ice. The mission ended when MESSENGER slammed into Mercury’s surface."
+	},
+	"dates": {
+		"start": "2004-08-03T06:15:56",
+		"end": "2015-04-30T19:26:00",
+		"landing": ""
+	},
+	"related": ["mercury"]
+}

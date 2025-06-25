@@ -1,0 +1,13 @@
+{
+	"title": "Parker Solar Probe",
+	"description": {
+		"blurb": "NASA's Parker Solar Probe is on a mission to \"touch the Sun.\" The spacecraft is flying closer to the Sun’s surface than any spacecraft before it. The mission will revolutionize our understanding of the Sun.",
+		"more": "NASA's Parker Solar Probe is diving into the Sun’s atmosphere, facing brutal heat and radiation, on a mission to give humanity its first-ever sampling of a star’s atmosphere.\n\n During its journey, the mission will provide answers to long-standing questions that have puzzled scientists for more than 60 years: Why is the corona much hotter than the Sun's surface (the photosphere)? How does the solar wind accelerate? What are the sources of high-energy solar particles?\n\n We live in the Sun's atmosphere and this mission will help scientists better understand the Sun's impact on Earth.\n\n Data from Parker will be key to understanding and, perhaps, forecasting space weather. Space weather can change the orbits of satellites, shorten their lifetimes, or interfere with onboard electronics.\n\n On its final three orbits, Parker Solar Probe will fly to within 3.9 million miles (6.2 million kilometers) of the Sun’s surface—more than seven times closer than the current record holder for a close solar pass: the Helios 2 spacecraft. Helios came within 27 million miles (43 million kilometers) in 1976.\n\n Parker can survive these conditions because cutting-edge thermal engineering advances protect the spacecraft during its dangerous journey.\n\n The probe has four instrument suites designed to study magnetic fields, plasma and energetic particles, and image the solar wind.\n\n The mission is named for Dr. Eugene N. Parker, who pioneered our modern understanding of the Sun."
+	},
+	"dates": {
+		"start": "2018-08-12T07:31",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sun", "sc_ulysses"]
+}

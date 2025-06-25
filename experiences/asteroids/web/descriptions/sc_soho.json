@@ -1,0 +1,13 @@
+{
+	"title": "SOHO",
+	"description": {
+		"blurb": "SOHO is the longest-lived Sun-watching satellite to date. Numerous mission extensions have enabled the spacecraft to observe two 11-year solar cycles and to discover thousands of comets.",
+		"more": "The ESA-sponsored Solar and Heliospheric Observatory (SOHO) carries 12 scientific instruments to study the solar atmosphere, helioseismology and the solar wind. Information from the mission has allowed scientists to learn more about the Sun’s internal structure and dynamics, the chromosphere, the corona and solar particles."
+	},
+	"dates": {
+		"start": "1995-12-02",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sun", "sc_sdo", "sc_stereo_ahead", "sc_stereo_behind"]
+}

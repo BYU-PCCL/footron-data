@@ -1,0 +1,28 @@
+{
+	"eros_landing": {
+		"id": "eros_landing",
+		"title": "Landing on Asteroid Eros",
+		"start": "2001-02-12T19:00:00",
+		"target": "433_eros",
+		"horizontalOffset": 15,
+		"distance": 0.1,
+		"rate": 45,
+		"visual": true
+	},
+	"eros_orbit": {
+		"id": "eros_orbit",
+		"title": "NEAR Shoemaker Enters Orbit Around Eros",
+		"start": "2000-02-14T15:33:00",
+		"target": "433_eros",
+		"rate": 200,
+		"visual": true
+	},
+	"mathilde_flyby": {
+		"id": "mathilde_flyby",
+		"title": "Flyby of Asteroid Mathilde",
+		"start": "1997-06-27T12:55:50",
+		"target": "253_mathilde",
+		"distance": 0.07,
+		"horizontalOffset": 15
+	}
+}

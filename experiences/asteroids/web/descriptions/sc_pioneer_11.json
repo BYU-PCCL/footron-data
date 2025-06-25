@@ -1,0 +1,13 @@
+{
+	"title": "Pioneer 11",
+	"description": {
+		"blurb": "Launched in 1973, Pioneer 11 was the first spacecraft to fly past Saturn. Its mission ended in 1995, but it is one of four spacecraft (including the two Voyagers and Pioneer 10) carrying a message from Earth beyond our solar system.",
+		"more": "Pioneer 11, the sister spacecraft to Pioneer 10, was the first human-made object to fly past Saturn and also returned the first pictures of the polar regions of Jupiter. Among Pioneer 11’s many discoveries at Saturn were a narrow ring outside the A ring named the F ring and a new satellite 124 miles (200 kilometers) in diameter."
+	},
+	"dates": {
+		"start": "1973-04-06",
+		"end": "1995-09-30",
+		"landing": ""
+	},
+	"related": ["sc_pioneer_10","sc_voyager_1","sc_voyager_2","saturn","jupiter"]
+}

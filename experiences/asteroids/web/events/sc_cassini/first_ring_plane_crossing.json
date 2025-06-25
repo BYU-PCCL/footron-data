@@ -1,0 +1,7 @@
+{
+	"description": {
+		"blurb": "This was Cassini's first visit to this unexplored region of the Saturn system.",
+		"more": "From a great distance, Saturn's rings appear as if their borders are sharply defined. But the space beyond the apparent borders of the rings is not completely empty. When Cassini raced through the 1,500-mile (2,400-kilometer) space between Saturn and its rings during its 22 Grand Finale orbits, the spacecraft was traveling at tens of thousands of miles per hour, and a single unseen ring particle the size of a BB can damage the spacecraft. So to protect Cassini during its first crossing through that gap (as well as four other grand finale passes), the spacecraft was instructed to reorient itself so that its big dish - the high-gain antenna - was facing toward the direction Cassini is moving, like a snowplow. The team calls this orientation \"high-gain to ram.\" The high-gain antenna's radius extends almost exactly the same distance from the center of the spacecraft as most of Cassini's instruments. So the orientation should at least help reduce the hazard of ring particles striking more sensitive hardware, while a few pits in the antenna itself won't likely inhibit the spacecraft's ability to communicate with Earth."
+	},
+	"related": ["saturn"]
+}

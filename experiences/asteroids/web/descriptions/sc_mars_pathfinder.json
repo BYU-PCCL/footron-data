@@ -1,0 +1,13 @@
+{
+	"title": "Mars Pathfinder",
+	"description": {
+		"blurb": "Mars Pathfinder was an ambitious mission to send a lander and a separate remote-controlled rover to the surface of Mars.",
+		"more": "Landing on Mars on July 4th, 1997, Pathfinder demonstrated a number of innovative, economical, and highly effective approaches to spacecraft and mission design. The wagon-sized Sojourner rover was the forerunner of more advanced rovers such as Spirit, Opportunity and Curiosity."
+	},
+	"dates": {
+		"start": "1996-12-04T06:58:07",
+		"end": "1997-09-27T10:23:00",
+		"landing": "1997-07-04T16:56:55"
+	},
+	"related": ["mars"]
+}

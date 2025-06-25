@@ -1,0 +1,13 @@
+{
+	"title": "Sentinel-6 Michael Freilich",
+	"description": {
+		"blurb": "Sentinel-6 Michael Freilich measures sea level height worldwide, continuing the work of the Jason-3 satellite.",
+		"more": "The first of two identical satellites to be launched five years apart, Sentinel-6 Michael Freilich will make high precision ocean altimetry measurements to continue the work previously done by Jason-1, Jason-2/OSTM, and the Jason-3 missions.\n\nA secondary objective is to collect high resolution vertical profiles of temperature and water vapor through the Radio Occultation instrument. This is used to help numerical weather predictions."
+	},
+	"dates": {
+		"start": "2020-11-21T17:17:08",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["earth","sc_jason_3","sc_jason_2","sc_jason_1"]
+}

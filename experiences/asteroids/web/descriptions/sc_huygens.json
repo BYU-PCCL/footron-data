@@ -1,0 +1,18 @@
+{
+	"title": "Huygens",
+	"description": {
+		"blurb": "The European Space Agency's Huygens Probe was a unique, advanced spacecraft and a crucial part of the overall Cassini mission to explore Saturn.",
+		"more": "The probe was about 9 feet wide (2.7 meters) and weighed roughly 700 pounds (318 kilograms). It was built like a shellfish: a hard shell protected its delicate interior from high temperatures during the a two hour and 27 minute descent through the atmosphere of Saturn's giant moon Titan. Huygens landed on Titan on January 14, 2005."
+	},
+	"dates": {
+		"start": "1997-10-15T08:43:00",
+		"end": "2005-01-14T13:37:00",
+		"landing": "2005-01-14T12:43:00"
+	},
+	"featuredEvents": {
+		"initial": [
+			{ "eventId": "descent_to_titan", "title": "Descent to Titan" }
+		]
+	},
+	"related": ["sc_cassini", "titan"]
+}

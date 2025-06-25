@@ -1,0 +1,44 @@
+{
+	"launch": {
+		"id": "launch",
+		"title": "OSIRIS-REx Launch",
+		"start": "2016-09-09T06:58:51",
+		"end": "2016-09-10T01:00:00",
+		"target": "earth",
+		"distance": 0.05,
+		"rate": 600,
+		"horizontalOffset": 5,
+		"verticalOffset": 0
+	},
+	"bennu_arrival": {
+		"id": "bennu_arrival",
+		"title": "Arrival at Bennu",
+		"start": "2018-03-05T00:00:00",
+		"target": "101955_bennu",
+		"distance": 0.3,
+		"rate": 50000,
+		"horizontalOffset": 5,
+		"verticalOffset": 0
+	},
+	"sample_acquisition": {
+		"id": "sample_acquisition",
+		"title": "OSIRIS-REx Samples Bennu's Surface",
+		"start": "2020-10-20T21:49:00",
+		"target": "101955_bennu",
+		"distance": 0.05,
+		"horizontalOffset": 45,
+		"verticalOffset": -67,
+		"visual":true
+	},
+	"sample_drop": {
+		"id": "sample_drop",
+		"title": "Sample Return Capsule Separation at Earth",
+		"start": "2023-09-24T10:41:52",
+		"end": "2023-09-24T14:43:38",
+		"target": "sc_osiris_rex_src",
+		"distance": 0.016,
+		"horizontalOffset": 100,
+		"rate": 1,
+		"visual":true
+	}
+}

@@ -1,0 +1,13 @@
+{
+	"title": "Spitzer",
+	"description": {
+		"blurb": "NASA's Spitzer was the first telescope to detect light from an exoplanet, or a planet outside our solar system.",
+		"more": "The Spitzer Space Telescope (formerly the Space Infrared Telescope Facility or SIRTF) was the fourth and last of NASA’s “Great Observatories,” and carried a 34-inch (85-centimeter) infrared telescope to study asteroids, comets, planets and distant galaxies. It was retired in January of 2020."
+	},
+	"dates": {
+		"start": "2003-08-25T05:35:39",
+		"end": "2020-01-30T00:00:00",
+		"landing": ""
+	},
+	"related": ["sc_hubble_space_telescope","sc_chandra"]
+}

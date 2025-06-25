@@ -1,0 +1,7 @@
+{
+	"description": {
+		"blurb": "The Dawn mission used Mars as a gravity \"slingshot\" in February of 2009, approaching within 550 kilometers of the surface of Mars in order to change her trajectory and pick up extra speed for the journey to the asteroid Vesta."
+	},
+	"related": ["mars"],
+	"layers": true
+}

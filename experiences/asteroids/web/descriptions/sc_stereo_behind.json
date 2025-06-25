@@ -1,0 +1,13 @@
+{
+	"title": "STEREO Behind",
+	"description": {
+		"blurb": "The twin STEREO spacecraft studied the structure and evolution of solar storms as they emerge from the Sun. STEREO B (\"Behind\") is no longer active.",
+		"more": "STEREO (Solar Terrestrial Relations Observatory), the third mission in NASA’s Solar Terrestrial Probes (STP) program, consisted of two space-based observatories to study the structure and evolution of solar storms as they emerge from the Sun and move out through space.\n\n The two spacecraft, one ahead of Earth in its orbit and the other trailing behind, provided the first stereoscopic images of the Sun, and collected data on the nature of its coronal mass ejections (CMEs), represented by large bursts of solar wind, solar plasma, and magnetic fields that are ejected into space. CMEs can disrupt communications, power grids, satellite operations, and air travel here on Earth. The orbital periods of STEREO A and STEREO B were 347 days and 387 days, respectively. The two spacecraft separate from each other at a (combined) annual rate of 44 degrees. At various points, the spacecraft were separated from each other by 90 degrees and 180 degrees. The latter occurred Feb. 6, 2011, allowing the entire Sun to be seen at once for the first time by any set of spacecraft."
+	},
+	"dates": {
+		"start": "2006-10-26T00:52:00",
+		"end": "2016-09-23T00:00:00",
+		"landing": ""
+	},
+	"related": ["sun","earth","sc_stereo_behind", "sc_sdo", "sc_soho"]
+}

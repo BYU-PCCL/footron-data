@@ -1,0 +1,8 @@
+{
+	"description": {
+		"blurb": "The Juno spacecraft launched aboard an Atlas V 551 rocket from Cape Canaveral, Florida, on August 5th, 2011. About 54 minutes after launch, the spacecraft separated from the Centaur and began to extend its solar panels to gather energy from the sun.",
+		"more": ""
+	},
+	"related": ["earth"],
+	"layers": true
+}

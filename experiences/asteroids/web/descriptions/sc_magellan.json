@@ -1,0 +1,13 @@
+{
+	"title": "Magellan",
+	"description": {
+		"blurb": "NASA's Magellan mission was the first spacecraft to image the entire surface of Venus and made several discoveries about the planet.",
+		"more": "The Magellan probe was the first interplanetary mission to be launched from the Space Shuttle, the first mission to map the entire surface of Venus, and the first spacecraft to test aerobraking as a method for circularizing its orbit. Magellan was the fifth successful NASA mission to Venus, and it ended an eleven-year gap in U.S. interplanetary probe launches. It self-destructed in the Venusian atmosphere in 1994."
+	},
+	"dates": {
+		"start": "1989-05-04T18:47:00",
+		"end": "1994-10-13T10:05:00",
+		"landing": ""
+	},
+	"related": []
+}

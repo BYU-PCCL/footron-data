@@ -1,0 +1,24 @@
+{
+	"title": "OSIRIS-APEX (OSIRIS-REx)",
+	"description": {
+		"blurb": "NASA’s <a href='https://www.nasa.gov/osiris-rex' target='_blank'>OSIRIS-REx</a> was the first U.S. mission to deliver an asteroid sample to Earth on September 24th, 2023. The spacecraft, renamed OSIRIS-APEX after the delivery, is now headed to asteroid Apophis for a 2029 rendezvous.",
+		"more": "OSIRIS-APEX is an acronym for \"Origins, Spectral Interpretation, Resource Identification, Security-Apophis Explorer.\" Originally named OSIRIS-REx (\"Regolith Explorer\"), the goal of the mission was to collect a sample weighing 2.1 ounces (59.5 grams) from near-Earth asteroid 101955 Bennu and then to bring the sample to Earth.\n\n The mission, developed by scientists at the University of Arizona, will give scientists more information about how the early solar system formed and about how life began. It will also help us better understand asteroids that could impact Earth in the future. On October 20th, 2020, approximately 121.6 grams of material from the surface of Bennu was successfully collected. On May 10th, 2021, the spacecraft left Bennu after nearly two years in orbit to begin the two-year voyage back to Earth.\n\n On Sept. 24, 2023, the OSIRIS-REx spacecraft flew by Earth to release the capsule carrying the asteroid sample for a parachute landing. The sample capsule deployed its parachute at an altitude of about 1.9 miles (3 kilometers), bringing it in for a soft landing at the Utah Test and Training Range about 80 miles (130 kilometers) west of Salt Lake City, Utah.\n\n The capsule was sent to Johnson Space Center in Houston, Texas, where scientists at the Astromaterials Acquisition and Curation Office will catalog it and set aside portions of the sample for partners in the Japanese and Canadian space agencies. The spacecraft collected 121.6 grams of material from Bennu. \n\n The main spacecraft (now renamed OSIRIS-APEX) will continue on to investigate the asteroid 99942 Apophis.\n\n "
+	},
+	"cards": [
+		{ "storyId": "asteroids_missions" }
+	],
+	"dates": {
+		"start": "2016-09-08T23:05:00",
+		"end": "",
+		"landing": ""
+	},
+	"featuredEvents": {
+		"initial": [
+			{ "eventId": "sample_acquisition", "title": "OSIRIS-REx Samples Bennu's Surface" },
+			{ "eventId": "sample_drop", "title": "Sample Return Capsule Separation at Earth" }
+		],
+		"more": [
+		]
+	},
+	"related": ["101955_bennu", "99942_apophis", "sc_osiris_rex_src"]
+}

@@ -1,0 +1,13 @@
+{
+	"title": "GRACE-2",
+	"description": {
+		"blurb": "The Gravity Recovery and Climate Experiment (GRACE) was a joint mission of NASA and the German Aerospace Center (DLR). Twin satellites took detailed measurements of Earth's gravity field anomalies from its launch in March 2002 to the end of its science mission in October 2017.",
+		"more": "The twin GRACE spacecraft tracked Earth's water movement to monitor changes in underground water storage, the amount of water in large lakes and rivers, soil moisture, ice sheets and glaciers, and sea level caused by the addition of water to the ocean. These discoveries provide a unique view of Earth's climate and have far-reaching benefits to society and the world's population. GRACE is able to make accurate measurements thanks in part to two advanced technologies: a microwave ranging system based on Global Positioning System (GPS) technology, and a very sensitive accelerometer—an instrument that measures the forces on the satellites besides gravity (such as atmospheric drag). Using the microwave ranging system, GRACE can measure the distance between satellites to within one micron -- about the diameter of a blood cell. Together, these very precise measurements of location, force and orbital change translate into an observation of gravity with unprecedented accuracy. Flight engineers maneuver the satellites only if they separate by more than 155 miles (250 km), otherwise they are left alone and gravity ‘tugs and pulls’ on them."
+	},
+	"dates": {
+		"start": "2002-03-17T09:21:00",
+		"end": "2017-10-27T00:00:00",
+		"landing": ""
+	},
+	"related": ["sc_grace_1", "sc_grace_fo1", "sc_grace_fo2"]
+}

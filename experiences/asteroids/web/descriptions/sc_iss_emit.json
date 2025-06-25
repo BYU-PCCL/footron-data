@@ -1,0 +1,13 @@
+{
+	"title": "EMIT",
+	"description": {
+		"blurb": "EMIT will be the first instrument to use NASA-invented imaging spectroscopy technology to comprehensively measure the mineral composition of the Earth's arid land dust source regions.",
+		"more": "The Earth Surface Mineral Dust Source Investigation (EMIT) will be mounted on the International Space Station (ISS) and will be used to improve forecasts of the role of mineral dust in the radiative forcing (warming or cooling) of the atmosphere."
+	},
+	"dates": {
+		"start": "2022-06-09",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_iss"]
+}

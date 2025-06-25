@@ -1,0 +1,13 @@
+{
+	"title": "TEMPO",
+	"description": {
+		"blurb": "The Tropospheric Emissions: Monitoring of Pollution (TEMPO) mission measures atmospheric pollution covering most of North America on an hourly basis and at high spatial resolution.",
+		"more": "Hosted on the Intelsat 40E, the TEMPO instrument is a UV-visible spectrometer, and is the first ever space-based instrument to monitor air pollutants hourly across the North American continent during daytime. It collects high-resolution measurements of ozone, nitrogen dioxide and other pollutants, data which will revolutionize air quality forecasts."
+	},
+	"dates": {
+		"start": "2023-04-07T04:30:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["earth"]
+}

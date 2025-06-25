@@ -1,0 +1,13 @@
+{
+	"title": "PREFIRE-2",
+	"description": {
+		"blurb": "NASA's PREFIRE (Polar Radiant Energy in the Far-InfraRed Experiment) mission will help close a gap in understanding of how much of Earth’s heat is lost to space, especially from the Arctic and Antarctic",
+		"more": "Analysis of PREFIRE’s measurements will inform climate and ice models, providing better projections of how a warming world will affect sea ice loss, ice sheet melt, and sea level rise. Improving climate models can ultimately help to provide more accurate projections on the impacts of storm severity and frequency, as well as coastal erosion and flooding. PREFIRE consists of two 6U CubeSats with a baseline mission length of 10 months."
+	},
+	"dates": {
+		"start": "2024-05-25T07:41:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_prefire_1"]
+}

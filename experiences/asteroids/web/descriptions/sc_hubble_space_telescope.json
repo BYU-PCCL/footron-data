@@ -1,0 +1,13 @@
+{
+	"title": "Hubble Space Telescope",
+	"description": {
+		"blurb": "NASA’s Hubble Space Telescope is the first astronomical observatory placed into orbit around Earth with the ability to record images in wavelengths of light spanning from ultraviolet to near-infrared.",
+		"more": "The Hubble Space Telescope's launch and deployment in April 1990 marked the most significant advancement in astronomy since Galileo's telescope. The first major optical telescope to be placed in space, Hubble operates from the ultimate mountaintop. Far above the distortion of Earth's atmosphere, clouds and light pollution, Hubble has an unobstructed view of the universe.\n\n Hubble can see far more than what we can with our eyes. Its domain extends from the ultraviolet, through the visible, and to the near-infrared.\n\n The telescope has had a major impact on every area of astronomy, from the solar system to objects at the edge of the universe. Scientists have used Hubble to observe the most distant stars and galaxies as well as the planets in our solar system.\n\n Data and from the orbiting telescope are the backbone of more than 15,000 technical papers. It also, of course, continues to dazzle us with stunning pictures of stars, galaxies and planets."
+	},
+	"dates": {
+		"start": "1990-04-24T12:33:51",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_spitzer", "sc_chandra"]
+}

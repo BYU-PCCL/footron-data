@@ -1,0 +1,11 @@
+{
+	"title": "4 Vesta",
+	"description": {
+		"blurb": "Vesta is one of the largest objects in the asteroid belt, and was visited for over a year by NASA's Dawn Spacecraft.",
+		"more": "The asteroid's official name is 4 Vesta because it was the fourth asteroid discovered. About the length of Arizona, it appears to have a surface of basaltic rock - frozen lava - which oozed out of the asteroid's presumably hot interior shortly after its formation 4.5 billion years ago, and has remained largely intact ever since. Telescopic observations reveal mineralogical variations across its surface.\n\nVesta has a unique surface feature which scientists look forward to peering into. At the asteroid's south pole is a giant crater - 460 kilometers (285 miles) across and 13 kilometers (8 miles) deep. The massive collision that created this crater gouged out one percent of the asteroid's volume, blasting over one-half million cubic miles of rock into space. What happened to the one percent that was propelled from its Vesta home? The debris, ranging in size from sand and gravel to boulder and mountain, was ejected into space where it began its own journey through the solar system. Scientist believe that about 5 percent of all meteorites we find on Earth are a result of this single ancient crash in deep space."
+	},
+	"cards": [
+		{ "storyId": "asteroids_missions" }
+	],
+	"related": ["sc_dawn"]
+}

@@ -1,0 +1,8 @@
+{
+	"title": "Pallene",
+	"description": {
+		"blurb": "The Cassini imaging team discovered Pallene on June 1, 2004. Pallene and nearby Methone were the first moons discovered in Cassini images.",
+		"more": "Pallene (pronounced pal-lee-nee, adjective: Pallenean) is a tiny moon, with a mean radius of 1.6 miles (2.5 kilometers), that orbits between Mimas and Enceladus at about 132,000 miles (212,000 kilometers) from Saturn. Scientists have two theories to explain the presence of Pallene and two other tiny sister moons, Methone and Anthe. First, the three moons may have split from either Mimas or Enceladus. Second, all five moons may be the remains of a larger swarm that traveled in that area close to Saturn. Pallene circles Saturn in approximately 27.7 hours. Because Pallene and its two sister moons orbit at very similar distances from Saturn, they are in a dynamical relationship. Mimas strongly perturbs Pallene, the 2-mile (3-kilometer) diameter moon Methone and the 1-mile (2-kilometer) diameter moon Anthe, all of which orbit between Mimas and the next major moon, Enceladus. The vastly more massive Mimas causes the orbits of the tiny moons to vary by as much as 12.4 miles (20 kilometers). Together, these three moons may also be contributing particles to Saturn's E-ring. Pallene shares its orbit with a faint dust ring around Saturn, now called the Pallene Ring. This ring may be made of particles blasted off Pallene's surface by meteoroid impacts. The name Pallene comes from the name in Greek mythology of one of seven Alkyonides, daughters of the god (or Titan) Alkyoneus who was born of Gaia and the blood of Uranus."
+	},
+	"related": ["sc_cassini"]
+}

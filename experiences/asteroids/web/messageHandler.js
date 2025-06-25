@@ -1,6 +1,42 @@
+let defaultTime = setTimeout(() => {
+  setTimeRate(432000);
+  console.log("TIME")
+}, 3000);
+
+let automationTimer = setTimeout(automation, 30000);
+
+let automationChoices = [
+  () => flyTo("sun"),
+  () => flyTo("mercury"),
+  () => flyTo("mars"),
+  () => flyTo("moon"),
+  () => flyTo("earth"),
+  () => flyTo("jupiter"),
+  () => flyTo("saturn"),
+  () => flyTo("uranus"),
+  () => flyTo("neptune"),
+  () => flyTo("1_ceres"),
+  () => flyTo("4_vesta"),
+  () => flyTo("134340_pluto"),
+  () => flyTo("sc_jwst"),
+  () => flyTo("sc_parker_solar_probe"),
+]
+
+async function automation() {
+  let choice = Math.floor(Math.random() * automationChoices.length)
+  automationChoices[choice]()
+  live();
+  resetTimer();
+}
+
+function resetTimer() {
+  clearTimeout(automationTimer); // Clear any existing timer
+  automationTimer = setTimeout(automation, 20000); // Set a new timer for 30 seconds
+}
+
 async function messageHandler(message) {
-  console.log(message);
   if (message == null) throw "message is null";
+  clearTimeout(automationTimer);
   switch (message.type) {
     case "settings":
       handleSettingsMessage(message);
@@ -23,6 +59,9 @@ async function messageHandler(message) {
     case "zoom":
       handleZoomMessage(message);
       break;
+    case "move":
+      handleMoveMessage(message);
+      break;
     default:
       throw "Can't understand message: " + message;
   }
@@ -33,21 +72,34 @@ const client = new FootronMessaging.Messaging();
 client.mount();
 client.addMessageListener(messageHandler);
 
+const layersList = [
+  "asteroids",
+  "constellations",
+  "icons",
+  "labels",
+  "landers",
+  "lightOption",
+  "planets",
+  "spacecraft",
+  "starfield",
+  "trails",
+  "ui",
+];
 async function handleSettingsMessage(message) {
   let count = null;
   if (message.setting == null) throw "message.setting is null";
   switch (message.setting) {
-    case "asteroids":
+    case "asteroidsFilter":
       if (message.value == null) throw "message.value is null";
       count = await showAsteroids(message.value);
       // client.sendMessage(count);
       break;
-    case "phos":
+    case "phosFilter":
       if (message.value == null) throw "message.value is null";
       count = await showPHOs(message.value);
       // client.sendMessage(count);
       break;
-    case "comets":
+    case "cometsFilter":
       if (message.value == null) throw "message.value is null";
       count = await showComets(message.value);
       // client.sendMessage(count);
@@ -60,33 +112,14 @@ async function handleSettingsMessage(message) {
       else if (message.value == "natural") setLighting("natural");
       else throw "unknown value: " + message.value;
       break;
-    case "planets":
-      toggleLayer("planets");
-      break;
-    case "spacecraft":
-      toggleLayer("spacecraft");
-      break;
-    case "trails":
-      toggleLayer("trails");
-      break;
-    case "labels":
-      toggleLayer("labels");
-      break;
-    case "icons":
-      toggleLayer("icons");
-      break;
-    case "starfield":
-      toggleLayer("starfield");
-      break;
-    case "userInterface":
-      toggleLayer("ui");
-      break;
     default:
-      throw "Unknown setting: " + message.setting;
+      if (layersList.includes(message.setting)) toggleLayer(message.setting);
+      else throw "Unknown setting: " + message.setting;
   }
 }
 
 function handleFlyMessage(message) {
+  console.log(message);
   if (message.value == null) throw "message.value is null";
   flyTo(message.value);
 }
@@ -130,4 +163,8 @@ function handleZoomMessage(message) {
   if (message.value == "in") zoomIn();
   else if (message.value == "out") zoomOut();
   else throw "unknown value: " + message.value;
+}
+
+function handleMoveMessage(message) {
+  setMotionParameters(message);
 }

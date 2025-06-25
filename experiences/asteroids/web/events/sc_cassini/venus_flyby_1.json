@@ -1,0 +1,8 @@
+{
+	"description": {
+		"blurb": "In 1998, Cassini performed the first of two Venus flybys that provided the spacecraft with speed boosts.",
+		"more": "Interplanetary missions often use gravity assists to gain speed and reach their destinations more quickly. On April 26, 1998, Cassini flew by Venus at an altitude of 209 miles (336 kilometers), followed by a second flyby on June 24, 1999, at an altitude of 387 miles (623 kilometers). The spacecraft approached the planet from behind, traveling in the same direction Venus moves through its solar orbit. The nearer Cassini got to Venus, the more the spacecraft and the planet pulled on one another gravitationally. The spacecraft sped up and the planet slowed down, but because the spacecraft's mass is miniscule relative to Venus, the planet slowed by an immeasurably small amount, while the spacecraft sped up enormously. Cassini later performed a gravity assist with Earth, and then Jupiter. The flybys provided Cassini with so much velocity that it arrived at Saturn years earlier than it would have without the gravity assists. The first Venus flyby alone boosted Cassini's speed by 15,000 miles per hour (about 6 kilometers per second)."
+	},
+	"related": ["venus"],
+	"layers": true
+}

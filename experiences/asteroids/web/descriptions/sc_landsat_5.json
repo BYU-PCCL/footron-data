@@ -1,0 +1,13 @@
+{
+	"title": "LANDSAT 5",
+	"description": {
+		"blurb": "",
+		"more": ""
+	},
+	"dates": {
+		"start": "1984-03-01T00:00:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_landsat_4", "sc_landsat_7", "sc_landsat_8"]
+}
