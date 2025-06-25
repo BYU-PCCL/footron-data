@@ -108,7 +108,7 @@ export default function ControlsComponent() {
         <AccordionSection title="Learn More" sectionKey="learn">
           <div className="vert-container">
             <p>
-              The Fourier transform is so useful accross so many disparate
+              The Fourier transform is so useful across so many disparate
               fields it is almost like magic. Luckily for us, this mathematical
               tool is far from sorcery; it&apos;s relatively easy to understand
               its basic principles and even easier to apply.
@@ -129,7 +129,7 @@ export default function ControlsComponent() {
               <a href="https://www.youtube.com/watch?v=r6sGWTCMz2k">
                 videos created by Grant Sanderson
               </a>{" "}
-              (or 3blue1brown) are fantastic resources to anyone wanting to get
+              (3blue1brown) are fantastic resources to anyone wanting to get
               a deeper understanding of how these circles learned to cooperate.
             </p>
           </div>
