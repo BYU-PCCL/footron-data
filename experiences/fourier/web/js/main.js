@@ -220,14 +220,14 @@ if (isAprilFools()) randomChoices.push(rickData);
 //   return
 // }
 
-// function initializeOdometer() {
-//   console.log("initializing")
-//   window.odometerOptions = {
-//     auto: false, // Don't automatically initialize everything with class 'odometer'
-//     format: '(dddd)', // Change how digit groups are formatted, and how many digits are shown after the decimal point
-//     duration: 1000, // Change how long the javascript expects the CSS animation to take
-//   };
-//   console.log(odometerOptions)
-// }
+function initializeOdometer() {
+  console.log("initializing")
+  window.odometerOptions = {
+    auto: false, // Don't automatically initialize everything with class 'odometer'
+    format: '(dddd)', // Change how digit groups are formatted, and how many digits are shown after the decimal point
+    duration: 1000, // Change how long the javascript expects the CSS animation to take
+  };
+  console.log(odometerOptions)
+}
 
 // init();
