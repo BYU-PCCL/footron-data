@@ -47,8 +47,7 @@ if (isAprilFools()) randomChoices.push(rickData);
 function init() {
     initializeOdometer();
 
-    attribution("Almost done")
-
+    
     // Initialize fourier controller
     controller.drawSteps.push(
         { canvas: "leftCanvas", type: "clear" },
@@ -96,14 +95,15 @@ function init() {
             style: { color: palette.fadableOrange, alpha: 1, lineWidth: 2.5 }
         }
     );
-
-    let test = document.getElementById("inProgressTitle")
-    test.style = "color: teal;"
+    
     // To let me play around with things in the console.
     // window.controller = controller;
-
+    
     setImage(null, true);
+    attribution("Almost done")
     controller.start();
+    let test = document.getElementById("inProgressTitle")
+    test.style = "color: teal;"
     // show.startShow()
 
 }
