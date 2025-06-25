@@ -189,6 +189,7 @@ export default class EpicyclesController {
         this.currentFourierData.push({ freq: this.targetFourierData[this.currentFourierData.length].freq, phase: 0, amplitude: 0 })
       }
     }
+    test.style = "color: red;"
     if (!transition) this.currentFourierData = this.copyArray(fourierData)
     if (zerosAtStart) {
       this.currentFourierData.forEach(function (e) {
@@ -196,6 +197,7 @@ export default class EpicyclesController {
         e.phase = 0;
       })
     }
+    test.style = "color: orange;"
     let { amplitude, phase } = this.sourceFourierData[0]
     this.fourierOrigin = {
       x: amplitude * Math.cos(phase),
@@ -216,9 +218,9 @@ export default class EpicyclesController {
 
   setSource(fourierData, fromZero = false, transition = false) {
     let test = document.getElementById("inProgressTitle")
-    test.style = "color: yellow;"
-
+    
     this.initializeData(fourierData, fromZero, transition)
+    test.style = "color: yellow;"
     this.numPathPoints = this.sourceFourierData.length * 2;
     
     test.style = "color: green;"
