@@ -11,9 +11,22 @@ body {
   background-color: black;
 }
 
-h1, h2 {
+.inProgress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  width: 500px;
+  height: 200px;
+  margin: auto;
+  text-align: center;
   color: white;
   font-family: 'Urbanist';
+}
+
+h1 {
+  font-size: 50px;
 }
 
 canvas {
