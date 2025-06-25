@@ -1,4 +1,4 @@
-/* .odometer.odometer-auto-theme, .odometer.odometer-theme-default {
+.odometer.odometer-auto-theme, .odometer.odometer-theme-default {
   display: -moz-inline-box;
   -moz-box-orient: vertical;
   display: inline-block;
@@ -95,4 +95,4 @@
 }
 .odometer.odometer-auto-theme .odometer-value, .odometer.odometer-theme-default .odometer-value {
   text-align: center;
-} */
+}

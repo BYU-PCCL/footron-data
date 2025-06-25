@@ -1,4 +1,3 @@
-// import EpicyclesController from "./epicycles-controller.js";
 import { fouriestData } from "./fourier-data/fouriest.js";
 import { peaceData } from "./fourier-data/peace.js";
 import { sailorData } from "./fourier-data/sailor.js";
@@ -13,6 +12,7 @@ import { fourierData } from "./fourier-data/fourier.js";
 import { pentagonData } from "./fourier-data/pentagon.js";
 import { hexagonData } from "./fourier-data/hexagon.js";
 
+import EpicyclesController from "./epicycles-controller.js";
 import "./message-handler.js";
 import { palette } from "./color.js";
 import Slideshow from "./slideshow.js";
@@ -37,13 +37,12 @@ const data = {
   "Po": poData,
   "Rick": rickData,
 }
-// const ATTRIBUTION_ELEMENT = document.getElementById("attribution")
+const ATTRIBUTION_ELEMENT = document.getElementById("attribution")
 
 let randomChoices = [
   sailorData, mooreData5, triangleData, yLogoData, peaceData, poData
 ]
 if (isAprilFools()) randomChoices.push(rickData);
-
 function init() {
   initializeOdometer();
   // Initialize fourier controller
@@ -101,8 +100,8 @@ function init() {
 
   controller.start();
   // show.startShow()
-}
 
+}
 // control methods
 function attribution(text) {
   ATTRIBUTION_ELEMENT.className = "hidden"
