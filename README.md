@@ -5,4 +5,4 @@ Videos and Dockerfiles are not included. Files for web experiences are usually i
 
 ## Use
 
-To add a new experience add it to the experiences directory and update the tags file.
+To add a new experience add it to the experiences directory and update the tags file. Also double check the build runner.
