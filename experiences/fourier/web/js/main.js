@@ -117,7 +117,7 @@ function attribution(text) {
 }
 
 export function setImage(image, fromZero = false, transition = false) {
-    attribution("Almost done")
+    attribution("Almost done" + image)
 
     let imageData;
     if (Object.keys(data).includes(image)) {
@@ -130,7 +130,7 @@ export function setImage(image, fromZero = false, transition = false) {
 
     let test = document.getElementById("inProgressTitle")
     test.style = "color: teal;"
-    
+
     controller.setSource(imageData, fromZero, transition)
     controller.rightCanvasController.setText(controller.sourceFourierData.length);
     controller.leftCanvasController.setText(controller.currentNumFourierTerms);
