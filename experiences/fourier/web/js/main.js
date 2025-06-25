@@ -44,6 +44,9 @@ let randomChoices = [
 ]
 if (isAprilFools()) randomChoices.push(rickData);
 function init() {
+    attribution("Almost done")
+    let test = document.getElementById("inProgressTitle")
+    test.style = "color: teal;"
   initializeOdometer();
   // Initialize fourier controller
   controller.drawSteps.push(
