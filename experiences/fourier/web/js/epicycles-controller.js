@@ -177,6 +177,8 @@ export default class EpicyclesController {
 
   initializeData(fourierData, zerosAtStart, transition) {
     if (fourierData[0] == undefined) console.error("Fourier Data is undefined")
+    let test = document.getElementById("inProgressTitle")
+    test.style = "color: purple;"
     // fourierData.sort((a, b) => b.amplitude - a.amplitude); 
     // // sort by amplitude.  
     // // More efficient (most significant terms first), but less mathmatically correct
@@ -213,11 +215,12 @@ export default class EpicyclesController {
   }
 
   setSource(fourierData, fromZero = false, transition = false) {
-    attribution("setting source: " + fourierData[0])
-    console.log("setting source: ", fourierData);
+    let test = document.getElementById("inProgressTitle")
+    test.style = "color: yellow;"
+
     this.initializeData(fourierData, fromZero, transition)
     this.numPathPoints = this.sourceFourierData.length * 2;
-    let test = document.getElementById("inProgressTitle")
+    
     test.style = "color: green;"
 
     this.resetEase(this.currentFourierData, this.easeStartFourierData);
