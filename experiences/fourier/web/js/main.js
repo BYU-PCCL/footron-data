@@ -100,10 +100,8 @@ function init() {
     // window.controller = controller;
     
     setImage(null, true);
-    attribution("Almost done")
     controller.start();
-    let test = document.getElementById("inProgressTitle")
-    test.style = "color: teal;"
+
     // show.startShow()
 
 }
@@ -119,6 +117,8 @@ function attribution(text) {
 }
 
 export function setImage(image, fromZero = false, transition = false) {
+    attribution("Almost done")
+
     let imageData;
     if (Object.keys(data).includes(image)) {
         console.log("setting image: ", image)
@@ -127,6 +127,10 @@ export function setImage(image, fromZero = false, transition = false) {
         console.log("choosing random image")
         imageData = randomChoices[Math.floor(Math.random() * randomChoices.length)]
     }
+
+    let test = document.getElementById("inProgressTitle")
+    test.style = "color: teal;"
+    
     controller.setSource(imageData, fromZero, transition)
     controller.rightCanvasController.setText(controller.sourceFourierData.length);
     controller.leftCanvasController.setText(controller.currentNumFourierTerms);
