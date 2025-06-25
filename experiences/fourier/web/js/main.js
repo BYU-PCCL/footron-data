@@ -3,40 +3,40 @@ import { fouriestData } from "./fourier-data/fouriest.js";
 import { peaceData } from "./fourier-data/peace.js";
 import { sailorData } from "./fourier-data/sailor.js";
 import { yLogoData } from "./fourier-data/y-logo.js";
+import { triangleData } from "./fourier-data/triangle.js";
+import { squareData } from "./fourier-data/square.js";
+import { lineData } from "./fourier-data/line.js";
+import { poData } from "./fourier-data/po.js";
+import { rickData } from "./fourier-data/rick.js";
+import { mooreData5 } from "./fourier-data/moore.js";
+import { fourierData } from "./fourier-data/fourier.js";
+import { pentagonData } from "./fourier-data/pentagon.js";
+import { hexagonData } from "./fourier-data/hexagon.js";
 
 import "./message-handler.js";
 // import { palette } from "./color.js";
 // import Slideshow from "./slideshow.js";
 // import { slides } from "./slides.js";
-// import { triangleData } from "./fourier-data/triangle.js";
-// import { squareData } from "./fourier-data/square.js";
-// import { lineData } from "./fourier-data/line.js";
-// import { poData } from "./fourier-data/po.js";
-// import { rickData } from "./fourier-data/rick.js";
-// import { mooreData5 } from "./fourier-data/moore.js";
-// import { fourierData } from "./fourier-data/fourier.js";
-// import { pentagonData } from "./fourier-data/pentagon.js";
-// import { hexagonData } from "./fourier-data/hexagon.js";
-// import { isAprilFools } from "./util.js";
+import { isAprilFools } from "./util.js";
 
 // const controller = new EpicyclesController("standardCanvas");
 // const show = new Slideshow("slideDisplay", slides, setImage);
 
-// const data = {
-//   "Line": lineData,
-//   "Triangle": triangleData,
-//   "Square": squareData,
-//   "Sailor": sailorData,
-//   "Moore curve": mooreData5,
-//   "Y logo": yLogoData,
-//   "Peace": peaceData,
-//   "Fourier": fourierData,
-//   "Fouriest": fouriestData,
-//   "Pentagon": pentagonData,
-//   "Hexagon": hexagonData,
-//   "Po": poData,
-//   "Rick": rickData,
-// }
+const data = {
+  "Line": lineData,
+  "Triangle": triangleData,
+  "Square": squareData,
+  "Sailor": sailorData,
+  "Moore curve": mooreData5,
+  "Y logo": yLogoData,
+  "Peace": peaceData,
+  "Fourier": fourierData,
+  "Fouriest": fouriestData,
+  "Pentagon": pentagonData,
+  "Hexagon": hexagonData,
+  "Po": poData,
+  "Rick": rickData,
+}
 // const ATTRIBUTION_ELEMENT = document.getElementById("attribution")
 
 // let randomChoices = [
