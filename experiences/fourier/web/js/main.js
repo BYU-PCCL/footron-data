@@ -45,6 +45,8 @@ let randomChoices = [
 if (isAprilFools()) randomChoices.push(rickData);
 
 function init() {
+    let test = document.getElementById("inProgressTitle")
+    test.style = "color: green;"
     initializeOdometer();
 
     
