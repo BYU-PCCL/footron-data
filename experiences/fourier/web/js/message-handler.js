@@ -20,9 +20,6 @@ export async function messageHandler(message) {
     case "setImage":
       client.sendMessage({ maxTerm: setImage(message.value, false, true) });
       break;
-    case "fromPoints":
-      setImageFromPoints();
-      break;
     case "maxTerm":
       client.sendMessage({ maxTerm: maxTerm() })
       break;
