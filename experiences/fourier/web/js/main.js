@@ -117,8 +117,7 @@ function attribution(text) {
 }
 
 export function setImage(image, fromZero = false, transition = false) {
-    attribution("Almost done" + image)
-
+    
     let imageData;
     if (Object.keys(data).includes(image)) {
         console.log("setting image: ", image)
@@ -128,11 +127,15 @@ export function setImage(image, fromZero = false, transition = false) {
         imageData = randomChoices[Math.floor(Math.random() * randomChoices.length)]
     }
 
+    controller.setSource(imageData, fromZero, transition)
+
+    attribution("Almost done: " + imageData[0])
+
+    controller.rightCanvasController.setText(controller.sourceFourierData.length);
+
     let test = document.getElementById("inProgressTitle")
     test.style = "color: teal;"
 
-    controller.setSource(imageData, fromZero, transition)
-    controller.rightCanvasController.setText(controller.sourceFourierData.length);
     controller.leftCanvasController.setText(controller.currentNumFourierTerms);
     if (imageData === fourierData) {
         attribution("Joseph Fourier Portrait by Stewart@Biocinematics")
