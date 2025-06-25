@@ -46,7 +46,7 @@ if (isAprilFools()) randomChoices.push(rickData);
 
 function init() {
     let test = document.getElementById("inProgressTitle")
-    test.style = "color: green;"
+    test.style = "color: orange;"
     initializeOdometer();
 
     
@@ -131,7 +131,7 @@ export function setImage(image, fromZero = false, transition = false) {
 
     controller.setSource(imageData, fromZero, transition)
 
-    attribution("Almost done: " + imageData[0])
+
 
     controller.rightCanvasController.setText(controller.sourceFourierData.length);
 

@@ -213,9 +213,12 @@ export default class EpicyclesController {
   }
 
   setSource(fourierData, fromZero = false, transition = false) {
+    attribution("setting source: " + fourierData[0])
     console.log("setting source: ", fourierData);
     this.initializeData(fourierData, fromZero, transition)
     this.numPathPoints = this.sourceFourierData.length * 2;
+    let test = document.getElementById("inProgressTitle")
+    test.style = "color: green;"
 
     this.resetEase(this.currentFourierData, this.easeStartFourierData);
     console.log("done setting source");
