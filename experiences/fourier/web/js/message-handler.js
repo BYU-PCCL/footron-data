@@ -1,4 +1,4 @@
-import { setImage, query, setPeriod, setFourierAmt, changeFourierAmt, setZoom, setFollowIndex, fullscreen, startShow, stopShow, queryTerm, maxTerm, termInfo, editTerm, toggleFollow, toggleOriginal, setImageFromPoints } from "./main.js";
+import { setImage, query, setPeriod, setFourierAmt, changeFourierAmt, setZoom, setFollowIndex, fullscreen, startShow, stopShow, queryTerm, maxTerm, termInfo, editTerm, toggleFollow, toggleOriginal } from "./main.js";
 
 export async function messageHandler(message) {
   console.log(message, message.type);
@@ -42,14 +42,8 @@ export async function messageHandler(message) {
     case "editTerm":
       editTerm(message.term, message.phase, message.amplitude)
       break;
-    // case "changeFourierAmt":
-    //   changeFourierAmt(message.value)
-    //   break;
-    case "setEpicycle":
-      console.warn("setEpicycle not implemented");
-      break;
-    case "setCamera":
-      console.warn("setCamera not implemented");
+    case "changeFourierAmt":
+      changeFourierAmt(message.value)
       break;
     case "query":
       query();
