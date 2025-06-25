@@ -1,0 +1,11 @@
+html,
+body {
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  background-color: navy;
+}
+
+h1 {
+  color: white;
+}
