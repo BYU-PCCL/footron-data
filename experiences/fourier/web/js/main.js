@@ -39,10 +39,10 @@ const data = {
 }
 // const ATTRIBUTION_ELEMENT = document.getElementById("attribution")
 
-// let randomChoices = [
-//   sailorData, mooreData5, triangleData, yLogoData, peaceData, poData
-// ]
-// if (isAprilFools()) randomChoices.push(rickData);
+let randomChoices = [
+  sailorData, mooreData5, triangleData, yLogoData, peaceData, poData
+]
+if (isAprilFools()) randomChoices.push(rickData);
 
 // function init() {
 //   initializeOdometer();
