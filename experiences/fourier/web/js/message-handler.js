@@ -75,6 +75,6 @@
 //   }
 // }
 
-// const client = new FootronMessaging.Messaging();
-// client.mount();
-// client.addMessageListener(messageHandler);
+const client = new FootronMessaging.Messaging();
+client.mount();
+client.addMessageListener(messageHandler);

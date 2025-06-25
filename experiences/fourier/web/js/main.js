@@ -1,10 +1,10 @@
 // import EpicyclesController from "./epicycles-controller.js";
-// import { fouriestData } from "./fourier-data/fouriest.js";
-// import { peaceData } from "./fourier-data/peace.js";
-// import { sailorData } from "./fourier-data/sailor.js";
-// import { yLogoData } from "./fourier-data/y-logo.js";
+import { fouriestData } from "./fourier-data/fouriest.js";
+import { peaceData } from "./fourier-data/peace.js";
+import { sailorData } from "./fourier-data/sailor.js";
+import { yLogoData } from "./fourier-data/y-logo.js";
 
-// import "./message-handler.js";
+import "./message-handler.js";
 // import { palette } from "./color.js";
 // import Slideshow from "./slideshow.js";
 // import { slides } from "./slides.js";
