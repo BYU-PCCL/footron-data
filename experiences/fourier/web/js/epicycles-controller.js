@@ -179,17 +179,19 @@ export default class EpicyclesController {
     if (fourierData[0] == undefined) console.error("Fourier Data is undefined")
     let test = document.getElementById("inProgressTitle")
     test.style = "color: purple;"
+    console.error(fourierData[0], zerosAtStart, transition)
     // fourierData.sort((a, b) => b.amplitude - a.amplitude); 
     // // sort by amplitude.  
     // // More efficient (most significant terms first), but less mathmatically correct
+    test.style = "color: red;"
     this.sourceFourierData = this.copyArray(fourierData)
+    test.style = "color: orange;"
     this.targetFourierData = this.copyArray(fourierData)
     if (transition) {
       while (this.targetFourierData > this.currentFourierData) {
         this.currentFourierData.push({ freq: this.targetFourierData[this.currentFourierData.length].freq, phase: 0, amplitude: 0 })
       }
     }
-    test.style = "color: red;"
     if (!transition) this.currentFourierData = this.copyArray(fourierData)
     if (zerosAtStart) {
       this.currentFourierData.forEach(function (e) {
@@ -197,7 +199,6 @@ export default class EpicyclesController {
         e.phase = 0;
       })
     }
-    test.style = "color: orange;"
     let { amplitude, phase } = this.sourceFourierData[0]
     this.fourierOrigin = {
       x: amplitude * Math.cos(phase),
