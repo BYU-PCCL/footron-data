@@ -238,4 +238,21 @@ function initializeOdometer() {
     console.log(odometerOptions)
 }
 
+const  originalConsoleError = console.error
+const originalConsoleWarn = console.warn;
+
+function handleConsoleLog(type, message, ...args) {
+    let jank = document.getElementById("jank")
+    let e = document.createElement('p')
+    e.textContent = type + ": " + message
+    jank.appendChild(e)
+}
+
+console.error = function (message, ...args) {
+  handleConsoleLog('Error', message, ...args);  // Call your custom handler
+  originalConsoleError(message, ...args)
+};
+
+
+
 init();
