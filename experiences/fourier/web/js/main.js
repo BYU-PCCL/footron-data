@@ -45,11 +45,9 @@ let randomChoices = [
 if (isAprilFools()) randomChoices.push(rickData);
 
 function init() {
-    let test = document.getElementById("inProgressTitle")
-    test.style = "color: orange;"
     initializeOdometer();
 
-    
+
     // Initialize fourier controller
     controller.drawSteps.push(
         { canvas: "leftCanvas", type: "clear" },
@@ -97,16 +95,16 @@ function init() {
             style: { color: palette.fadableOrange, alpha: 1, lineWidth: 2.5 }
         }
     );
-    
+
     // To let me play around with things in the console.
     // window.controller = controller;
-    
+
     setImage(null, true);
     controller.start();
 
     // show.startShow()
-
 }
+
 // control methods
 function attribution(text) {
     ATTRIBUTION_ELEMENT.className = "hidden"
@@ -119,7 +117,7 @@ function attribution(text) {
 }
 
 export function setImage(image, fromZero = false, transition = false) {
-    
+
     let imageData;
     if (Object.keys(data).includes(image)) {
         console.log("setting image: ", image)
@@ -131,14 +129,9 @@ export function setImage(image, fromZero = false, transition = false) {
 
     controller.setSource(imageData, fromZero, transition)
 
-
-
     controller.rightCanvasController.setText(controller.sourceFourierData.length);
-
-    let test = document.getElementById("inProgressTitle")
-    test.style = "color: teal;"
-
     controller.leftCanvasController.setText(controller.currentNumFourierTerms);
+
     if (imageData === fourierData) {
         attribution("Joseph Fourier Portrait by Stewart@Biocinematics")
     } else attribution(image);
@@ -237,22 +230,5 @@ function initializeOdometer() {
     };
     console.log(odometerOptions)
 }
-
-const  originalConsoleError = console.error
-const originalConsoleWarn = console.warn;
-
-function handleConsoleLog(type, message, ...args) {
-    let jank = document.getElementById("jank")
-    let e = document.createElement('p')
-    e.textContent = type + ": " + message
-    jank.appendChild(e)
-}
-
-console.error = function (message, ...args) {
-  handleConsoleLog('Error', message, ...args);  // Call your custom handler
-  originalConsoleError(message, ...args)
-};
-
-
 
 init();

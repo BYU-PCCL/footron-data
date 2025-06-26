@@ -177,15 +177,10 @@ export default class EpicyclesController {
 
   initializeData(fourierData, zerosAtStart, transition) {
     if (fourierData[0] == undefined) console.error("Fourier Data is undefined")
-    let test = document.getElementById("inProgressTitle")
-    test.style = "color: purple;"
-    console.error(fourierData[0].amplitude, zerosAtStart, transition)
     // fourierData.sort((a, b) => b.amplitude - a.amplitude); 
     // // sort by amplitude.  
     // // More efficient (most significant terms first), but less mathmatically correct
-    test.style = "color: red;"
     this.sourceFourierData = this.copyArray(fourierData)
-    test.style = "color: orange;"
     this.targetFourierData = this.copyArray(fourierData)
     if (transition) {
       while (this.targetFourierData > this.currentFourierData) {
@@ -215,17 +210,13 @@ export default class EpicyclesController {
   copyArray(array) {
     return JSON.parse(JSON.stringify(array));
     // return structuredClone(array); // this seems to perform a tad better.
+    // EXCEPT ON PROD WHERE IT CRASHES!
   }
 
   setSource(fourierData, fromZero = false, transition = false) {
-    let test = document.getElementById("inProgressTitle")
-    
     this.initializeData(fourierData, fromZero, transition)
-    test.style = "color: yellow;"
     this.numPathPoints = this.sourceFourierData.length * 2;
     
-    test.style = "color: green;"
-
     this.resetEase(this.currentFourierData, this.easeStartFourierData);
     console.log("done setting source");
   }
