@@ -179,7 +179,7 @@ export default class EpicyclesController {
     if (fourierData[0] == undefined) console.error("Fourier Data is undefined")
     let test = document.getElementById("inProgressTitle")
     test.style = "color: purple;"
-    console.error(fourierData[0], zerosAtStart, transition)
+    console.error(fourierData[0].amplitude, zerosAtStart, transition)
     // fourierData.sort((a, b) => b.amplitude - a.amplitude); 
     // // sort by amplitude.  
     // // More efficient (most significant terms first), but less mathmatically correct
@@ -213,8 +213,8 @@ export default class EpicyclesController {
   }
 
   copyArray(array) {
-    // return JSON.parse(JSON.stringify(array));
-    return structuredClone(array); // this seems to perform a tad better.
+    return JSON.parse(JSON.stringify(array));
+    // return structuredClone(array); // this seems to perform a tad better.
   }
 
   setSource(fourierData, fromZero = false, transition = false) {
