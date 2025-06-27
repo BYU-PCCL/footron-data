@@ -82,7 +82,7 @@ export default class EpicyclesController {
       yCenter: 0
     }
     this.targetZoom = {
-      zoom: 1,
+      scale: 1,
       xCenter: 0,
       yCenter: 0
     }
@@ -270,7 +270,7 @@ export default class EpicyclesController {
    * @param {zoom} zoom automatically clamped between 1 and 10
    */
   setZoom(zoom = 1) {
-    this.targetZoom.zoom = clamp(zoom, 1, 10);
+    this.targetZoom.scale = clamp(zoom, 1, 10);
     this.#resetZoomEase()
   }
 
@@ -424,7 +424,7 @@ export default class EpicyclesController {
     if (this.zoomFinishedEasing) {
       this.currentZoom.xCenter = this.targetZoom.xCenter
       this.currentZoom.yCenter = this.targetZoom.yCenter
-      this.currentZoom.scale = this.targetZoom.zoom
+      this.currentZoom.scale = this.targetZoom.scale
       return;
     }
 
@@ -433,8 +433,7 @@ export default class EpicyclesController {
 
     this.currentZoom.xCenter = slurp(this.startZoom.xCenter, this.targetZoom.xCenter, progress)
     this.currentZoom.yCenter = slurp(this.startZoom.yCenter, this.targetZoom.yCenter, progress)
-    this.currentZoom.scale = slurp(this.startZoom.scale, this.targetZoom.zoom, progress)
-
+    this.currentZoom.scale = slurp(this.startZoom.scale, this.targetZoom.scale, progress)
     if (this.zoomEaseAmt >= 1) {
       this.zoomFinishedEasing = true;
     }
