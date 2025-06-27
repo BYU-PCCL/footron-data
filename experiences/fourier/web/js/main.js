@@ -97,7 +97,7 @@ function init() {
     );
 
     // To let me play around with things in the console.
-    // window.controller = controller;
+    window.controller = controller;
 
     setImage(null, true);
     controller.start();

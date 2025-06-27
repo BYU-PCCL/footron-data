@@ -11,13 +11,15 @@ import CanvasController from "./canvas-controller.js";
 export default class EpicyclesController {
   constructor(id) {
     // config values
-    this.maxNumPathPoints = 4096;
+    this.maxNumPathPoints = 2048;
     this.period = 120; // Time for a default full cycle. Note: Can be slowed or sped up by setPeriod()
     this.zoomEaseTime = 5; // How long a zoom takes
     this.minRenderAmplitude = 0.01;
     this.easeTime = 5; // how many seconds to chase an update
     this.easingMethod = "bounce";
     this.fillAmount = 0.75 // How much of the canvas the path can take up (at default zoom)
+    this.goalFrameRate = 0.05
+    this.minimalChunk = 256;
 
     this.id = id;
     this.drawSteps = [];
@@ -48,8 +50,8 @@ export default class EpicyclesController {
     })
 
     this.animate = true;
+    this.calcChunk = 512;
 
-    this.fourierOrigin = { x: 0, y: 0 } // the offset from the top left given by the first fourier term
     // [ {freq, amplitude, phase } ]
     this.sourceFourierData = []; // Ground truth
     this.changingSourceFourierData = []; // Ground truth
@@ -167,7 +169,7 @@ export default class EpicyclesController {
     if (numPoints < 0) {
       numPoints = path.length;
     }
-    this.numPathPoints = Math.min(numPoints * 2, this.maxNumPathPoints);
+    this.numPathPoints = Math.min(numPoints, this.maxNumPathPoints);
     this.animAmt = 0;
     this.niceAnimAmt = 0;
     let scaledAndCentered = scaleAndShift2dData(path, this.rightCanvasController.width, this.rightCanvasController.height, this.fillAmount);
@@ -193,8 +195,7 @@ export default class EpicyclesController {
    */
   setSource(fourierData, fromZero = false, transition = false) {
     this.#initializeData(fourierData, fromZero, transition)
-    this.numPathPoints = this.sourceFourierData.length * 2;
-
+    this.numPathPoints = Math.min(this.sourceFourierData.length * 2, this.maxNumPathPoints);
     this.#resetEase(this.currentFourierData, this.easeStartFourierData);
     console.log("done setting source");
   }
@@ -362,12 +363,12 @@ export default class EpicyclesController {
    * repeats every frame
    */
   #everyFrame() {
-    const start = Date.now()
+    // const start = Date.now()
     this.#update();
-    const updateTime = Date.now()
+    // const updateTime = Date.now()
     this.#render();
-    const renderTime = Date.now()
-    console.debug(`FPS: ${Math.round(1000 / (renderTime - start))}, update: ${updateTime - start}ms, render: ${renderTime - updateTime}ms`)
+    // const renderTime = Date.now()
+    // console.debug(`FPS: ${Math.round(1000 / (renderTime - start))}, update: ${updateTime - start}ms, render: ${renderTime - updateTime}ms`)
     requestAnimationFrame(() => this.#everyFrame());
   }
 
@@ -390,18 +391,10 @@ export default class EpicyclesController {
         e.phase = 0;
       })
     }
-    let { amplitude, phase } = this.sourceFourierData[0]
-    this.fourierOrigin = {
-      x: amplitude * Math.cos(phase),
-      y: amplitude * Math.sin(phase)
-    }
     this.currentFourierData[0] = { ...this.sourceFourierData[0] };
     this.currentNumFourierTerms = this.sourceFourierData.length;
     this.totalNumFourierTerms = this.sourceFourierData.length;
-    console.log(this.sourceFourierPath[5])
     this.sourceFourierPath = this.#calculatePath(this.sourceFourierData, this.sourceFourierPath);
-    console.log(this.sourceFourierPath[5])
-    this.currentFourierPath = this.#calculatePath(this.currentFourierData, this.currentFourierPath);
     if (transition) this.#resetEase(this.currentFourierData);
   }
 
@@ -446,23 +439,13 @@ export default class EpicyclesController {
     }
   }
 
-  // #recalculatePath(data, path, maxFouriers = -1, pathResolution = this.numPathPoints) {
-  //   // then render everything.
-  //   for (let i = 0; i <= pathResolution; i++) {
-  //     this.niceAnimAmt += 1 / this.numPathPoints;
-  //     this.addToPath(data, path, maxFouriers);
-  //   }
-  //   this.niceAnimAmt -= 1;
-  // }
-
-    /**
- * 
- * @param {*} data 
- * @param {*} path 
- * @param {*} pathResolution 
- */
-  #calculatePath(data, path, pathResolution = this.numPathPoints) {
-    path = this.#partialCalculatePath(data, path, data.length, pathResolution)
+  /**
+* 
+* @param {*} data 
+* @param {*} path 
+*/
+  #calculatePath(data, path) {
+    path = this.#partialCalculatePath(data, path, data.length)
     this.deferredIndex = 0
     return path
   }
@@ -472,43 +455,44 @@ export default class EpicyclesController {
    * @param {*} data 
    * @param {*} path 
    * @param {*} numTerms 
-   * @param {*} pathResolution 
+   * @param {*} startTerm 
    */
-  #partialCalculatePath(data, path, numTerms = 512, pathResolution = this.numPathPoints, startTerm = 0) {
-    while (path.length < pathResolution) {
-      path.push({x: 0, y: 0});
+  #partialCalculatePath(data, path, numTerms = 1, startTerm = 0) {
+    while (path.length < this.numPathPoints) {
+      path.push({ x: 0, y: 0 });
     }
-    if (path.length > pathResolution) {
-      path = path.slice(0, pathResolution);
+    if (path.length > this.numPathPoints) {
+      path = path.slice(0, this.numPathPoints);
     }
-    if (startTerm + numTerms > this.currentFourierData) {
-      numTerms = this.currentFourierData.length - startTerm
+    if (startTerm + numTerms > data.length) {
+      numTerms = data.length - startTerm
+      console.log("KEEP ME")
     }
-    for (let i = 0; i < pathResolution; i++) {
-      this.#updatePathPoint(data, path, i, numTerms);
+    if (numTerms < 1) return path
+    for (let i = 0; i < path.length; i++) {
+      this.#updatePathPoint(data, path, i, numTerms, startTerm);
     }
     return path
   }
 
   #setPathResolution(numPoints) {
-    while (path.length < pathResolution) {
-      path.push({x: 0, y: 0});
+    while (path.length < numPoints) {
+      path.push({ x: 0, y: 0 });
     }
-    if (path.length > pathResolution) {
-      path = path.slice(0, pathResolution);
+    if (path.length > numPoints) {
+      path = path.slice(0, numPoints);
     }
     this.numPathPoints = numPoints
-    this.currentFourierPath = this.#calculatePath(this.currentFourierData, this.currentFourierPath)
   }
 
-    /**
- * 
- * @param {*} data 
- * @param {*} path 
- * @param {integer} index the index of the item in path that will be updated
- * @param {integer} numAddedFouriers optional number to specify how many fourier terms should be used in the calculation
- */
-  #updatePathPoint(data, path, index, numAddedFouriers = -1) {
+  /**
+* 
+* @param {*} data 
+* @param {*} path 
+* @param {integer} index the index of the item in path that will be updated
+* @param {integer} numAddedFouriers optional number to specify how many fourier terms should be used in the calculation
+*/
+  #updatePathPoint(data, path, index, numAddedFouriers = -1, startTerm = 0) {
     if (data.length == 0) {
       console.error("updatePathPoint called with no data")
       return;
@@ -520,14 +504,22 @@ export default class EpicyclesController {
     if (data.length <= 1) {
       console.error("data.length is only ", data.length)
     }
-
-    if (numAddedFouriers == -1) {
-      numAddedFouriers = data.length - this.deferredIndex
+    if (startTerm >= data.length) {
+      console.error("start term is after end of data ")
+      return;
     }
 
-    if (this.deferredIndex != 0) {
-      // path[index] = this.#getPoint(data, index / path.length, numAddedFouriers, this.deferredIndex, path[index])
-      path[index] = this.#getPoint(data, index / path.length, numAddedFouriers)
+    if (numAddedFouriers == -1) {
+      numAddedFouriers = data.length - startTerm
+    }
+
+    if (numAddedFouriers < 1) {
+      console.error("NEGATIVE", data.length - startTerm)
+    }
+
+
+    if (startTerm != 0) {
+      path[index] = this.#getPoint(data, index / path.length, numAddedFouriers, startTerm, path[index])
     } else {
       path[index] = this.#getPoint(data, index / path.length, numAddedFouriers)
     }
@@ -550,8 +542,6 @@ export default class EpicyclesController {
       console.error("Get point with negative numFouriers")
     }
 
-    // console.log(data, percentage, numFouriers, startFourier)
-
     let xChange = 0;
     let yChange = 0;
 
@@ -564,7 +554,7 @@ export default class EpicyclesController {
       xChange += amplitude * Math.cos(angle);
       yChange += amplitude * Math.sin(angle);
     }
-    return ({x: xChange + initialPoint.x, y: yChange + initialPoint.y})
+    return ({ x: xChange + initialPoint.x, y: yChange + initialPoint.y })
   }
 
   #boxFromZoomPoint(canvas, zoom, xPoint, yPoint) {
@@ -581,25 +571,42 @@ export default class EpicyclesController {
   #update() {
     let curTime = Date.now();
     let dt = (curTime - this.lastTime) / 1000;
+    this.lastTime = curTime
 
     this.#findArm()
     this.#easeZoomData(dt, easeOutSine)
 
-    if (this.pathDirty) {
-      this.currentFourierPath = this.#calculatePath(this.currentFourierData, this.currentFourierPath);
-      this.pathDirty = false;
-    }
+    // if (!this.finishedEasing) {
+
+    //   this.currentFourierPath = this.#partialCalculatePath(this.currentFourierData, this.currentFourierPath, this.calcChunk, 1024)
+    //   this.deferredIndex = 0
+    // } else if (this.deferredIndex < this.currentNumFourierTerms) {
+    //   this.currentFourierPath = this.#partialCalculatePath(this.currentFourierData, this.currentFourierPath, 1);
+    // }
 
     if (!this.finishedEasing) {
-      // This call is really expensive, so we give it a max number
-      // of terms to calculate during the transition
-      this.currentFourierPath = this.#calculatePath(
+      // if (dt > this.goalFrameRate) {
+      //   console.log(this.calcChunk + " is to slow, halving calcChunk")
+      //   this.calcChunk = Math.max(this.minimalChunk, Math.floor(this.calcChunk * 4 / 5))
+      // } else {
+      //   this.calcChunk = Math.ceil(this.calcChunk * 5 / 4)
+      // }
+      this.currentFourierPath = this.#partialCalculatePath(
         this.currentFourierData,
-        this.currentFourierPath
+        this.currentFourierPath, this.calcChunk
       );
-    }
-    if (!this.animate) {
-      return;
+    } else if (this.pathDirty) {
+      this.#partialCalculatePath(
+        this.currentFourierData,
+        this.currentFourierPath, this.calcChunk, this.deferredIndex
+      );
+      this.deferredIndex += this.calcChunk
+      this.refining = true;
+      // }
+      if (this.deferredIndex >= this.currentFourierData.length) {
+        this.pathDirty = false
+        this.deferredIndex = 0
+      }
     }
 
     if (this.easeAmt < 1) {
@@ -610,6 +617,7 @@ export default class EpicyclesController {
         this.targetFourierData,
         easeOutSine
       );
+      this.deferredIndex = 0
     }
 
     this.animAmt += (dt / this.period) % 1;
@@ -618,8 +626,6 @@ export default class EpicyclesController {
       this.animAmt--;
       this.niceAnimAmt--;
     }
-
-    this.lastTime = curTime;
   }
 
   /**
@@ -649,7 +655,8 @@ export default class EpicyclesController {
 
     if (this.easeAmt >= 1) {
       this.finishedEasing = true;
-      this.pathDirty = true;
+      this.deferredIndex = 0
+      this.pathDirty = true
     }
   }
 

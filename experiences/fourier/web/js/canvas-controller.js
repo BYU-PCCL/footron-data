@@ -117,16 +117,17 @@ export default class CanvasController {
     this.context.globalAlpha = style.alpha;
     this.context.strokeStyle = style.color;
     this.context.lineWidth = style.lineWidth;
-    for (let i = 0; i < path.length - 1; i++) {
-      this.context.beginPath();
-      this.context.moveTo(
-        this.transformX(path[i].x),
-        this.transformY(path[i].y))
+    this.context.beginPath();
+    this.context.moveTo(
+      this.transformX(path[0].x),
+      this.transformY(path[0].y))
+    for (let i = 1; i < path.length - 1; i++) {
       this.context.lineTo(
         this.transformX(path[i + 1].x),
         this.transformY(path[i + 1].y));
-      this.context.stroke();
-    }
+      }
+    this.context.closePath();
+    this.context.stroke();
     this.context.globalAlpha = 1;
   }
 
