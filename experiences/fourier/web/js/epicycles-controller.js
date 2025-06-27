@@ -391,7 +391,9 @@ export default class EpicyclesController {
         e.phase = 0;
       })
     }
-    this.currentFourierData[0] = { ...this.sourceFourierData[0] };
+    if (zerosAtStart || !transition) {
+      this.currentFourierData[0] = { ...this.sourceFourierData[0] };
+    }
     this.currentNumFourierTerms = this.sourceFourierData.length;
     this.totalNumFourierTerms = this.sourceFourierData.length;
     this.sourceFourierPath = this.#calculatePath(this.sourceFourierData, this.sourceFourierPath);

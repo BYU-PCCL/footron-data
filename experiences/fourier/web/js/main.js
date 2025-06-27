@@ -11,6 +11,7 @@ import { mooreData5 } from "./fourier-data/moore.js";
 import { fourierData } from "./fourier-data/fourier.js";
 import { pentagonData } from "./fourier-data/pentagon.js";
 import { hexagonData } from "./fourier-data/hexagon.js";
+import { infinityData } from "./fourier-data/infinity.js";
 
 import EpicyclesController from "./epicycles-controller.js";
 import "./message-handler.js";
@@ -18,6 +19,7 @@ import { palette } from "./color.js";
 import Slideshow from "./slideshow.js";
 import { slides } from "./slides.js";
 import { isAprilFools } from "./util.js";
+
 
 const controller = new EpicyclesController("standardCanvas");
 const show = new Slideshow("slideDisplay", slides, setImage);
@@ -40,7 +42,7 @@ const data = {
 const ATTRIBUTION_ELEMENT = document.getElementById("attribution")
 
 let randomChoices = [
-    sailorData, mooreData5, triangleData, yLogoData, peaceData, poData
+    sailorData, mooreData5, triangleData, yLogoData, peaceData, poData, hexagonData, fouriestData, infinityData
 ]
 if (isAprilFools()) randomChoices.push(rickData);
 
