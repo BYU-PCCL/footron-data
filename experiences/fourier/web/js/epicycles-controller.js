@@ -155,12 +155,6 @@ export default class EpicyclesController {
     console.log(this.drawSteps);
   }
 
-  #everyFrame() {
-    this.#update();
-    this.#render();
-    requestAnimationFrame(() => this.#everyFrame());
-  }
-
   setSourceFromPath(path, numPoints = -1, zerosAtStart = false) {
     if (numPoints < 0) {
       numPoints = path.length;
@@ -290,6 +284,16 @@ export default class EpicyclesController {
   }
 
   // Private methods
+
+  /**
+   * Update calculations and render canvases.
+   * repeats every frame
+   */
+  #everyFrame() {
+    this.#update();
+    this.#render();
+    requestAnimationFrame(() => this.#everyFrame());
+  }
 
   #initializeData(fourierData, zerosAtStart, transition) {
     if (fourierData[0] == undefined) console.error("Fourier Data is undefined")
