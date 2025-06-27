@@ -63,7 +63,7 @@ export function smallEaseInOut(t, a, b) {
 }
 
 export function slurp(val1, val2, amt) {
-  return (val2 - val1) * amt + val1;
+  return val2 * amt + val1 * (1 - amt);
 }
 
 export function experp(val1, val2, amt) {
