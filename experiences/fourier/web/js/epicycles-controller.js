@@ -29,7 +29,7 @@ export default class EpicyclesController {
     this.lastTime = Date.now();
 
     // Listener for fullscreen changes
-    window.addEventListener("resize", (evt) => this.onResize(evt));
+    window.addEventListener("resize", (evt) => this.#onResize(evt));
     this.isTransitioning = false
     document.addEventListener('transitionstart', event => {
       const { target } = event;
@@ -41,7 +41,7 @@ export default class EpicyclesController {
         target.removeEventListener('transitioncancel', onFinish);
         target.removeEventListener('transitionend', onFinish);
         this.isTransitioning = false;
-        this.onResize()
+        this.#onResize()
       };
       target.addEventListener('transitioncancel', onFinish);
       target.addEventListener('transitionend', onFinish);
@@ -100,6 +100,10 @@ export default class EpicyclesController {
     this.fullscreen = "left";
   }
 
+  /**
+   * Changes the window mode to maximize the left or right canvas, or display them both
+   * @param {string} fullscreenTarget accepts values of "left", "right", or "both"
+   */
   setFullscreen(fullscreenTarget) {
     if (fullscreenTarget == "left") {
       this.fullscreen = "left";
@@ -122,18 +126,14 @@ export default class EpicyclesController {
     }
   }
 
-  // Kick off the update loop
-  start() {
-    window.requestAnimationFrame(() => this.everyFrame());
-  }
-
-  everyFrame() {
-    this.update();
-    this.render();
-    requestAnimationFrame(() => this.everyFrame());
-  }
-
   /**
+   * Kick off the update loop
+   */
+  start() {
+    window.requestAnimationFrame(() => this.#everyFrame());
+  }
+
+    /**
    * Debug function to print values to console
    */
   query() {
@@ -147,14 +147,21 @@ export default class EpicyclesController {
         numFourierTerms: ${this.currentNumFourierTerms}
         numPathPoints:   ${this.numPathPoints}`;
     console.log(generalMessage);
+    console.log(this.currentFourierPath.length, this.currentFourierPath[0], this.currentFourierPath[10])
+    console.log(this.currentFourierData.length, this.currentFourierData[10], this.currentFourierData[20])
 
-    this.canvases.forEach((canvas) => {
-      canvas.query();
-    });
+    this.leftCanvasController.query();
+    this.rightCanvasController.query();
     console.log(this.drawSteps);
   }
 
-  setPathFromPoints(path, numPoints = -1, zerosAtStart = false) {
+  #everyFrame() {
+    this.#update();
+    this.#render();
+    requestAnimationFrame(() => this.#everyFrame());
+  }
+
+  setSourceFromPath(path, numPoints = -1, zerosAtStart = false) {
     if (numPoints < 0) {
       numPoints = path.length;
     }
@@ -170,57 +177,19 @@ export default class EpicyclesController {
       1 << (31 - Math.clz32(this.numPathPoints)) // next power of 2
     );
     // console.log("Resampled: ", resampledData)
-    this.initializeData(getFourierData(resampledData), zerosAtStart);
+    this.#initializeData(getFourierData(resampledData), zerosAtStart);
     console.log(this.sourceFourierData.length + "/" + numPoints);
-    this.resetEase(this.currentFourierData, this.easeStartFourierData);
+    this.#resetEase(this.currentFourierData, this.easeStartFourierData);
   }
-
-  initializeData(fourierData, zerosAtStart, transition) {
-    if (fourierData[0] == undefined) console.error("Fourier Data is undefined")
-    // fourierData.sort((a, b) => b.amplitude - a.amplitude); 
-    // // sort by amplitude.  
-    // // More efficient (most significant terms first), but less mathmatically correct
-    this.sourceFourierData = this.copyArray(fourierData)
-    this.targetFourierData = this.copyArray(fourierData)
-    if (transition) {
-      while (this.targetFourierData > this.currentFourierData) {
-        this.currentFourierData.push({ freq: this.targetFourierData[this.currentFourierData.length].freq, phase: 0, amplitude: 0 })
-      }
-    }
-    if (!transition) this.currentFourierData = this.copyArray(fourierData)
-    if (zerosAtStart) {
-      this.currentFourierData.forEach(function (e) {
-        e.amplitude = 0;
-        e.phase = 0;
-      })
-    }
-    let { amplitude, phase } = this.sourceFourierData[0]
-    this.fourierOrigin = {
-      x: amplitude * Math.cos(phase),
-      y: amplitude * Math.sin(phase)
-    }
-    this.currentFourierData[0] = { ...this.sourceFourierData[0] };
-    this.currentNumFourierTerms = this.sourceFourierData.length;
-    this.totalNumFourierTerms = this.sourceFourierData.length;
-    this.recalculatePath(this.sourceFourierData, this.sourceFourierPath);
-    this.recalculatePath(this.currentFourierData, this.currentFourierPath, this.currentFourierData.length, true);
-    if (transition) this.resetEase(this.currentFourierData);
-  }
-
-  copyArray(array) {
-    return JSON.parse(JSON.stringify(array));
-    // return structuredClone(array); // this seems to perform a tad better.
-    // EXCEPT ON PROD WHERE IT CRASHES!
-  }
-
+  
   setSource(fourierData, fromZero = false, transition = false) {
-    this.initializeData(fourierData, fromZero, transition)
+    this.#initializeData(fourierData, fromZero, transition)
     this.numPathPoints = this.sourceFourierData.length * 2;
     
-    this.resetEase(this.currentFourierData, this.easeStartFourierData);
+    this.#resetEase(this.currentFourierData, this.easeStartFourierData);
     console.log("done setting source");
   }
-
+  
   setFourierAmt(amt) {
     let fullLength = this.sourceFourierData.length;
     if (amt <= 1) amt *= fullLength;
@@ -235,7 +204,7 @@ export default class EpicyclesController {
     ) {
       this.targetFourierData[i].amplitude = 0;
     }
-    this.resetEase(this.currentFourierData);
+    this.#resetEase(this.currentFourierData);
     return this.currentNumFourierTerms;
   }
 
@@ -255,7 +224,7 @@ export default class EpicyclesController {
     for (let i = this.currentNumFourierTerms; i < fullLength; i++) {
       this.targetFourierData[i].amplitude = 0;
     }
-    this.resetEase(this.currentFourierData, this.easeStartFourierData);
+    this.#resetEase(this.currentFourierData, this.easeStartFourierData);
     return this.currentNumFourierTerms;
   }
 
@@ -266,12 +235,98 @@ export default class EpicyclesController {
       this.targetZoom.xCenter = this.rightCanvasController.canvas.width / 2;
       this.targetZoom.yCenter = this.rightCanvasController.canvas.height / 2;
     }
-    this.resetZoomEase()
+    this.#resetZoomEase()
   }
 
   setZoom(zoom = 1) {
     this.targetZoom.zoom = clamp(zoom, 1, 10);
-    this.resetZoomEase()
+    this.#resetZoomEase()
+  }
+
+  resetZoom() {
+    this.targetZoom = {
+      zoom: 1,
+      xCenter: this.rightCanvasController.canvas.width / 2,
+      yCenter: this.rightCanvasController.canvas.height / 2
+    }
+    this.#resetEase(this.currentFourierData);
+  }
+
+  setEpicycle(index, phase = null, amplitude = null) {
+    if (index < 0 || index >= this.sourceFourierData.length) {
+      return;
+    }
+    if (!isNaN(amplitude)) this.targetFourierData[index].amplitude = amplitude;
+    if (!isNaN(phase)) this.targetFourierData[index].phase = phase;
+    this.#resetEase(this.currentFourierData);
+  }
+
+  resetEpicycles(index = -1) {
+    if (index >= this.sourceFourierData.length) {
+      return;
+    }
+    if (index < 0) {
+      this.targetFourierData = this.sourceFourierData.map((d) => ({ ...d }));
+    } else {
+      this.targetFourierData[index].amplitude =
+        this.sourceFourierData[index].amplitude;
+      this.targetFourierData[index].phase = this.sourceFourierData[index].phase;
+    }
+    this.#resetEase(this.currentFourierData, this.easeStartFourierData);
+  }
+
+  setHighlight(index, highlightStyle = basicStyle) {
+    this.drawSteps.forEach(step => {
+      if (step.type == "circles") {
+        step.index = index;
+        step.highlightStyle = highlightStyle;
+      }
+    });
+  }
+
+  setPeriod(seconds = 60) {
+    if (seconds == 0) return;
+    this.period = seconds;
+  }
+
+  // Private methods
+
+  #initializeData(fourierData, zerosAtStart, transition) {
+    if (fourierData[0] == undefined) console.error("Fourier Data is undefined")
+    // fourierData.sort((a, b) => b.amplitude - a.amplitude); 
+    // // sort by amplitude.  
+    // // More efficient (most significant terms first), but less mathmatically correct
+    this.sourceFourierData = this.#copyArray(fourierData)
+    this.targetFourierData = this.#copyArray(fourierData)
+    if (transition) {
+      while (this.targetFourierData > this.currentFourierData) {
+        this.currentFourierData.push({ freq: this.targetFourierData[this.currentFourierData.length].freq, phase: 0, amplitude: 0 })
+      }
+    }
+    if (!transition) this.currentFourierData = this.#copyArray(fourierData)
+    if (zerosAtStart) {
+      this.currentFourierData.forEach(function (e) {
+        e.amplitude = 0;
+        e.phase = 0;
+      })
+    }
+    let { amplitude, phase } = this.sourceFourierData[0]
+    this.fourierOrigin = {
+      x: amplitude * Math.cos(phase),
+      y: amplitude * Math.sin(phase)
+    }
+    this.currentFourierData[0] = { ...this.sourceFourierData[0] };
+    this.currentNumFourierTerms = this.sourceFourierData.length;
+    this.totalNumFourierTerms = this.sourceFourierData.length;
+    this.#recalculatePath(this.sourceFourierData, this.sourceFourierPath);
+    this.#recalculatePath(this.currentFourierData, this.currentFourierPath, this.currentFourierData.length, true);
+    if (transition) this.#resetEase(this.currentFourierData);
+  }
+
+  #copyArray(array) {
+    return JSON.parse(JSON.stringify(array));
+    // return structuredClone(array); // this seems to perform a tad better.
+    // EXCEPT ON PROD WHERE IT CRASHES!
   }
 
   // takes a zoom level and a point in the canvas, and returns the offset from the center of the canvas to that point.
@@ -282,27 +337,7 @@ export default class EpicyclesController {
     return xOffset, yOffset;
   }
 
-  boxFromZoomPoint(canvas, zoom, xPoint, yPoint) {
-    let x, y, width, height;
-    width = canvas.canvas.width / zoom
-    height = canvas.canvas.height / zoom
-    x = xPoint - (width / 2)
-    y = yPoint - (height / 2)
-    return {
-      x: x, y: y, width: width, height: height
-    }
-  }
-
-  resetZoom() {
-    this.targetZoom = {
-      zoom: 1,
-      xCenter: this.rightCanvasController.canvas.width / 2,
-      yCenter: this.rightCanvasController.canvas.height / 2
-    }
-    this.resetEase(this.currentFourierData);
-  }
-
-  resetZoomEase() {
+  #resetZoomEase() {
     this.startZoom.scale = this.currentZoom.scale;
     this.startZoom.xCenter = this.currentZoom.xCenter;
     this.startZoom.yCenter = this.currentZoom.yCenter;
@@ -310,7 +345,7 @@ export default class EpicyclesController {
     this.zoomEaseAmt = 0
   }
 
-  easeZoomData(dt, easeFunction) {
+  #easeZoomData(dt, easeFunction) {
     if (this.zoomFinishedEasing) {
       this.currentZoom.xCenter = this.targetZoom.xCenter
       this.currentZoom.yCenter = this.targetZoom.yCenter
@@ -330,44 +365,7 @@ export default class EpicyclesController {
     }
   }
 
-  setEpicycle(index, phase = null, amplitude = null) {
-    if (index < 0 || index >= this.sourceFourierData.length) {
-      return;
-    }
-    if (!isNaN(amplitude)) this.targetFourierData[index].amplitude = amplitude;
-    if (!isNaN(phase)) this.targetFourierData[index].phase = phase;
-    this.resetEase(this.currentFourierData);
-  }
-
-  resetEpicycles(index = -1) {
-    if (index >= this.sourceFourierData.length) {
-      return;
-    }
-    if (index < 0) {
-      this.targetFourierData = this.sourceFourierData.map((d) => ({ ...d }));
-    } else {
-      this.targetFourierData[index].amplitude =
-        this.sourceFourierData[index].amplitude;
-      this.targetFourierData[index].phase = this.sourceFourierData[index].phase;
-    }
-    this.resetEase(this.currentFourierData, this.easeStartFourierData);
-  }
-
-  setHighlight(index, highlightStyle = basicStyle) {
-    this.drawSteps.forEach(step => {
-      if (step.type == "circles") {
-        step.index = index;
-        step.highlightStyle = highlightStyle;
-      }
-    });
-  }
-
-  setPeriod(seconds = 60) {
-    if (seconds == 0) return;
-    this.period = seconds;
-  }
-
-  recalculatePath(data, path, maxFouriers = -1, pathResolution = this.numPathPoints) {
+  #recalculatePath(data, path, maxFouriers = -1, pathResolution = this.numPathPoints) {
     // then render everything.
     for (let i = 0; i <= pathResolution; i++) {
       this.niceAnimAmt += 1 / this.numPathPoints;
@@ -376,22 +374,33 @@ export default class EpicyclesController {
     this.niceAnimAmt -= 1;
   }
 
-  update() {
+  #boxFromZoomPoint(canvas, zoom, xPoint, yPoint) {
+    let x, y, width, height;
+    width = canvas.canvas.width / zoom
+    height = canvas.canvas.height / zoom
+    x = xPoint - (width / 2)
+    y = yPoint - (height / 2)
+    return {
+      x: x, y: y, width: width, height: height
+    }
+  }
+
+  #update() {
     let curTime = Date.now();
     let dt = (curTime - this.lastTime) / 1000;
 
-    this.findArm()
-    this.easeZoomData(dt, easeOutSine)
+    this.#findArm()
+    this.#easeZoomData(dt, easeOutSine)
 
     if (this.pathDirty) {
-      this.recalculatePath(this.currentFourierData, this.currentFourierPath);
+      this.#recalculatePath(this.currentFourierData, this.currentFourierPath);
       this.pathDirty = false;
     }
 
     if (!this.finishedEasing) {
       // This call is really expensive, so we give it a max number
       // of terms to calculate during the transition
-      this.recalculatePath(
+      this.#recalculatePath(
         this.currentFourierData,
         this.currentFourierPath,
         this.currentFourierData.length / 2,
@@ -402,7 +411,7 @@ export default class EpicyclesController {
     }
 
     if (this.easeAmt < 1) {
-      this.easeData(
+      this.#easeData(
         dt,
         this.easeStartFourierData,
         this.currentFourierData,
@@ -424,7 +433,7 @@ export default class EpicyclesController {
   /**
    * Causes this.currentFourierData to chase this.targetFourierData
    */
-  easeData(dt, start, update, target, easeFunction) {
+  #easeData(dt, start, update, target, easeFunction) {
     if (this.finishedEasing) {
       while (this.currentFourierData.length > this.targetFourierData) {
         this.currentFourierData.pop();
@@ -452,7 +461,7 @@ export default class EpicyclesController {
     }
   }
 
-  resetEase(current) {
+  #resetEase(current) {
     this.startZoom.scale = this.currentZoom.scale
     this.easeStartFourierData = current.map((d) => ({ ...d }));
     this.easeAmt = 0;
@@ -482,7 +491,7 @@ export default class EpicyclesController {
     }
   }
 
-  findArm() {
+  #findArm() {
     if (this.followIndex < 0 || this.followIndex == null) {
       const canvasWidth = this.rightCanvasController.canvas.width;
       const canvasHeight = this.rightCanvasController.canvas.height;
@@ -507,7 +516,7 @@ export default class EpicyclesController {
     this.targetZoom.yCenter = runningY;
   }
 
-  renderCanvas(canvas, zoomInfo = null) {
+  #renderCanvas(canvas, zoomInfo = null) {
     if (zoomInfo != null) {
       canvas.zoom = zoomInfo
     }
@@ -519,7 +528,7 @@ export default class EpicyclesController {
 
     filtered.forEach((step) => {
       if (step.dataType === "box") {
-        step.boxCoords = this.boxFromZoomPoint(canvas, currentZoomScale, currentZoomXCenter, currentZoomYCenter);
+        step.boxCoords = this.#boxFromZoomPoint(canvas, currentZoomScale, currentZoomXCenter, currentZoomYCenter);
         if (currentZoomScale > 1) step.style.alpha = Math.round(Math.min(currentZoomScale - 1, 1) * 100);
       } else if (step.dataType === "path") {
         step.data = step.source === "source" ? this.sourceFourierPath : this.currentFourierPath;
@@ -530,18 +539,18 @@ export default class EpicyclesController {
     canvas.drawFrame(this.animAmt, filtered);
   }
 
-  render() {
+  #render() {
     if (this.isTransitioning) {
-      this.onResize()
+      this.#onResize()
     }
-    this.renderCanvas(this.leftCanvasController, this.currentZoom)
-    this.renderCanvas(this.rightCanvasController)
+    this.#renderCanvas(this.leftCanvasController, this.currentZoom)
+    this.#renderCanvas(this.rightCanvasController)
   }
 
   /**
    * Resize canvases to fit new context
    */
-  onResize() {
+  #onResize() {
     this.leftCanvasController.onResize()
     this.rightCanvasController.onResize()
   }
