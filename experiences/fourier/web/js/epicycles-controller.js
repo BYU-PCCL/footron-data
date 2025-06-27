@@ -133,9 +133,9 @@ export default class EpicyclesController {
     window.requestAnimationFrame(() => this.#everyFrame());
   }
 
-    /**
-   * Debug function to print values to console
-   */
+  /**
+ * Debug function to print values to console
+ */
   query() {
     let generalMessage = `
     General:
@@ -155,6 +155,13 @@ export default class EpicyclesController {
     console.log(this.drawSteps);
   }
 
+  /**
+ * Sets an image from point data instead of fourier terms.
+ * This is primarily a development tool to load new images
+ * @param {Array.Position} path 
+ * @param {integer} numPoints 
+ * @param {boolean} zerosAtStart 
+ */
   setSourceFromPath(path, numPoints = -1, zerosAtStart = false) {
     if (numPoints < 0) {
       numPoints = path.length;
@@ -175,15 +182,28 @@ export default class EpicyclesController {
     console.log(this.sourceFourierData.length + "/" + numPoints);
     this.#resetEase(this.currentFourierData, this.easeStartFourierData);
   }
-  
+
+  /**
+   * Changes the data used to calculate the cycle
+   * @param {Array.FourierTerm} fourierData 
+   * @param {boolean} fromZero starts all amplitudes and phases at zero to allow shape to grow from nothing
+   * @param {boolean} transition if set to false, when changing the data the new shape will appear immediately 
+   * instead of morphing from the previous one
+   */
   setSource(fourierData, fromZero = false, transition = false) {
     this.#initializeData(fourierData, fromZero, transition)
     this.numPathPoints = this.sourceFourierData.length * 2;
-    
+
     this.#resetEase(this.currentFourierData, this.easeStartFourierData);
     console.log("done setting source");
   }
-  
+
+  /**
+   * Sets the amplitude of all target terms after the given amt to zero
+   * values of 1 or less are treated as percentages of the available terms
+   * @param {number} amt 
+   * @returns the updated number of terms being used
+   */
   setFourierAmt(amt) {
     let fullLength = this.sourceFourierData.length;
     if (amt <= 1) amt *= fullLength;
@@ -202,6 +222,12 @@ export default class EpicyclesController {
     return this.currentNumFourierTerms;
   }
 
+  /**
+   * Changes the number of terms used to calculate the cycle
+   * values of 1 or less are treated as percentages of the available terms
+   * @param {number} amt 
+   * @returns the updated number of terms being used
+   */
   changeFourierAmt(amt) {
     let fullLength = this.sourceFourierData.length;
     if (Math.abs(amt) < 1) {
@@ -222,6 +248,11 @@ export default class EpicyclesController {
     return this.currentNumFourierTerms;
   }
 
+  /**
+   * Causes the left canvas "camera" to follow the tip a given epicycle
+   * Calling with no index given resets the camera to the center
+   * @param {integer} index 
+   */
   setFollowIndex(index = null) {
     this.followIndex = index
     if (null == index) {
@@ -232,11 +263,20 @@ export default class EpicyclesController {
     this.#resetZoomEase()
   }
 
+  /**
+   * Causes the camera to zoom in on its current location.
+   * Higher numbers are more zoomed in.
+   * 1 is the default and 10 is 10 times larger
+   * @param {zoom} zoom automatically clamped between 1 and 10
+   */
   setZoom(zoom = 1) {
     this.targetZoom.zoom = clamp(zoom, 1, 10);
     this.#resetZoomEase()
   }
 
+  /**
+   * Returns the "camera" to the center of the screen at the default zoom level
+   */
   resetZoom() {
     this.targetZoom = {
       zoom: 1,
@@ -246,6 +286,12 @@ export default class EpicyclesController {
     this.#resetEase(this.currentFourierData);
   }
 
+  /**
+   * Change the values of an epicycle
+   * @param {integer} index 
+   * @param {number} phase 
+   * @param {amplitude} amplitude 
+   */
   setEpicycle(index, phase = null, amplitude = null) {
     if (index < 0 || index >= this.sourceFourierData.length) {
       return;
@@ -255,6 +301,9 @@ export default class EpicyclesController {
     this.#resetEase(this.currentFourierData);
   }
 
+  /**
+   * Resets all epicycles to source data
+   */
   resetEpicycles(index = -1) {
     if (index >= this.sourceFourierData.length) {
       return;
@@ -269,6 +318,11 @@ export default class EpicyclesController {
     this.#resetEase(this.currentFourierData, this.easeStartFourierData);
   }
 
+  /**
+   * Emphasize an epicycle with a style
+   * @param {integer} index 
+   * @param {*} highlightStyle 
+   */
   setHighlight(index, highlightStyle = basicStyle) {
     this.drawSteps.forEach(step => {
       if (step.type == "circles") {
@@ -278,6 +332,10 @@ export default class EpicyclesController {
     });
   }
 
+  /**
+   * Change how long a full cycle takes
+   * @param {number} seconds defaults to 60
+   */
   setPeriod(seconds = 60) {
     if (seconds == 0) return;
     this.period = seconds;
@@ -452,7 +510,7 @@ export default class EpicyclesController {
 
     // apply the easing function to the data
     for (let i = 0; i < update.length; i++) {
-      let targetTerm = i >= target.length ? {amplitude: 0, phase: 0} : target[i];
+      let targetTerm = i >= target.length ? { amplitude: 0, phase: 0 } : target[i];
       let amplitudeError = targetTerm.amplitude - start[i].amplitude;
       update[i].amplitude = start[i].amplitude + progress * amplitudeError;
       let phaseError = targetTerm.phase - start[i].phase;
