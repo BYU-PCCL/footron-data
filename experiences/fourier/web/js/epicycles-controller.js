@@ -302,6 +302,19 @@ export default class EpicyclesController {
   }
 
   /**
+   * Resets a specified epicycle to source data
+   * @param {integer} index the epicycle to reset
+   */
+  resetEpicycle(index) {
+    if (index >= this.sourceFourierData.length || index < 0) {
+      return;
+    }
+    this.targetFourierData[index].amplitude = this.sourceFourierData[index].amplitude;
+    this.targetFourierData[index].phase = this.sourceFourierData[index].phase;
+    this.#resetEase(this.currentFourierData, this.easeStartFourierData);
+  }
+
+  /**
    * Resets all epicycles to source data
    */
   resetEpicycles(index = -1) {
