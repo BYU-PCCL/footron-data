@@ -25,3 +25,9 @@ export const basicStyle = {
   lineWidth: 2,
   alpha: 0.5,
 };
+
+export const fadableStyle = {
+  strokeStyle: "255 255 255",
+  lineWidth: 2,
+  alpha: 100,
+}

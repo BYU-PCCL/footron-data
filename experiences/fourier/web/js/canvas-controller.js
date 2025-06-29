@@ -1,10 +1,10 @@
-import { palette } from "./color.js";
+import { fadableStyle } from "./color.js";
 import InfoPanel from "./info-panel.js";
 
 import { basicStyle } from "./color.js";
 
 export default class CanvasController {
-  constructor(id, fullscreen = false) {
+  constructor(id) {
     this.id = id;
     this.width = 0
     this.height = 0
@@ -65,8 +65,6 @@ export default class CanvasController {
   }
 
   drawFrame(animAmt, drawSteps) {
-    let start = Date.now();
-
     for (let i = 0; i < drawSteps.length; i++) {
       const e = drawSteps[i];
       switch (e.type) {
@@ -196,14 +194,11 @@ export default class CanvasController {
     this.context.stroke();
   }
 
-  drawBox(boxCoords, style = basicStyle) {
+  drawBox(boxCoords, style = fadableStyle) {
     this.context.beginPath();
-    if (style.alpha) {
-      let color = "rgb(" + style.color + " / " + style.alpha + "%)"
-      this.context.strokeStyle = color
-    } else {
-      this.context.strokeStyle = style.color;
-    }
+
+    let color = "rgb(" + style.color + " / " + style.alpha + "%)"
+    this.context.strokeStyle = color
     
     this.context.lineWidth = style.lineWidth;
     this.context.rect(
@@ -218,7 +213,7 @@ export default class CanvasController {
   clear() {
     // Clear the previous frame
     this.context.resetTransform();
-    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.context.clearRect(0, 0, this.canvas.width + 1, this.canvas.height + 1);
   }
 
   fade() {
