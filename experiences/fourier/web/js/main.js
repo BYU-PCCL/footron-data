@@ -4,7 +4,7 @@ import EpicyclesController from "./epicycles-controller.js";
 import { palette } from "./color.js";
 import Slideshow from "./slideshow.js";
 import { slides } from "./slides.js"
-import { isAprilFools } from "./util.js";
+import { bounce, inOutExpo, isAprilFools, sinEaseInOut } from "./util.js";
 
 
 // Config variables
@@ -18,8 +18,8 @@ const PERIOD = 120; // Time for a default full cycle. Note: Can be slowed or spe
 const ZOOM_EASE_TIME = 5; // How long a zoom takes
 const MIN_RENDER_AMPLITUDE = 0.01;
 const EASE_TIME = 3; // how many seconds to chase an update
-const EASING_METHOD = "bounce";
-const ZOOM_EASE_METHOD = "bounce";
+const EASE_FUNCTION = sinEaseInOut; // There are a couple of these in utils.js
+const ZOOM_EASE_FUNCTION = inOutExpo;
 const FILL_AMOUNT = 0.75 // How much of the canvas the path can take up (at default zoom)
 const GOAL_FRAME_RATE = 0.05
 const MINIMAL_CHUNK = 256;
@@ -107,7 +107,7 @@ const ATTRIBUTION_ELEMENT = document.getElementById("attribution")
 const ATTRIBUTION_TIMEOUTS = []
 const CONTROLLER = new EpicyclesController(
     "standardCanvas", RENDER_STEPS, MAX_NUM_PATH_POINTS, MIN_NUM_PATH_POINTS,
-    PERIOD, EASE_TIME, ZOOM_EASE_TIME, EASING_METHOD, ZOOM_EASE_METHOD, 
+    PERIOD, EASE_TIME, ZOOM_EASE_TIME, EASE_FUNCTION, ZOOM_EASE_FUNCTION, 
     MIN_RENDER_AMPLITUDE, FILL_AMOUNT, GOAL_FRAME_RATE, MINIMAL_CHUNK);
 
 let goodRandomChoiceNames = ["Sailor", "Triangle", "Y logo", "Peace", "Po", "Hexagon", "Fourier", "Fouriest", "Infinity"]
@@ -262,6 +262,14 @@ export function startShow() {
 
 export function stopShow() {
     SHOW.stopShow()
+}
+
+export function toggleBounceMode() {
+    if (CONTROLLER.easeFunction == bounce) {
+        CONTROLLER.setEaseFunction(EASE_FUNCTION)
+    } else {
+        CONTROLLER.setEaseFunction(bounce)
+    }
 }
 
 

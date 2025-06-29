@@ -38,6 +38,9 @@ addEventListener("keydown", (e) => {
     case "c":
       messageHandler({ type: "setZoom", value: "5"});
       break;
+    case "b":
+      messageHandler({ type: "toggleBounce", value: null});
+      break;
     case "+":
       messageHandler({ type: "changeFourierAmt", value: "0.05" });
       break;

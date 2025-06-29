@@ -3,7 +3,7 @@ import {
   resample2dData,
   scaleAndShift2dData,
 } from "./just-fourier-things.js";
-import { slurp, clampedSlurp, easeOutSine, bounce, clamp } from "./util.js";
+import { slurp, clampedSlurp, easeOutSine, bounce, clamp, easeInOut, sinEaseInOut } from "./util.js";
 import { basicStyle } from "./color.js";
 
 import CanvasController from "./canvas-controller.js";
@@ -28,7 +28,7 @@ export default class EpicyclesController {
     id, renderSteps,
     maxPathPoints = 2048, minPathPoints = 1024, 
     period = 120, easeTime = 5, zoomEaseTime = 5, 
-    easingFunction = "bounce", zoomEaseFunction = "bounce",
+    easingFunction = sinEaseInOut, zoomEaseFunction = sinEaseInOut,
     minRenderAmplitude = 0.01, 
     fillAmount = 0.75, goalFrameRate = 20, minimalChunk = 256
   ) {
@@ -168,6 +168,16 @@ export default class EpicyclesController {
     this.leftCanvasController.query();
     this.rightCanvasController.query();
     console.log(this.renderSteps);
+  }
+
+  setEaseFunction(easeFunction) {
+    try {
+      if (easeFunction(0) == 0 && easeFunction(1) == 1) {
+        this.easeFunction = easeFunction
+      }
+    } catch {
+      this.easeFunction = easeInOut
+    }
   }
 
   /**
@@ -604,7 +614,7 @@ export default class EpicyclesController {
         this.easeStartFourierData,
         this.currentFourierData,
         this.targetFourierData,
-        easeOutSine
+        this.easeFunction
       );
       this.deferredIndex = 0
     }

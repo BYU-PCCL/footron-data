@@ -1,4 +1,4 @@
-import { setImage, query, setPeriod, setFourierAmt, changeFourierAmt, setZoom, setFollowIndex, fullscreen, startShow, stopShow, queryTerm, maxTerm, termInfo, editTerm, toggleFollow, toggleOriginal } from "./main.js";
+import { setImage, query, setPeriod, setFourierAmt, changeFourierAmt, setZoom, setFollowIndex, fullscreen, startShow, stopShow, queryTerm, maxTerm, termInfo, editTerm, toggleFollow, toggleOriginal, toggleBounceMode } from "./main.js";
 
 export async function messageHandler(message) {
   console.log(message, message.type);
@@ -54,6 +54,9 @@ export async function messageHandler(message) {
       break;
     case "fullscreen":
       fullscreen(message.value);
+      break;
+    case "toggleBounce":
+      toggleBounceMode();
       break;
     case "show":
       if (message.value == "start") {
