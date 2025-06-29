@@ -2,6 +2,7 @@ import { setImage, query, setPeriod, setFourierAmt, changeFourierAmt, setZoom, s
 
 export async function messageHandler(message) {
   console.log(message, message.type);
+  stopShow()
   switch (message.type) {
     case "zoom":
       setZoom(message.value)

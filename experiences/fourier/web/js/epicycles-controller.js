@@ -9,27 +9,48 @@ import { basicStyle } from "./color.js";
 import CanvasController from "./canvas-controller.js";
 
 export default class EpicyclesController {
-  constructor(id) {
-    // config values
-    this.maxNumPathPoints = 2048;
-    this.period = 120; // Time for a default full cycle. Note: Can be slowed or sped up by setPeriod()
-    this.zoomEaseTime = 5; // How long a zoom takes
-    this.minRenderAmplitude = 0.01;
-    this.easeTime = 5; // how many seconds to chase an update
-    this.easingMethod = "bounce";
-    this.fillAmount = 0.75 // How much of the canvas the path can take up (at default zoom)
-    this.goalFrameRate = 0.05
-    this.minimalChunk = 256;
-
+  /**
+   * This class does all of the heavy lifting of calculating and animating the full path and the arm of epiccycles
+   * @param {string} id ID of the page's controller element
+   * @param {integer} maxPathPoints Maximum resolution of the path
+   * @param {integer} minPathPoints Minimum
+   * @param {number} period Time for a default full cycle. Note: Can be slowed or sped up by setPeriod()
+   * @param {number} easeTime How many seconds to chase an update
+   * @param {number} zoomEaseTime How long a zoom takes
+   * @param {*} easingFunction CSS style function to interpolate between path changes
+   * @param {*} zoomEaseFunction CSS style function to interpolate between zoom values
+   * @param {number} minRenderAmplitude The size of term to not bother rendering. default is 0.01
+   * @param {number} fillAmount How much of the canvas the path can take up (at default zoom)
+   * @param {number} goalFrameRate Each frame the amount of calculations will change to attempt to stay above this goal. 40=40 fps
+   * @param {integer} minimalChunk Minimum number of terms to calculate each frame regardless of framerate
+   */
+  constructor(
+    id, renderSteps,
+    maxPathPoints = 2048, minPathPoints = 1024, 
+    period = 120, easeTime = 5, zoomEaseTime = 5, 
+    easingFunction = "bounce", zoomEaseFunction = "bounce",
+    minRenderAmplitude = 0.01, 
+    fillAmount = 0.75, goalFrameRate = 20, minimalChunk = 256
+  ) {
     this.id = id;
-    this.drawSteps = [];
+    this.renderSteps = renderSteps;
+    this.maxNumPathPoints = maxPathPoints;
+    this.minNumPathPoints = minPathPoints;
+    this.period = period; 
+    this.easeTime = easeTime;
+    this.zoomEaseTime = zoomEaseTime;
+    this.minRenderAmplitude = minRenderAmplitude;
+    this.easeFunction = easingFunction;
+    this.zoomEaseFunction = zoomEaseFunction
+    this.zoomEaseFunction = 
+    this.fillAmount = fillAmount
+    this.goalFrameRate = 1 / goalFrameRate
+    this.minimalChunk = minimalChunk;
 
     this.leftCanvasController = new CanvasController("leftCanvas",);
     this.leftCanvasController.fullscreen(true)
     this.rightCanvasController = new CanvasController("rightCanvas");
     this.rightCanvasController.minimize(true)
-    this.lastTime = Date.now();
-
     // Listener for fullscreen changes
     window.addEventListener("resize", (evt) => this.#onResize(evt));
     this.isTransitioning = false
@@ -48,10 +69,9 @@ export default class EpicyclesController {
       target.addEventListener('transitioncancel', onFinish);
       target.addEventListener('transitionend', onFinish);
     })
-
-    this.animate = true;
-    this.calcChunk = 512;
-
+    // Boxes
+    this.boxCoords = { x: 0, y: 0, width: 0, height: 0 };
+    this.startBoxCoords = { x: 0, y: 0, width: 0, height: 0 };
     // [ {freq, amplitude, phase } ]
     this.sourceFourierData = []; // Ground truth
     this.changingSourceFourierData = []; // Ground truth
@@ -59,21 +79,11 @@ export default class EpicyclesController {
     this.currentFourierData = [];
     this.easeStartFourierData = []; // copy of current to calculate ease
     this.currentNumFourierTerms = 0;
-    this.totalNumFourierTerms = 0;
-    this.lastNonZeroIndex = -1;
-
     // [ {x, y} ]
     this.numPathPoints = this.maxNumPathPoints;
     this.sourceFourierPath = [];
     this.currentFourierPath = [];
-
-    this.deferredIndex = 0;
-    this.animAmt = 0;
-    this.niceAnimAmt = 0;
-    this.followIndex = null;
-
-    this.followPoint = { x: 0, y: 0 }
-
+    // [ {scale, xCenter, yCenter} ]
     this.startZoom = {
       scale: 1,
       xCenter: 0,
@@ -89,18 +99,20 @@ export default class EpicyclesController {
       xCenter: 0,
       yCenter: 0
     }
-    this.zoomEaseAmt = 0;
+    // Flags
+    this.fullscreen = "left";
+    this.pathDirty = false;
+    this.finishedEasing = true;
     this.zoomFinishedEasing = true
 
-    this.pathDirty = false;
-
+    this.zoomEaseAmt = 0;
     this.easeAmt = 0;
-    this.finishedEasing = true;
-
-    this.boxCoords = { x: 0, y: 0, width: 0, height: 0 };
-    this.startBoxCoords = { x: 0, y: 0, width: 0, height: 0 };
-
-    this.fullscreen = "left";
+    this.animAmt = 0;
+    this.lastTime = Date.now();
+    this.followIndex = null;
+    this.imageName = null;
+    this.deferredIndex = 0;
+    this.calcChunk = 512;
   }
 
   /**
@@ -155,7 +167,7 @@ export default class EpicyclesController {
 
     this.leftCanvasController.query();
     this.rightCanvasController.query();
-    console.log(this.drawSteps);
+    console.log(this.renderSteps);
   }
 
   /**
@@ -167,14 +179,11 @@ export default class EpicyclesController {
  */
   setSourceFromPath(path, numPoints = -1, zerosAtStart = false) {
     if (numPoints < 0) {
-      numPoints = path.length;
+      numPoints = path.length * 2;
     }
-    this.numPathPoints = Math.min(numPoints, this.maxNumPathPoints);
+    this.#setNumPathPoints(numPoints)
     this.animAmt = 0;
-    this.niceAnimAmt = 0;
     let scaledAndCentered = scaleAndShift2dData(path, this.rightCanvasController.width, this.rightCanvasController.height, this.fillAmount);
-    this.boxCoords = scaledAndCentered.boxCoords;
-    this.startBoxCoords = scaledAndCentered.startBoxCoords;
     // Get the fourier data, also filter out the really small terms.
     let resampledData = resample2dData(
       scaledAndCentered.data,
@@ -193,11 +202,20 @@ export default class EpicyclesController {
    * @param {boolean} transition if set to false, when changing the data the new shape will appear immediately 
    * instead of morphing from the previous one
    */
-  setSource(fourierData, fromZero = false, transition = false) {
+  setSource(fourierData, fromZero = false, transition = false, imageName = null) {
     this.#initializeData(fourierData, fromZero, transition)
-    this.numPathPoints = Math.min(this.sourceFourierData.length * 2, this.maxNumPathPoints);
+    this.#setNumPathPoints(this.sourceFourierData.length * 2)
     this.#resetEase(this.currentFourierData, this.easeStartFourierData);
+    this.imageName = imageName
     console.log("done setting source");
+  }
+
+  /**
+   * Sets numPathPoints to a value between the min and max
+   */
+  #setNumPathPoints(numPoints) {
+    this.numPathPoints = Math.min(numPoints, this.maxNumPathPoints);
+    this.numPathPoints = Math.max(this.numPathPoints, this.minNumPathPoints)
   }
 
   /**
@@ -261,6 +279,9 @@ export default class EpicyclesController {
       this.displayBox = false
       this.targetZoom.xCenter = this.rightCanvasController.canvas.width / 2;
       this.targetZoom.yCenter = this.rightCanvasController.canvas.height / 2;
+    }
+    if (index == -1) {
+      this.followIndex = 100
     }
     this.#resetZoomEase()
   }
@@ -339,7 +360,7 @@ export default class EpicyclesController {
    * @param {*} highlightStyle 
    */
   setHighlight(index, highlightStyle = basicStyle) {
-    this.drawSteps.forEach(step => {
+    this.renderSteps.forEach(step => {
       if (step.type == "circles") {
         step.index = index;
         step.highlightStyle = highlightStyle;
@@ -395,7 +416,6 @@ export default class EpicyclesController {
       this.currentFourierData[0] = { ...this.sourceFourierData[0] };
     }
     this.currentNumFourierTerms = this.sourceFourierData.length;
-    this.totalNumFourierTerms = this.sourceFourierData.length;
     this.sourceFourierPath = this.#calculatePath(this.sourceFourierData, this.sourceFourierPath);
     if (transition) this.#resetEase(this.currentFourierData);
   }
@@ -404,14 +424,6 @@ export default class EpicyclesController {
     return JSON.parse(JSON.stringify(array));
     // return structuredClone(array); // this seems to perform a tad better.
     // EXCEPT ON PROD WHERE IT CRASHES!
-  }
-
-  // takes a zoom level and a point in the canvas, and returns the offset from the center of the canvas to that point.
-  // this is used to calculate the offset of the canvas when zooming in on a point.
-  getOffsets(zoom, xPoint, yPoint) {
-    let xOffset = xPoint - (this.rightCanvasController.canvas.width / 2) / zoom;
-    let yOffset = yPoint - (this.rightCanvasController.canvas.height / 2) / zoom;
-    return xOffset, yOffset;
   }
 
   #resetZoomEase() {
@@ -475,16 +487,6 @@ export default class EpicyclesController {
       this.#updatePathPoint(data, path, i, numTerms, startTerm);
     }
     return path
-  }
-
-  #setPathResolution(numPoints) {
-    while (path.length < numPoints) {
-      path.push({ x: 0, y: 0 });
-    }
-    if (path.length > numPoints) {
-      path = path.slice(0, numPoints);
-    }
-    this.numPathPoints = numPoints
   }
 
   /**
@@ -578,21 +580,7 @@ export default class EpicyclesController {
     this.#findArm()
     this.#easeZoomData(dt, easeOutSine)
 
-    // if (!this.finishedEasing) {
-
-    //   this.currentFourierPath = this.#partialCalculatePath(this.currentFourierData, this.currentFourierPath, this.calcChunk, 1024)
-    //   this.deferredIndex = 0
-    // } else if (this.deferredIndex < this.currentNumFourierTerms) {
-    //   this.currentFourierPath = this.#partialCalculatePath(this.currentFourierData, this.currentFourierPath, 1);
-    // }
-
     if (!this.finishedEasing) {
-      // if (dt > this.goalFrameRate) {
-      //   console.log(this.calcChunk + " is to slow, halving calcChunk")
-      //   this.calcChunk = Math.max(this.minimalChunk, Math.floor(this.calcChunk * 4 / 5))
-      // } else {
-      //   this.calcChunk = Math.ceil(this.calcChunk * 5 / 4)
-      // }
       this.currentFourierPath = this.#partialCalculatePath(
         this.currentFourierData,
         this.currentFourierPath, this.calcChunk
@@ -604,7 +592,6 @@ export default class EpicyclesController {
       );
       this.deferredIndex += this.calcChunk
       this.refining = true;
-      // }
       if (this.deferredIndex >= this.currentFourierData.length) {
         this.pathDirty = false
         this.deferredIndex = 0
@@ -626,7 +613,6 @@ export default class EpicyclesController {
 
     while (this.animAmt > 1) {
       this.animAmt--;
-      this.niceAnimAmt--;
     }
   }
 
@@ -662,34 +648,15 @@ export default class EpicyclesController {
     }
   }
 
+  /**
+   * Restarts the ease function
+   * @param {*} current 
+   */
   #resetEase(current) {
     this.startZoom.scale = this.currentZoom.scale
     this.easeStartFourierData = current.map((d) => ({ ...d }));
     this.easeAmt = 0;
     this.finishedEasing = false;
-  }
-
-  addToPath(data, path, maxFouriers = -1) {
-    if (data.length == 0) {
-      return;
-    }
-    let runningX = 0;
-    let runningY = 0;
-    const numFouriers = maxFouriers === -1 ? data.length : Math.min(data.length, maxFouriers);
-    const theta = 2 * Math.PI * this.niceAnimAmt;
-
-    for (let i = 0; i < numFouriers; i++) {
-      const { amplitude, freq, phase } = data[i];
-      const angle = theta * freq + phase;
-      runningX += amplitude * Math.cos(angle);
-      runningY += amplitude * Math.sin(angle);
-    }
-
-    path.push({ x: runningX, y: runningY });
-
-    while (path.length > this.numPathPoints + 1) {
-      path.shift();
-    }
   }
 
   /**
@@ -709,11 +676,14 @@ export default class EpicyclesController {
     this.targetZoom.yCenter = y;
   }
 
+  /**
+   * Draw the current data to the canvas
+   */
   #renderCanvas(canvas, zoomInfo = null) {
     if (zoomInfo != null) {
       canvas.zoom = zoomInfo
     }
-    const filtered = this.drawSteps.filter((step) => step.canvas === canvas.id);
+    const filtered = this.renderSteps.filter((step) => step.canvas === canvas.id);
     const currentZoom = this.currentZoom;
     const currentZoomXCenter = currentZoom.xCenter;
     const currentZoomYCenter = currentZoom.yCenter;
@@ -732,6 +702,9 @@ export default class EpicyclesController {
     canvas.drawFrame(this.animAmt, filtered);
   }
 
+  /**
+   * Causes the call to draw to both canvases
+   */
   #render() {
     if (this.isTransitioning) {
       this.#onResize()

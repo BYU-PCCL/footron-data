@@ -1,8 +1,8 @@
 export const sailorData = [
   {
     "freq": 0,
-    "amplitude": 782.5752159666191,
-    "phase": 0.739753714465586
+    "amplitude": 868,
+    "phase": 0.663
   },
   {
     "freq": -1,

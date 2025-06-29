@@ -1,226 +1,149 @@
-import { fouriestData } from "./fourier-data/fouriest.js";
-import { peaceData } from "./fourier-data/peace.js";
-import { sailorData } from "./fourier-data/sailor.js";
-import { yLogoData } from "./fourier-data/y-logo.js";
-import { triangleData } from "./fourier-data/triangle.js";
-import { squareData } from "./fourier-data/square.js";
-import { lineData } from "./fourier-data/line.js";
-import { poData } from "./fourier-data/po.js";
-import { rickData } from "./fourier-data/rick.js";
-import { mooreData5 } from "./fourier-data/moore.js";
-import { fourierData } from "./fourier-data/fourier.js";
-import { pentagonData } from "./fourier-data/pentagon.js";
-import { hexagonData } from "./fourier-data/hexagon.js";
-import { infinityData } from "./fourier-data/infinity.js";
-
-import EpicyclesController from "./epicycles-controller.js";
 import "./message-handler.js";
+import * as fourierData from "./fourier-data/index.js"
+import EpicyclesController from "./epicycles-controller.js";
 import { palette } from "./color.js";
 import Slideshow from "./slideshow.js";
-import { slides } from "./slides.js";
+import { slides } from "./slides.js"
 import { isAprilFools } from "./util.js";
 
 
-const controller = new EpicyclesController("standardCanvas");
-const show = new Slideshow("slideDisplay", slides, setImage);
+// Config variables
+const DISPLAY_ATTRIBUTION_SECONDS = 5
+const DEFAULT_SLIDE_DURATION = 7
+const AUTO_START_SHOW_IN = 15 // How many seconds to wait before starting the slideshow on load
+const CONTINUE_SHOW_AFTER = 40 // After input has stopped, how long to wait before starting again.
+const MAX_NUM_PATH_POINTS = 2048;
+const MIN_NUM_PATH_POINTS = 1024;
+const PERIOD = 120; // Time for a default full cycle. Note: Can be slowed or sped up by setPeriod()
+const ZOOM_EASE_TIME = 5; // How long a zoom takes
+const MIN_RENDER_AMPLITUDE = 0.01;
+const EASE_TIME = 3; // how many seconds to chase an update
+const EASING_METHOD = "bounce";
+const ZOOM_EASE_METHOD = "bounce";
+const FILL_AMOUNT = 0.75 // How much of the canvas the path can take up (at default zoom)
+const GOAL_FRAME_RATE = 0.05
+const MINIMAL_CHUNK = 256;
+// Render styles
+const LEFT_PATH_STYLE = { color: palette.white, alpha: 1, lineWidth: 4 }
+const LEFT_CIRCLES_STYLE = { color: palette.cyan, alpha: 0.5 }
+const LEFT_RADIUS_STYLE = { color: palette.white, alpha: 1, lineWidth: 2.5 }
+const LEFT_HIGHLIGHT_STYLE = { color: palette.pink, alpha: 1 }
+const RIGHT_PATH_STYLE = { color: palette.white, alpha: 1, lineWidth: 4 }
+const RIGHT_CIRCLES_STYLE = { color: palette.cyan, alpha: 0.5 }
+const RIGHT_RADIUS_STYLE = { color: palette.white, alpha: 0.8, lineWidth: 2.5 }
+const RIGHT_HIGHLIGHT_STYLE = { color: palette.white, alpha: 1, lineWidth: 4 }
+const RIGHT_ZOOM_BOX_STYLE = { color: palette.fadableOrange, alpha: 1, lineWidth: 2.5 }
 
-const data = {
-    "Line": lineData,
-    "Triangle": triangleData,
-    "Square": squareData,
-    "Sailor": sailorData,
-    "Moore curve": mooreData5,
-    "Y logo": yLogoData,
-    "Peace": peaceData,
-    "Fourier": fourierData,
-    "Fouriest": fouriestData,
-    "Pentagon": pentagonData,
-    "Hexagon": hexagonData,
-    "Po": poData,
-    "Rick": rickData,
+
+const SHOW = new Slideshow("slideDisplay", slides, DEFAULT_SLIDE_DURATION, CONTINUE_SHOW_AFTER, AUTO_START_SHOW_IN);
+const RENDER_STEPS = [
+    { canvas: "leftCanvas", type: "clear" },
+    {
+        canvas: "leftCanvas",
+        dataType: "path",
+        type: "path",
+        source: "current",
+        style: LEFT_PATH_STYLE,
+    },
+    {
+        canvas: "leftCanvas",
+        dataType: "fourier",
+        type: "circles",
+        source: "current",
+        circleStyle: LEFT_CIRCLES_STYLE,
+        lineStyle: LEFT_RADIUS_STYLE,
+        highlightStyle: LEFT_HIGHLIGHT_STYLE,
+        highlightIndex: null,
+    },
+    { canvas: "rightCanvas", type: "clear" },
+    {
+        canvas: "rightCanvas",
+        dataType: "path",
+        type: "path",
+        source: "source",
+        style: RIGHT_PATH_STYLE,
+    },
+    {
+        canvas: "rightCanvas",
+        dataType: "fourier",
+        type: "circles",
+        source: "source",
+        circleStyle: RIGHT_CIRCLES_STYLE,
+        lineStyle: RIGHT_RADIUS_STYLE,
+        highlightStyle: RIGHT_HIGHLIGHT_STYLE,
+        highlightIndex: null,
+    },
+    {
+        canvas: "rightCanvas",
+        dataType: "box",
+        type: "box",
+        style: RIGHT_ZOOM_BOX_STYLE
+    }
+]
+const DATA = {
+    "Line": fourierData.lineData,
+    "Triangle": fourierData.triangleData,
+    "Square": fourierData.squareData,
+    "Sailor": fourierData.sailorData,
+    "Moore curve": fourierData.mooreData5,
+    "Y logo": fourierData.yLogoData,
+    "Peace": fourierData.peaceData,
+    "Fourier": fourierData.fourierData,
+    "Fouriest": fourierData.fouriestData,
+    "Pentagon": fourierData.pentagonData,
+    "Hexagon": fourierData.hexagonData,
+    "Po": fourierData.poData,
+    "Rick": fourierData.rickData,
+    "Infinity": fourierData.infinityData
+}
+const ATTRIBUTIONS = {
+    "Peace": "Peace, Jez Swanson",
+    "Fourier": "Joseph Fourier by Stewart@Biocinematics",
+    "Fouriest": "Font: Clement Numbers",
+    "Rick": "Never gonna give you up!",
+    "Sailor": "BYU Sailor Logo"
 }
 const ATTRIBUTION_ELEMENT = document.getElementById("attribution")
+const ATTRIBUTION_TIMEOUTS = []
+const CONTROLLER = new EpicyclesController(
+    "standardCanvas", RENDER_STEPS, MAX_NUM_PATH_POINTS, MIN_NUM_PATH_POINTS,
+    PERIOD, EASE_TIME, ZOOM_EASE_TIME, EASING_METHOD, ZOOM_EASE_METHOD, 
+    MIN_RENDER_AMPLITUDE, FILL_AMOUNT, GOAL_FRAME_RATE, MINIMAL_CHUNK);
 
-let randomChoices = [
-    sailorData, mooreData5, triangleData, yLogoData, peaceData, poData, hexagonData, fouriestData, infinityData
-]
-if (isAprilFools()) randomChoices.push(rickData);
+let goodRandomChoiceNames = ["Sailor", "Triangle", "Y logo", "Peace", "Po", "Hexagon", "Fourier", "Fouriest", "Infinity"]
+if (isAprilFools()) goodRandomChoiceNames = ["Rick", "Fourier", "Fouriest", "Y logo"];
 
-function init() {
+function init(drawSteps) {
     initializeOdometer();
-
-
-    // Initialize fourier controller
-    controller.drawSteps.push(
-        { canvas: "leftCanvas", type: "clear" },
-        {
-            canvas: "leftCanvas",
-            dataType: "path",
-            type: "path",
-            source: "current",
-            style: { color: palette.white, alpha: 1, lineWidth: 4 },
-        },
-        {
-            canvas: "leftCanvas",
-            dataType: "fourier",
-            type: "circles",
-            source: "current",
-            circleStyle: { color: palette.cyan, alpha: 0.5 },
-            lineStyle: { color: palette.white, alpha: 1, lineWidth: 2.5 },
-            highlightStyle: { color: palette.black, alpha: 1 },
-            highlightIndex: null,
-        }
-    );
-    controller.drawSteps.push(
-        { canvas: "rightCanvas", type: "clear" },
-        {
-            canvas: "rightCanvas",
-            dataType: "path",
-            type: "path",
-            source: "source",
-            style: { color: palette.white, alpha: 1, lineWidth: 4 },
-        },
-        {
-            canvas: "rightCanvas",
-            dataType: "fourier",
-            type: "circles",
-            source: "source",
-            circleStyle: { color: palette.cyan, alpha: 0.5 },
-            lineStyle: { color: palette.white, alpha: 1, lineWidth: 2.5 },
-            highlightStyle: { color: palette.black, alpha: 1 },
-            highlightIndex: null,
-        },
-        {
-            canvas: "rightCanvas",
-            dataType: "box",
-            type: "box",
-            style: { color: palette.fadableOrange, alpha: 1, lineWidth: 2.5 }
-        }
-    );
-
     // To let me play around with things in the console.
-    window.controller = controller;
-
+    window.controller = CONTROLLER;
     setImage(null, true);
-    controller.start();
-
-    // show.startShow()
+    CONTROLLER.start();
 }
 
-// control methods
 function attribution(text) {
-    ATTRIBUTION_ELEMENT.className = "hidden"
-    console.log("hidding")
-    setTimeout(() => {
-        console.log("Showing")
+    if (ATTRIBUTION_ELEMENT.innerText == text) return
+    while (ATTRIBUTION_TIMEOUTS.length > 0) {
+        window.clearTimeout(ATTRIBUTION_TIMEOUTS.pop())
+    }
+    if (ATTRIBUTION_ELEMENT.className != "hidden") {
+        console.log("Hiding attribution")
+        ATTRIBUTION_ELEMENT.className = "hidden"
+        ATTRIBUTION_TIMEOUTS.push(setTimeout(() => {
+            console.log("Showing attribution")
+            ATTRIBUTION_ELEMENT.innerText = text;
+            ATTRIBUTION_ELEMENT.className = ""
+        }, 1000))
+    } else {
+        console.log("Showing attribution")
         ATTRIBUTION_ELEMENT.innerText = text;
         ATTRIBUTION_ELEMENT.className = ""
-    }, 1000)
-}
-
-export function setImage(image, fromZero = false, transition = false) {
-
-    let imageData;
-    if (Object.keys(data).includes(image)) {
-        console.log("setting image: ", image)
-        imageData = data[image]
-    } else {
-        console.log("choosing random image")
-        imageData = randomChoices[Math.floor(Math.random() * randomChoices.length)]
     }
-
-    controller.setSource(imageData, fromZero, transition)
-
-    controller.rightCanvasController.setText(controller.sourceFourierData.length);
-    controller.leftCanvasController.setText(controller.currentNumFourierTerms);
-
-    if (imageData === fourierData) {
-        attribution("Joseph Fourier Portrait by Stewart@Biocinematics")
-    } else attribution(image);
-    return controller.totalNumFourierTerms
-}
-
-export function query() {
-    controller.query();
-}
-
-export function maxTerm() {
-    return controller.totalNumFourierTerms;
-}
-
-export function termInfo() {
-    console.log("Sending" + controller.currentNumFourierTerms)
-    return {
-        maxNumTerms: controller.totalNumFourierTerms,
-        currentNumTerms: controller.currentNumFourierTerms
-    }
-}
-
-export function queryTerm(term) {
-    return { ...controller.currentFourierData[term], maxTerm: controller.totalNumFourierTerms, queryTermResult: true };
-}
-
-export function editTerm(term, phase, amplitude) {
-    controller.setEpicycle(term, phase, amplitude);
-}
-
-export function setPeriod(seconds) {
-    controller.setPeriod(seconds);
-}
-
-export function setFourierAmt(amount) {
-    controller.setFourierAmt(amount);
-    controller.leftCanvasController.setText(controller.currentNumFourierTerms)
-}
-
-export function changeFourierAmt(amount) {
-    controller.changeFourierAmt(amount);
-    controller.leftCanvasController.setText(controller.currentNumFourierTerms)
-}
-
-export function setTerm(index, amplitude, phase) {
-    controller.setEpicycle(index, phase, amplitude);
-}
-
-export function setZoom(zoom, x = 0, y = 0) {
-    controller.setZoom(zoom);
-}
-
-export function resetZoom() {
-    controller.setZoom(1);
-    setFollowIndex(null);
-    fullscreen("left")
-}
-
-export function setFollowIndex(index) {
-    controller.setFollowIndex(index)
-}
-
-export function toggleFollow() {
-    if (null === controller.followIndex) {
-        let followIndex = 65
-        while (controller.targetFourierData[followIndex].amplitude > 1) {
-            followIndex++
-        }
-        setFollowIndex(followIndex)
-    } else setFollowIndex(null)
-}
-
-export function toggleOriginal() {
-    if (controller.fullscreen == "left") fullscreen("both");
-    else fullscreen("left");
-}
-
-export function fullscreen(fullscreenTarget) {
-    controller.setFullscreen(fullscreenTarget)
-}
-
-export function startShow() {
-    return
-}
-
-export function stopShow() {
-    return
+    ATTRIBUTION_TIMEOUTS.push(setTimeout(() => {
+        console.log("Hiding attribution")
+        ATTRIBUTION_ELEMENT.innerText = text;
+        ATTRIBUTION_ELEMENT.className = "hidden"
+    }, DISPLAY_ATTRIBUTION_SECONDS * 1000))
 }
 
 function initializeOdometer() {
@@ -233,4 +156,113 @@ function initializeOdometer() {
     console.log(odometerOptions)
 }
 
-init();
+// control methods that message-handler calls
+export function setImage(image, fromZero = false, transition = true) {
+    if (Object.keys(DATA).includes(image)) {
+        console.log("setting image: ", image)
+    } else {
+        console.log("Unknown image: " + image)
+        const choices = goodRandomChoiceNames.filter((choice) => choice != CONTROLLER.imageName)
+        image = choices[Math.floor(Math.random() * choices.length)]
+        console.log(`Using random image '${image}' instead`)
+    }
+
+    const imageData = DATA[image]
+    CONTROLLER.setSource(imageData, fromZero, transition, image)
+
+    CONTROLLER.rightCanvasController.setText(CONTROLLER.sourceFourierData.length);
+    CONTROLLER.leftCanvasController.setText(CONTROLLER.currentNumFourierTerms);
+
+    if (ATTRIBUTIONS[image]) {
+        attribution(ATTRIBUTIONS[image])
+    } else attribution(image);
+    return CONTROLLER.totalNumFourierTerms
+}
+
+export function query() {
+    CONTROLLER.query();
+}
+
+export function maxTerm() {
+    return CONTROLLER.totalNumFourierTerms;
+}
+
+export function termInfo() {
+    console.log("Sending" + CONTROLLER.currentNumFourierTerms)
+    return {
+        maxNumTerms: CONTROLLER.totalNumFourierTerms,
+        currentNumTerms: CONTROLLER.currentNumFourierTerms
+    }
+}
+
+export function queryTerm(term) {
+    return { ...CONTROLLER.currentFourierData[term], maxTerm: CONTROLLER.totalNumFourierTerms, queryTermResult: true };
+}
+
+export function editTerm(term, phase, amplitude) {
+    CONTROLLER.setEpicycle(term, phase, amplitude);
+}
+
+export function setPeriod(seconds) {
+    CONTROLLER.setPeriod(seconds);
+}
+
+export function setFourierAmt(amount) {
+    CONTROLLER.setFourierAmt(amount);
+    CONTROLLER.leftCanvasController.setText(CONTROLLER.currentNumFourierTerms)
+}
+
+export function changeFourierAmt(amount) {
+    CONTROLLER.changeFourierAmt(amount);
+    CONTROLLER.leftCanvasController.setText(CONTROLLER.currentNumFourierTerms)
+}
+
+export function setTerm(index, amplitude, phase) {
+    CONTROLLER.setEpicycle(index, phase, amplitude);
+}
+
+export function setZoom(zoom, x = 0, y = 0) {
+    CONTROLLER.setZoom(zoom);
+}
+
+export function resetZoom() {
+    CONTROLLER.setZoom(1);
+    setFollowIndex(null);
+    fullscreen("left")
+}
+
+export function setFollowIndex(index) {
+    CONTROLLER.setFollowIndex(index)
+}
+
+export function toggleFollow() {
+    if (null === CONTROLLER.followIndex) {
+        let followIndex = 65
+        while (CONTROLLER.targetFourierData[followIndex].amplitude > 1) {
+            followIndex++
+        }
+        setFollowIndex(followIndex)
+    } else setFollowIndex(null)
+}
+
+export function toggleOriginal() {
+    if (CONTROLLER.fullscreen == "left") fullscreen("both");
+    else fullscreen("left");
+}
+
+export function fullscreen(fullscreenTarget) {
+    CONTROLLER.setFullscreen(fullscreenTarget)
+}
+
+export function startShow() {
+    x = null
+    a = x.prop == 5
+    SHOW.startShow()
+}
+
+export function stopShow() {
+    SHOW.stopShow()
+}
+
+
+init(RENDER_STEPS);

@@ -3,9 +3,9 @@
 import { getFourierData, resample2dData, scaleAndShift2dData } from "./just-fourier-things.js";
 
 // Config parameters
-const BOUNDING_WIDTH = 1024; // Size of the canvas in pixels this will be displayed on (The wall is 2736 x 1216)
-const BOUNDING_HEIGHT = 1024;
-const FILL_PROPORTION = 0.9; // Max proportion of the canvas the shape will fill in either dimension
+const BOUNDING_WIDTH = 1368; // Size of the canvas in pixels this will be displayed on (The wall is 2736 x 1216)
+const BOUNDING_HEIGHT = 1216;
+const FILL_PROPORTION = 0.75; // Max proportion of the canvas the shape will fill in either dimension
 const NUM_PATH_SAMPLES = 4096; // These will be *evenly* spaced along the length of the path
 const NUM_FOURIER_SERIES_TERMS = 2048;
 
