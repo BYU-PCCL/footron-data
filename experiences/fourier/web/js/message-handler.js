@@ -1,4 +1,4 @@
-import { setImage, query, setPeriod, setFourierAmt, changeFourierAmt, setZoom, setFollowIndex, fullscreen, startShow, stopShow, queryTerm, maxTerm, termInfo, editTerm, toggleFollow, toggleOriginal, toggleBounceMode } from "./main.js";
+import { setImage, query, setPeriod, setFourierAmt, changeFourierAmt, setZoom, setFollowIndex, fullscreen, startShow, stopShow, queryTerm, maxTerm, termInfo, editTerm, toggleFollow, toggleOriginal, toggleBounceMode, resetTerm, resetAllTerms } from "./main.js";
 
 export async function messageHandler(message) {
   console.log(message, message.type);
@@ -42,6 +42,12 @@ export async function messageHandler(message) {
       break;
     case "editTerm":
       editTerm(message.term, message.phase, message.amplitude)
+      break;
+    case "resetTerm":
+      resetTerm(message.value)
+      break;
+    case "resetAllTerms":
+      resetAllTerms(message.value)
       break;
     case "changeFourierAmt":
       changeFourierAmt(message.value)

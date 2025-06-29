@@ -190,17 +190,25 @@ export function maxTerm() {
 export function termInfo() {
     console.log("Sending" + CONTROLLER.currentNumFourierTerms)
     return {
-        maxNumTerms: CONTROLLER.totalNumFourierTerms,
+        maxNumTerms: CONTROLLER.sourceFourierData.length,
         currentNumTerms: CONTROLLER.currentNumFourierTerms
     }
 }
 
 export function queryTerm(term) {
-    return { ...CONTROLLER.currentFourierData[term], maxTerm: CONTROLLER.totalNumFourierTerms, queryTermResult: true };
+    return { ...CONTROLLER.currentFourierData[term], maxTerm: CONTROLLER.sourceFourierData.length, queryTermResult: true };
 }
 
 export function editTerm(term, phase, amplitude) {
     CONTROLLER.setEpicycle(term, phase, amplitude);
+}
+
+export function resetTerm(term) {
+    CONTROLLER.resetEpicycle(term);
+}
+
+export function resetAllTerms() {
+    CONTROLLER.resetEpicycles();
 }
 
 export function setPeriod(seconds) {
