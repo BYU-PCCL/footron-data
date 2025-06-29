@@ -1,4 +1,4 @@
-import { JSX, useCallback, useState } from "react";
+import React, { JSX, useCallback, useState } from "react";
 import { useMessaging } from "@footron/controls-client";
 import TimeSlider from "./time-slider";
 import "./index.css";

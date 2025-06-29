@@ -1,4 +1,4 @@
-import { useState, JSX, useCallback } from "react";
+import React, { useState, JSX, useCallback } from "react";
 import { Button, IconButton, Slider } from "@material-ui/core";
 import { ChevronLeft, ChevronRight } from "@material-ui/icons";
 import TermCanvas from "./term-canvas";
