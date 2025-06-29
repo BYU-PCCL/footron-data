@@ -1,16 +1,13 @@
-import React, { useState } from "react";
+import { useState, JSX } from "react";
 import { IconButton, Slider, SvgIcon } from "@material-ui/core";
 import { useMessaging } from "@footron/controls-client";
-import {
-  ChevronRight,
-  KeyboardArrowLeft,
-} from "@material-ui/icons";
+import { KeyboardArrowLeft, KeyboardArrowRight } from "@material-ui/icons";
 
 type TermSliderProps = {
   onChange: (num: number) => void;
 };
 
-export default function TermSlider({ onChange }: TermSliderProps) {
+const TermSlider = ({ onChange }: TermSliderProps): JSX.Element => {
   const [maxNumTerms, setMaxNumTerms] = useState<number>(-1);
   const [numTermsPercentage, setNumTermsPercentage] = useState<number>(1);
   const [helpUsed, setHelpUsed] = useState<boolean>(false);
@@ -61,7 +58,10 @@ export default function TermSlider({ onChange }: TermSliderProps) {
             }
           >
             {helpRemoved
-              ? Math.round(numTermsPercentage * maxNumTerms) + " / " + maxNumTerms + " terms"
+              ? Math.round(numTermsPercentage * maxNumTerms) +
+                " / " +
+                maxNumTerms +
+                " terms"
               : "Choose how many terms are used to display the image"}
           </div>
         </div>
@@ -88,15 +88,25 @@ export default function TermSlider({ onChange }: TermSliderProps) {
           </IconButton>
           <IconButton
             disabled={numTermsPercentage <= 0}
-            onClick={() => handleChange(null, (numTermsPercentage * maxNumTerms - 1) / maxNumTerms)}
+            onClick={() =>
+              handleChange(
+                null,
+                (numTermsPercentage * maxNumTerms - 1) / maxNumTerms
+              )
+            }
           >
             <KeyboardArrowLeft />
           </IconButton>
           <IconButton
             disabled={numTermsPercentage >= 1}
-            onClick={() => handleChange(null, (numTermsPercentage * maxNumTerms + 1) / maxNumTerms)}
+            onClick={() =>
+              handleChange(
+                null,
+                (numTermsPercentage * maxNumTerms + 1) / maxNumTerms
+              )
+            }
           >
-            <ChevronRight />
+            <KeyboardArrowRight />
           </IconButton>
           <IconButton
             disabled={numTermsPercentage >= 1}
@@ -113,4 +123,6 @@ export default function TermSlider({ onChange }: TermSliderProps) {
       </div>
     </div>
   );
-}
+};
+
+export default TermSlider;

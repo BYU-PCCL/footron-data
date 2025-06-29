@@ -1,6 +1,5 @@
-/** @jsxImportSource @emotion/react */
-import React, { useState, useCallback } from "react";
-import { IconButton, Slider } from "@material-ui/core";
+import { useState, JSX, useCallback } from "react";
+import { Button, IconButton, Slider } from "@material-ui/core";
 import { ChevronLeft, ChevronRight } from "@material-ui/icons";
 import TermCanvas from "./term-canvas";
 import { useMessaging } from "@footron/controls-client";
@@ -38,7 +37,7 @@ function formattedAmplitude(amplitude: number) {
     : amplitude.toFixed(2);
 }
 
-export default function TermEditor({ onChange }: TermSliderProps) {
+const TermEditor = ({ onChange }: TermSliderProps): JSX.Element => {
   const [maxTerm, setMaxTerm] = useState<number>(1);
   const [term, setTerm] = useState<number>(1);
   const [phase, setPhase] = useState<number>(0);
@@ -61,6 +60,14 @@ export default function TermEditor({ onChange }: TermSliderProps) {
       setHaveLiveValues(true);
     }
   });
+
+  const resetTerm = () => {
+    sendMessage({ type: "resetTerm", value: term });
+  };
+
+  const resetAll = () => {
+    sendMessage({ type: "resetAllTerms" });
+  };
 
   const queryTerm = useCallback(
     async (term: number) => {
@@ -219,8 +226,18 @@ export default function TermEditor({ onChange }: TermSliderProps) {
               onChange={handleAmplitudeChange}
             />
           </div>
+          <div className="vert-item">
+            <Button color="primary" variant="contained" onClick={resetTerm}>
+              Reset Term
+            </Button>
+            <Button color="primary" variant="contained" onClick={resetAll}>
+              Reset All
+            </Button>
+          </div>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default TermEditor;

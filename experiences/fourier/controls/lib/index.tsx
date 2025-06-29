@@ -1,5 +1,4 @@
-/** @jsxImportSource @emotion/react */
-import React, { useCallback, useState } from "react";
+import { JSX, useCallback, useState } from "react";
 import { useMessaging } from "@footron/controls-client";
 import TimeSlider from "./time-slider";
 import "./index.css";
@@ -9,6 +8,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Button,
 } from "@material-ui/core";
 import TermSlider from "./term-slider";
 import ZoomSlider from "./zoom-slider";
@@ -17,10 +17,10 @@ import { ExpandMore } from "@material-ui/icons";
 type AccordionProps = {
   title: string;
   sectionKey: string;
-  children?: React.ReactNode;
+  children: JSX.Element;
 };
 
-export default function ControlsComponent() {
+const ControlsComponent = (): JSX.Element => {
   const [maxNumTerms, setMaxNumTerms] = useState<number>(-1);
   const [expanded, setExpanded] = useState<string>("animation");
 
@@ -49,6 +49,9 @@ export default function ControlsComponent() {
   };
   const toggleZoom = async (useZoom: boolean) => {
     sendMessage({ type: "toggleZoom", value: useZoom });
+  };
+  const toggleBounce = () => {
+    sendMessage({ type: "toggleBounce" });
   };
   const editTerm = (termValues: TermChange) => {
     sendMessage({
@@ -86,50 +89,46 @@ export default function ControlsComponent() {
     <div>
       {/* Automatically querying would be better but this works for now */}
       <div className="full">
-        {/* TermSlider help text my need set here if the internal state isn't preserved */}
-
+        {/* TermSlider help text may need set here if the internal state isn't preserved */}
         <AccordionSection title="Change the animation" sectionKey="animation">
           <div className="full-width">
             <TermSlider onChange={setNumTerms} />
             <ImageSelector onSelect={confirmImage} />
             <TimeSlider onChange={setAnimationPeriod} />
+            <Button onClick={toggleBounce}>Toggle Bounce</Button>
           </div>
         </AccordionSection>
         <AccordionSection title="Edit a term" sectionKey="term">
           <TermEditor onChange={editTerm} maxTerm={maxNumTerms} />
         </AccordionSection>
         <AccordionSection title="Zoom in" sectionKey="zoom">
-          <ZoomSlider
-            onChange={setZoom}
-            onToggleZoom={toggleZoom}
-            onToggleOriginal={toggleOriginal}
-          />
+          <ZoomSlider/>
         </AccordionSection>
         <AccordionSection title="Learn More" sectionKey="learn">
           <div className="vert-container">
             <p>
-              The Fourier transform is so useful across so many disparate
+              The Fourier transform is so useful accross so many disparate
               fields it is almost like magic. Luckily for us, this mathematical
-              tool is far from sorcery; it&apos;s relatively easy to understand
-              its basic principles and even easier to apply.
+              tool is far from sorcery; it's relatively easy to understand its
+              basic principles and even easier to apply.
             </p>
             <p>
               Feel free to explore this demonstration and build a better
-              intuition of how this beautiful tool works.
+              intuition of how this beautiful mathematical tool works.
             </p>
             <p>Enjoy!</p>
             <p>-Christian</p>
             <h3>Further resources</h3>
             <p>
-              This demonstration owes much of it&apos;s implimentation to{" "}
+              This demonstration owes much of it's implimentation to{" "}
               <a href="https://www.jezzamon.com/fourier/index.html">
-                Jez Swanson&apos;s amazing article
+                Jez Swanson's amazing article
               </a>{" "}
               on the topic. Both his article and the{" "}
               <a href="https://www.youtube.com/watch?v=r6sGWTCMz2k">
                 videos created by Grant Sanderson
               </a>{" "}
-              (3blue1brown) are fantastic resources to anyone wanting to get
+              (or 3blue1brown) are fantastic resources to anyone wanting to get
               a deeper understanding of how these circles learned to cooperate.
             </p>
           </div>
@@ -137,4 +136,6 @@ export default function ControlsComponent() {
       </div>
     </div>
   );
-}
+};
+
+export default ControlsComponent;

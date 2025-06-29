@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
 
 type TermCanvasProps = {
   phase: number;
@@ -78,7 +78,7 @@ export default function TermCanvas({
   useEffect(() => {
     function draw(context: CanvasRenderingContext2D) {
       if (context) {
-        const full = 2 * Math.PI
+        const full = 2 * Math.PI;
         // A little buffer so the circle stays on screen
         const onCanvasMaxAmplitude = width / 2.2;
         const onCanvasAmplitude =

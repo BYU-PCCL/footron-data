@@ -5,11 +5,12 @@ import {
   MenuItem,
   Select,
 } from "@material-ui/core";
-import React from "react";
+import { JSX } from "react";
 
 const images = [
   "Peace",
   "Y logo",
+  "Infinity",
   "Sailor",
   "Moore curve",
   "Po",
@@ -27,7 +28,7 @@ type ImageSelectorProps = {
   onSelect: (choice: string) => Promise<void>;
 };
 
-export default function ImageSelector({ onSelect }: ImageSelectorProps) {
+const ImageSelector = ({ onSelect }: ImageSelectorProps): JSX.Element => {
   const select = (event: any) => {
     const image = event.target.value;
     onSelect(image);
@@ -54,11 +55,13 @@ export default function ImageSelector({ onSelect }: ImageSelectorProps) {
           </NativeSelect> */}
         <InputLabel>Image</InputLabel>
         <Select onChange={select}>
-          {images.map((img, index) => (
-            <MenuItem value={img} key={index}>{img}</MenuItem>
+          {images.map((img) => (
+            <MenuItem value={img}>{img}</MenuItem>
           ))}
         </Select>
       </FormControl>
     </div>
   );
-}
+};
+
+export default ImageSelector;
