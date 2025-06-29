@@ -1,4 +1,5 @@
-import React, { useState, JSX } from "react";
+/** @jsxImportSource @emotion/react */
+import React, { useState } from "react";
 import { Button, Slider } from "@material-ui/core";
 import { useMessaging } from "@footron/controls-client";
 

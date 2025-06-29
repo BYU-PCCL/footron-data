@@ -1,4 +1,5 @@
-import React, { JSX, useCallback, useState } from "react";
+/** @jsxImportSource @emotion/react */
+import React, { useCallback, useState } from "react";
 import { useMessaging } from "@footron/controls-client";
 import TimeSlider from "./time-slider";
 import "./index.css";

@@ -1,4 +1,5 @@
-import React, { useState, JSX } from "react";
+/** @jsxImportSource @emotion/react */
+import React, { useState } from "react";
 import { IconButton, Slider, SvgIcon } from "@material-ui/core";
 import { useMessaging } from "@footron/controls-client";
 import { KeyboardArrowLeft, KeyboardArrowRight } from "@material-ui/icons";

@@ -1,10 +1,11 @@
+/** @jsxImportSource @emotion/react */
+import React from "react";
 import {
   FormControl,
   InputLabel,
   MenuItem,
   Select,
 } from "@material-ui/core";
-import React, { JSX } from "react";
 
 const images = [
   "Peace",

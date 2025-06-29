@@ -1,4 +1,5 @@
-import React, { useState, JSX } from "react";
+/** @jsxImportSource @emotion/react */
+import React, { useState } from "react";
 import { Slider } from "@material-ui/core";
 
 type TimeSliderProps = {
