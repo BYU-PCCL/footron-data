@@ -33,7 +33,7 @@ const TimeSlider = (): JSX.Element => {
   const handleChange = (_: any, value: number | number[]) => {
     if (Array.isArray(value)) return;
     setPeriod(value);
-    // sendMessage({ type: "setPeriod", value: value });
+    sendMessage({ type: "setPeriod", value: value });
     changeHelpText();
   };
 
