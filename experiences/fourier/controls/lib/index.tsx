@@ -1,15 +1,15 @@
 /** @jsxImportSource @emotion/react */
-import React, { useCallback, useState } from "react";
+import React, { useState } from "react";
 import { useMessaging } from "@footron/controls-client";
-import TimeSlider from "./time-slider";
 import "./index.css";
-import TermEditor, { TermChange } from "./term-editor";
+import TermEditor from "./term-editor";
 import ImageSelector from "./image-selector";
 import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
   Button,
+  Slider,
 } from "@material-ui/core";
 import TermSlider from "./term-slider";
 import ZoomSlider from "./zoom-slider";
@@ -21,12 +21,51 @@ type AccordionProps = {
   children: JSX.Element;
 };
 
+function formatTime(seconds: number) {
+  const units = [{ label: "minute", value: 60 }];
+
+  let timeStr = "",
+    secondsRemaining = true;
+
+  for (const unit of units) {
+    const unitValue = Math.floor(seconds / unit.value);
+    if (unitValue > 0) {
+      timeStr += `${unitValue} ${unit.label}${unitValue > 1 ? "s" : " "} `;
+      seconds -= unitValue * unit.value;
+      secondsRemaining = seconds > 0;
+      break;
+    }
+  }
+  timeStr += secondsRemaining ? seconds.toFixed(1) + " seconds" : "";
+  return timeStr.trim();
+}
+
 const ControlsComponent = (): JSX.Element => {
   const [expanded, setExpanded] = useState<string>("animation");
+    const [period, setPeriod] = useState<number>(60);
+    const [periodHelpUsed, setPeriodHelpUsed] = useState<boolean>(false);
+    const [periodHelpHidden, setPeriodHelpHidden] = useState<boolean>(false);
+    const [periodHelpRemoved, setPeriodHelpRemoved] = useState<boolean>(false);
 
   const { sendMessage } = useMessaging();
   const toggleBounce = () => {
     sendMessage({ type: "toggleBounce" });
+  };
+  const handlePeriodChange = (_: any, value: number | number[]) => {
+    if (Array.isArray(value)) return;
+    setPeriod(value);
+    sendMessage({ type: "setPeriod", value: period });
+    changeHelpText();
+  };
+
+    const changeHelpText = () => {
+    if (!periodHelpUsed) {
+      setPeriodHelpUsed(true);
+      setPeriodHelpHidden(true);
+      setTimeout(() => {
+        setPeriodHelpRemoved(true);
+      }, 1000);
+    }
   };
 
   const handleExpand = (newExpanded: string) => {
@@ -58,7 +97,27 @@ const ControlsComponent = (): JSX.Element => {
           <div className="full-width">
             <TermSlider />
             <ImageSelector />
-            <TimeSlider />
+            <div className="vert-container full-width">
+              <div className="slider-description hidable-children centered">
+                <div
+                  className={
+                    "description-item" +
+                    (periodHelpHidden != periodHelpRemoved ? " hidden-item " : "")
+                  }
+                >
+                  {periodHelpRemoved
+                    ? formatTime(period)
+                    : "Change the period of the animation"}
+                </div>
+              </div>
+              <Slider
+                value={period}
+                onChange={handlePeriodChange}
+                min={3}
+                max={1800}
+                step={0.1}
+              />
+            </div>
             <Button onClick={toggleBounce}>Toggle Bounce</Button>
           </div>
         </AccordionSection>
