@@ -33,13 +33,10 @@ const TimeSlider = (): JSX.Element => {
   const handleChange = (_: any, value: number | number[]) => {
     if (Array.isArray(value)) return;
     setPeriod(value);
-    sendPeriodUpdate(value);
+    // sendMessage({ type: "setPeriod", value: value });
     changeHelpText();
   };
 
-  const sendPeriodUpdate = (period: number) => {
-    sendMessage({ type: "setPeriod", value: period });
-  };
 
   const changeHelpText = () => {
     if (!helpUsed) {
@@ -70,7 +67,6 @@ const TimeSlider = (): JSX.Element => {
         onChange={handleChange}
         min={3}
         max={1800}
-        step={0.1}
       />
     </div>
   );
