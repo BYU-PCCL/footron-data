@@ -42,10 +42,10 @@ function formatTime(seconds: number) {
 
 const ControlsComponent = (): JSX.Element => {
   const [expanded, setExpanded] = useState<string>("animation");
-    const [period, setPeriod] = useState<number>(60);
-    const [periodHelpUsed, setPeriodHelpUsed] = useState<boolean>(false);
-    const [periodHelpHidden, setPeriodHelpHidden] = useState<boolean>(false);
-    const [periodHelpRemoved, setPeriodHelpRemoved] = useState<boolean>(false);
+  const [period, setPeriod] = useState<number>(60);
+  const [periodHelpUsed, setPeriodHelpUsed] = useState<boolean>(false);
+  const [periodHelpHidden, setPeriodHelpHidden] = useState<boolean>(false);
+  const [periodHelpRemoved, setPeriodHelpRemoved] = useState<boolean>(false);
 
   const { sendMessage } = useMessaging();
   const toggleBounce = () => {
@@ -54,11 +54,11 @@ const ControlsComponent = (): JSX.Element => {
   const handlePeriodChange = (_: any, value: number | number[]) => {
     if (Array.isArray(value)) return;
     setPeriod(value);
-    sendMessage({ type: "setPeriod", value: period });
+    sendMessage({ type: "setPeriod", value: value });
     changeHelpText();
   };
 
-    const changeHelpText = () => {
+  const changeHelpText = () => {
     if (!periodHelpUsed) {
       setPeriodHelpUsed(true);
       setPeriodHelpHidden(true);
@@ -102,7 +102,9 @@ const ControlsComponent = (): JSX.Element => {
                 <div
                   className={
                     "description-item" +
-                    (periodHelpHidden != periodHelpRemoved ? " hidden-item " : "")
+                    (periodHelpHidden != periodHelpRemoved
+                      ? " hidden-item "
+                      : "")
                   }
                 >
                   {periodHelpRemoved
@@ -115,7 +117,6 @@ const ControlsComponent = (): JSX.Element => {
                 onChange={handlePeriodChange}
                 min={3}
                 max={1800}
-                step={0.1}
               />
             </div>
             <Button onClick={toggleBounce}>Toggle Bounce</Button>
@@ -125,15 +126,15 @@ const ControlsComponent = (): JSX.Element => {
           <TermEditor />
         </AccordionSection>
         <AccordionSection title="Zoom in" sectionKey="zoom">
-          <ZoomSlider/>
+          <ZoomSlider />
         </AccordionSection>
         <AccordionSection title="Learn More" sectionKey="learn">
           <div className="vert-container">
             <p>
               The Fourier transform is so useful accross so many disparate
               fields it is almost like magic. Luckily for us, this mathematical
-              tool is far from sorcery; it`&apos;`s relatively easy to understand its
-              basic principles and even easier to apply.
+              tool is far from sorcery; it`&apos;`s relatively easy to
+              understand its basic principles and even easier to apply.
             </p>
             <p>
               Feel free to explore this demonstration and build a better
