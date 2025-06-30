@@ -4,11 +4,7 @@ import { IconButton, Slider, SvgIcon } from "@material-ui/core";
 import { useMessaging } from "@footron/controls-client";
 import { KeyboardArrowLeft, KeyboardArrowRight } from "@material-ui/icons";
 
-type TermSliderProps = {
-  onChange: (num: number) => void;
-};
-
-const TermSlider = ({ onChange }: TermSliderProps): JSX.Element => {
+const TermSlider = (): JSX.Element => {
   const [maxNumTerms, setMaxNumTerms] = useState<number>(-1);
   const [numTermsPercentage, setNumTermsPercentage] = useState<number>(1);
   const [helpUsed, setHelpUsed] = useState<boolean>(false);
@@ -30,11 +26,11 @@ const TermSlider = ({ onChange }: TermSliderProps): JSX.Element => {
       changeHelpText();
       return;
     }
-    value = value as number;
+    if (Array.isArray(value)) return;
     value = Math.max(value, 0);
     value = Math.min(value, 1);
     setNumTermsPercentage(value);
-    onChange(value);
+    sendMessage({ type: "setNumTerms", value: value});
     changeHelpText();
   };
 

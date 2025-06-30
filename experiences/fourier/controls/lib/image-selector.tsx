@@ -1,6 +1,7 @@
 /** @jsxImportSource @emotion/react */
 import React from "react";
 import { FormControl, InputLabel, MenuItem, Select } from "@material-ui/core";
+import { useMessaging } from "@footron/controls-client";
 
 const images = [
   "Peace",
@@ -19,17 +20,15 @@ const images = [
   "Hexagon",
 ];
 
-type ImageSelectorProps = {
-  onSelect: (choice: string) => void;
-};
-
-const ImageSelector = ({ onSelect }: ImageSelectorProps): JSX.Element => {
+const ImageSelector = (): JSX.Element => {
   const [selectedImage, setSelectedImage] = React.useState("");
 
+  const { sendMessage } = useMessaging()
+  
   const select = (event: any) => {
     const image = event.target.value;
     setSelectedImage(image);
-    onSelect(image);
+    sendMessage({ type: "setImage", value: image });
   };
 
   return (

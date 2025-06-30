@@ -59,6 +59,7 @@ const ZoomSlider = (): JSX.Element => {
         onChange={handleChange}
         min={1}
         max={10}
+        step={0.1}
       />
       <div> </div>
       <div className="slider-container full-width centered">

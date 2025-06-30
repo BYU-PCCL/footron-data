@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import { Slider } from "@material-ui/core";
 import { useMessaging } from "@footron/controls-client";
 
+console.log("time-slider.tsx loaded")
+
 function formatTime(seconds: number) {
   const units = [{ label: "minute", value: 60 }];
 
@@ -27,16 +29,20 @@ const TimeSlider = (): JSX.Element => {
   const [helpUsed, setHelpUsed] = useState<boolean>(false);
   const [helpHidden, setHelpHidden] = useState<boolean>(false);
   const [helpRemoved, setHelpRemoved] = useState<boolean>(false);
-
+  console.log("Time slider called. period=", period)
+  
   const { sendMessage } = useMessaging();
 
   const handleChange = (_: any, value: number | number[]) => {
     if (Array.isArray(value)) return;
     setPeriod(value);
-    sendMessage({ type: "setPeriod", value: value });
+    sendPeriodUpdate(value);
     changeHelpText();
   };
 
+  const sendPeriodUpdate = (period: number) => {
+    sendMessage({ type: "setPeriod", value: period });
+  };
 
   const changeHelpText = () => {
     if (!helpUsed) {
@@ -67,6 +73,7 @@ const TimeSlider = (): JSX.Element => {
         onChange={handleChange}
         min={3}
         max={1800}
+        step={0.1}
       />
     </div>
   );

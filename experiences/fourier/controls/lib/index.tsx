@@ -22,36 +22,11 @@ type AccordionProps = {
 };
 
 const ControlsComponent = (): JSX.Element => {
-  const [maxNumTerms, setMaxNumTerms] = useState<number>(-1);
   const [expanded, setExpanded] = useState<string>("animation");
 
-  // Callback functions
-  const { sendMessage } = useMessaging((message: any) => {
-    if (message.maxTerm) {
-      setMaxNumTerms(message.maxTerm);
-    }
-  });
-
-  // Outgoing message calls
-  const confirmImage = useCallback(
-    (choice: string) => {
-      sendMessage({ type: "setImage", value: choice });
-    },
-    [sendMessage]
-  );
-  const setNumTerms = async (numTerms: number) => {
-    await sendMessage({ type: "setNumTerms", value: numTerms });
-  };
+  const { sendMessage } = useMessaging();
   const toggleBounce = () => {
     sendMessage({ type: "toggleBounce" });
-  };
-  const editTerm = (termValues: TermChange) => {
-    sendMessage({
-      type: "editTerm",
-      term: termValues.term,
-      phase: termValues.phase,
-      amplitude: termValues.amplitude,
-    });
   };
 
   const handleExpand = (newExpanded: string) => {
@@ -81,14 +56,14 @@ const ControlsComponent = (): JSX.Element => {
         {/* TermSlider help text may need set here if the internal state isn`&apos;`t preserved */}
         <AccordionSection title="Change the animation" sectionKey="animation">
           <div className="full-width">
-            <TermSlider onChange={setNumTerms} />
-            <ImageSelector onSelect={confirmImage} />
+            <TermSlider />
+            <ImageSelector />
             <TimeSlider />
             <Button onClick={toggleBounce}>Toggle Bounce</Button>
           </div>
         </AccordionSection>
         <AccordionSection title="Edit a term" sectionKey="term">
-          <TermEditor onChange={editTerm} maxTerm={maxNumTerms} />
+          <TermEditor />
         </AccordionSection>
         <AccordionSection title="Zoom in" sectionKey="zoom">
           <ZoomSlider/>

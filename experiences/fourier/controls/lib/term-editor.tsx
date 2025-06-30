@@ -18,11 +18,6 @@ type TermProps = {
   maxTerm: number;
 };
 
-type TermSliderProps = {
-  onChange: (defaults: TermChange) => void;
-  maxTerm: number;
-};
-
 const helpUiDelay = 1000;
 
 function getAmplitude(percent: number) {
@@ -38,7 +33,7 @@ function formattedAmplitude(amplitude: number) {
     : amplitude.toFixed(2);
 }
 
-const TermEditor = ({ onChange }: TermSliderProps): JSX.Element => {
+const TermEditor = (): JSX.Element => {
   const [maxTerm, setMaxTerm] = useState<number>(1);
   const [term, setTerm] = useState<number>(1);
   const [phase, setPhase] = useState<number>(0);
@@ -60,6 +55,9 @@ const TermEditor = ({ onChange }: TermSliderProps): JSX.Element => {
       setMaxTerm(message.maxTerm);
       setHaveLiveValues(true);
     }
+    if (message.maxTerm) {
+      setMaxTerm(message.maxTerm);
+    }
   });
 
   const resetTerm = () => {
@@ -78,7 +76,7 @@ const TermEditor = ({ onChange }: TermSliderProps): JSX.Element => {
   );
 
   function handleUpdate() {
-    onChange({ term: term, phase: phase, amplitude: getAmplitude(amplitude) });
+    sendMessage({type: "editTerm", term: term, phase: phase, amplitude: getAmplitude(amplitude) });
   }
 
   async function handleTermChange(event: any, value: number | number[]) {
