@@ -53,7 +53,7 @@ const TermEditor = ({ onChange }: TermSliderProps): JSX.Element => {
   const [termHelpRemoved, setTermHelpRemoved] = useState<boolean>(false);
 
   const { sendMessage } = useMessaging<TermProps>((message) => {
-    if (!haveLiveValues && message.queryTermResult) {
+    if (message.queryTermResult) {
       setPhase(message.phase);
       const newAmplitude = (message.amplitude / 400) ** 0.25;
       setAmplitude(newAmplitude);
@@ -86,7 +86,6 @@ const TermEditor = ({ onChange }: TermSliderProps): JSX.Element => {
     setHaveLiveValues(false);
     changeTermHelpText();
     const getTermInfoTimer = setTimeout(() => {
-      setHaveLiveValues(false);
       setQueryFailed(true);
       return;
     });
@@ -102,14 +101,15 @@ const TermEditor = ({ onChange }: TermSliderProps): JSX.Element => {
       });
   }
 
-  const handlePhaseChange = (event: any, value: number | number[]) => {
-    setPhase(value as number);
+  const handlePhaseChange = (_: any, value: number | number[]) => {
+    if (Array.isArray(value)) return
+    setPhase(value);
     changePAHelpText();
     handleUpdate();
   };
-  const handleAmplitudeChange = (event: any, value: number | number[]) => {
-    value = value as number;
-    setAmplitude(value as number);
+  const handleAmplitudeChange = (_: any, value: number | number[]) => {
+    if (Array.isArray(value)) return
+    setAmplitude(value);
     changePAHelpText();
     handleUpdate();
   };
@@ -199,7 +199,6 @@ const TermEditor = ({ onChange }: TermSliderProps): JSX.Element => {
               disabled={!haveLiveValues}
               min={-Math.PI}
               max={Math.PI}
-              step={0.05}
               value={phase}
               onChange={handlePhaseChange}
             />

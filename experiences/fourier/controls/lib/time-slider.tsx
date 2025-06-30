@@ -1,10 +1,7 @@
 /** @jsxImportSource @emotion/react */
 import React, { useState } from "react";
 import { Slider } from "@material-ui/core";
-
-type TimeSliderProps = {
-  onChange: (num: number) => void;
-};
+import { useMessaging } from "@footron/controls-client";
 
 function formatTime(seconds: number) {
   const units = [{ label: "minute", value: 60 }];
@@ -25,16 +22,23 @@ function formatTime(seconds: number) {
   return timeStr.trim();
 }
 
-const TimeSlider = ({ onChange }: TimeSliderProps): JSX.Element => {
-  const [currentValue, setValue] = useState<number>(60);
+const TimeSlider = (): JSX.Element => {
+  const [period, setPeriod] = useState<number>(60);
   const [helpUsed, setHelpUsed] = useState<boolean>(false);
   const [helpHidden, setHelpHidden] = useState<boolean>(false);
   const [helpRemoved, setHelpRemoved] = useState<boolean>(false);
 
-  const handleChange = (event: any, value: number | number[]) => {
-    setValue(value as number);
-    onChange(value as number);
+  const { sendMessage } = useMessaging();
+
+  const handleChange = (_: any, value: number | number[]) => {
+    if (Array.isArray(value)) return;
+    setPeriod(value);
+    sendPeriodUpdate(value);
     changeHelpText();
+  };
+
+  const sendPeriodUpdate = (period: number) => {
+    sendMessage({ type: "setPeriod", value: period });
   };
 
   const changeHelpText = () => {
@@ -57,12 +61,12 @@ const TimeSlider = ({ onChange }: TimeSliderProps): JSX.Element => {
           }
         >
           {helpRemoved
-            ? formatTime(currentValue)
+            ? formatTime(period)
             : "Change the period of the animation"}
         </div>
       </div>
       <Slider
-        defaultValue={60}
+        value={period}
         onChange={handleChange}
         min={3}
         max={1800}

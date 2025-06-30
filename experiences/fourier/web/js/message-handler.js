@@ -22,7 +22,7 @@ export async function messageHandler(message) {
       client.sendMessage({ maxTerm: setImage(message.value, false, true) });
       break;
     case "maxTerm":
-      client.sendMessage({ maxTerm: maxTerm() })
+      client.sendMessage({ maxTerm: maxTerm() });
       break;
     case "termInfo":
       client.sendMessage(termInfo())

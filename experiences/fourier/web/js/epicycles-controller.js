@@ -170,6 +170,14 @@ export default class EpicyclesController {
     console.log(this.renderSteps);
   }
 
+  /**
+   * 
+   * @returns the number of terms that are editable via other methods like setFourierAmt
+   */
+  maxTerms() {
+    return this.sourceFourierData.length
+  }
+
   setEaseFunction(easeFunction) {
     try {
       if (easeFunction(0) == 0 && easeFunction(1) == 1) {

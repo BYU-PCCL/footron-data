@@ -1,11 +1,6 @@
 /** @jsxImportSource @emotion/react */
 import React from "react";
-import {
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
-} from "@material-ui/core";
+import { FormControl, InputLabel, MenuItem, Select } from "@material-ui/core";
 
 const images = [
   "Peace",
@@ -25,12 +20,15 @@ const images = [
 ];
 
 type ImageSelectorProps = {
-  onSelect: (choice: string) => Promise<void>;
+  onSelect: (choice: string) => void;
 };
 
 const ImageSelector = ({ onSelect }: ImageSelectorProps): JSX.Element => {
+  const [selectedImage, setSelectedImage] = React.useState("");
+
   const select = (event: any) => {
     const image = event.target.value;
+    setSelectedImage(image);
     onSelect(image);
   };
 
@@ -40,23 +38,12 @@ const ImageSelector = ({ onSelect }: ImageSelectorProps): JSX.Element => {
         {"Change the displayed image"}
       </div>
       <FormControl>
-        {/* I think I like the react select better. Check on mobile view */}
-        {/* <NativeSelect
-          defaultValue={"-"}
-          inputProps={{
-            name: 'image',
-            id: 'uncontrolled-native',
-          }}
-          onChange={select}
-        >
-          {images.map((img) => (
-            <option value={img}>{img}</option>
-          ))}
-          </NativeSelect> */}
         <InputLabel>Image</InputLabel>
-        <Select onChange={select}>
+        <Select value={selectedImage} onChange={select}>
           {images.map((img) => (
-            <MenuItem value={img} key={img}>{img}</MenuItem>
+            <MenuItem value={img} key={img}>
+              {img}
+            </MenuItem>
           ))}
         </Select>
       </FormControl>

@@ -11,10 +11,11 @@ const ZoomSlider = (): JSX.Element => {
 
   const { sendMessage } = useMessaging();
 
-  const handleChange = (event: any, value: number | number[]) => {
+  const handleChange = (_: any, value: number | number[]) => {
     sendMessage({ type: "zoom", value: value });
     changeHelpText();
-    setValue(value as number);
+    if (Array.isArray(value)) return;
+    setValue(value);
   };
 
   const sendToggleFollow = (event: any) => {
@@ -54,7 +55,7 @@ const ZoomSlider = (): JSX.Element => {
         </div>
       </div>
       <Slider
-        defaultValue={1}
+        value={currentValue}
         onChange={handleChange}
         min={1}
         max={10}
@@ -62,17 +63,28 @@ const ZoomSlider = (): JSX.Element => {
       />
       <div> </div>
       <div className="slider-container full-width centered">
-        <Button color="primary" variant="contained" onClick={sendToggleFollow}>
-          Toggle Follow
+        <Button
+          color="primary"
+          variant="contained"
+          size="small"
+          onClick={sendToggleFollow}
+        >
+          Follow
         </Button>
         <Button
+          size="small"
           color="primary"
           variant="contained"
           onClick={sendToggleOriginal}
         >
-          {"Toggle Original"}
+          {"Show Original"}
         </Button>
-        <Button color="primary" variant="contained" onClick={sendReset}>
+        <Button
+          color="primary"
+          variant="contained"
+          size="small"
+          onClick={sendReset}
+        >
           {"Reset"}
         </Button>
       </div>

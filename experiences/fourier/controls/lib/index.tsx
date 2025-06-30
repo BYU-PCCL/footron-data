@@ -34,22 +34,13 @@ const ControlsComponent = (): JSX.Element => {
 
   // Outgoing message calls
   const confirmImage = useCallback(
-    async (choice: string) => {
-      await sendMessage({ type: "setImage", value: choice });
+    (choice: string) => {
+      sendMessage({ type: "setImage", value: choice });
     },
     [sendMessage]
   );
   const setNumTerms = async (numTerms: number) => {
     await sendMessage({ type: "setNumTerms", value: numTerms });
-  };
-  const setAnimationPeriod = async (period: number) => {
-    sendMessage({ type: "setPeriod", value: period });
-  };
-  const setZoom = async (zoom: number) => {
-    sendMessage({ type: "setZoom", value: zoom });
-  };
-  const toggleZoom = async (useZoom: boolean) => {
-    sendMessage({ type: "toggleZoom", value: useZoom });
   };
   const toggleBounce = () => {
     sendMessage({ type: "toggleBounce" });
@@ -61,9 +52,6 @@ const ControlsComponent = (): JSX.Element => {
       phase: termValues.phase,
       amplitude: termValues.amplitude,
     });
-  };
-  const toggleOriginal = () => {
-    sendMessage({ type: "toggleOriginal" });
   };
 
   const handleExpand = (newExpanded: string) => {
@@ -95,7 +83,7 @@ const ControlsComponent = (): JSX.Element => {
           <div className="full-width">
             <TermSlider onChange={setNumTerms} />
             <ImageSelector onSelect={confirmImage} />
-            <TimeSlider onChange={setAnimationPeriod} />
+            <TimeSlider />
             <Button onClick={toggleBounce}>Toggle Bounce</Button>
           </div>
         </AccordionSection>

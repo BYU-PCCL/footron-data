@@ -176,7 +176,7 @@ export function setImage(image, fromZero = false, transition = true) {
     if (ATTRIBUTIONS[image]) {
         attribution(ATTRIBUTIONS[image])
     } else attribution(image);
-    return CONTROLLER.totalNumFourierTerms
+    return CONTROLLER.maxTerms()
 }
 
 export function query() {
@@ -184,13 +184,13 @@ export function query() {
 }
 
 export function maxTerm() {
-    return CONTROLLER.totalNumFourierTerms;
+    return CONTROLLER.maxTerms();
 }
 
 export function termInfo() {
     console.log("Sending" + CONTROLLER.currentNumFourierTerms)
     return {
-        maxNumTerms: CONTROLLER.sourceFourierData.length,
+        maxNumTerms: CONTROLLER.maxTerms(),
         currentNumTerms: CONTROLLER.currentNumFourierTerms
     }
 }
