@@ -1,9 +1,10 @@
-/** @jsxImportSource @emotion/react */
-import React, { useState } from "react";
 import { Slider } from "@material-ui/core";
-import { useMessaging } from "@footron/controls-client";
+import React, { useState } from "react";
+import HelpText from "./help-text";
 
-console.log("time-slider.tsx loaded")
+function exponentialTime(val: number): number {
+  return 3 * 600 ** val;
+}
 
 function formatTime(seconds: number) {
   const units = [{ label: "minute", value: 60 }];
@@ -24,58 +25,29 @@ function formatTime(seconds: number) {
   return timeStr.trim();
 }
 
-const TimeSlider = (): JSX.Element => {
-  const [period, setPeriod] = useState<number>(60);
-  const [helpUsed, setHelpUsed] = useState<boolean>(false);
-  const [helpHidden, setHelpHidden] = useState<boolean>(false);
-  const [helpRemoved, setHelpRemoved] = useState<boolean>(false);
-  console.log("Time slider called. period=", period)
-  
-  const { sendMessage } = useMessaging();
+type TimeSliderProps = {
+  sendMessage: (message: any) => void;
+}
 
-  const handleChange = (_: any, value: number | number[]) => {
+const TimeSlider = ({sendMessage}: TimeSliderProps): JSX.Element => {
+    const startValue = 0.47;
+  const [sliderVal, setSliderVal] = useState(startValue);
+
+  const handleChange = (_: React.ChangeEvent<{}>, value: number | number[]) => {
     if (Array.isArray(value)) return;
-    setPeriod(value);
-    sendPeriodUpdate(value);
-    changeHelpText();
-  };
-
-  const sendPeriodUpdate = (period: number) => {
-    sendMessage({ type: "setPeriod", value: period });
-  };
-
-  const changeHelpText = () => {
-    if (!helpUsed) {
-      setHelpUsed(true);
-      setHelpHidden(true);
-      setTimeout(() => {
-        setHelpRemoved(true);
-      }, 1000);
-    }
-  };
-
+    setSliderVal(value);
+    console.log("send 'setPeriod': ", exponentialTime(value));
+    sendMessage({type: "setPeriod", value: exponentialTime(value)})
+  }
   return (
-    <div className="vert-container full-width">
-      <div className="slider-description hidable-children centered">
-        <div
-          className={
-            "description-item" +
-            (helpHidden != helpRemoved ? " hidden-item " : "")
-          }
-        >
-          {helpRemoved
-            ? formatTime(period)
-            : "Change the period of the animation"}
-        </div>
-      </div>
-      <Slider
-        value={period}
-        onChange={handleChange}
-        min={3}
-        max={1800}
-        step={0.1}
+    <>
+      <HelpText
+        initialHelp="Change the period of the animation"
+        subsequentHelp={"Period: " + formatTime(exponentialTime(sliderVal))}
+        helpUsed={sliderVal != startValue}
       />
-    </div>
+      <Slider value={sliderVal} min={0} max={1} step={0.005} onChange={handleChange}/>
+    </>
   );
 };
 

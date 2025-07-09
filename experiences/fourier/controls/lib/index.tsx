@@ -1,164 +1,148 @@
 /** @jsxImportSource @emotion/react */
-import React, { useState } from "react";
-import { useMessaging } from "@footron/controls-client";
-import "./index.css";
-import TermEditor from "./term-editor";
-import ImageSelector from "./image-selector";
 import {
   Accordion,
-  AccordionSummary,
   AccordionDetails,
-  Button,
-  Slider,
+  AccordionSummary,
+  Typography,
 } from "@material-ui/core";
-import TermSlider from "./term-slider";
-import ZoomSlider from "./zoom-slider";
-import { ExpandMore } from "@material-ui/icons";
-
-type AccordionProps = {
-  title: string;
-  sectionKey: string;
-  children: JSX.Element;
-};
-
-function formatTime(seconds: number) {
-  const units = [{ label: "minute", value: 60 }];
-
-  let timeStr = "",
-    secondsRemaining = true;
-
-  for (const unit of units) {
-    const unitValue = Math.floor(seconds / unit.value);
-    if (unitValue > 0) {
-      timeStr += `${unitValue} ${unit.label}${unitValue > 1 ? "s" : " "} `;
-      seconds -= unitValue * unit.value;
-      secondsRemaining = seconds > 0;
-      break;
-    }
-  }
-  timeStr += secondsRemaining ? seconds.toFixed(1) + " seconds" : "";
-  return timeStr.trim();
-}
+import React, { ChangeEvent, useCallback, useState } from "react";
+import { useMessaging } from "@footron/controls-client";
+import "./index.css";
+import AccordionSection from "./accordion-section";
+import ZoomSection from "./zoom-section";
+import AnimationSection from "./animation-section";
+import TermEditor from "./term-editor";
 
 const ControlsComponent = (): JSX.Element => {
-  const [expanded, setExpanded] = useState<string>("animation");
-  const [period, setPeriod] = useState<number>(60);
-  const [periodHelpUsed, setPeriodHelpUsed] = useState<boolean>(false);
-  const [periodHelpHidden, setPeriodHelpHidden] = useState<boolean>(false);
-  const [periodHelpRemoved, setPeriodHelpRemoved] = useState<boolean>(false);
-
-  const { sendMessage } = useMessaging();
-  const toggleBounce = () => {
-    sendMessage({ type: "toggleBounce" });
-  };
-  const handlePeriodChange = (_: any, value: number | number[]) => {
-    if (Array.isArray(value)) return;
-    setPeriod(value);
-    sendMessage({ type: "setPeriod", value: value });
-    changeHelpText();
-  };
-
-  const changeHelpText = () => {
-    if (!periodHelpUsed) {
-      setPeriodHelpUsed(true);
-      setPeriodHelpHidden(true);
-      setTimeout(() => {
-        setPeriodHelpRemoved(true);
-      }, 1000);
+  const [focused, setFocused] = useState<string | false>("animation");
+  const [maxTerm, setMaxTerm] = useState<number>(512);
+  const [currentTerm, setCurrentTerm] = useState<number | false>(false);
+  const [termPhase, setTermPhase] = useState<number | false>(false);
+  const [termAmplitude, setTermAmplitude] = useState<number | false>(false);
+  const [termOriginalPhase, setTermOriginalPhase] = useState<number | false>(
+    false
+  );
+  const [termOriginalAmplitude, setTermOriginalAmplitude] = useState<
+    number | false
+  >(false);
+  
+  
+  const { sendMessage } = useMessaging((message: any) => {
+    if (!message) return;
+    console.log("Message received: ", message);
+    const {
+      maxTerm: newMaxTerm,
+      term: newTerm,
+      currentAmplitude: newCurrAmplitude,
+      currentPhase: newCurrPhase,
+      originalAmplitude: newOrigAmplitude,
+      originalPhase: newOrigPhase,
+    } = message;
+    // debugger;
+    if (newMaxTerm) {
+      setMaxTerm(newMaxTerm);
     }
-  };
+    if (newTerm) {
+      setCurrentTerm(newTerm);
+    }
+    if (newCurrAmplitude) {
+      setTermAmplitude(newCurrAmplitude);
+    }
+    if (newCurrPhase) {
+      setTermPhase(newCurrPhase);
+    }
+    if (newOrigAmplitude) {
+      setTermOriginalAmplitude(newOrigAmplitude);
+    }
+    if (newOrigPhase) {
+      setTermOriginalPhase(newOrigPhase);
+    }
+  });
 
-  const handleExpand = (newExpanded: string) => {
-    expanded === newExpanded ? setExpanded("none") : setExpanded(newExpanded);
-  };
+  const mySendMessage = useCallback(
+    async (message: any) => {
+      console.log("sending message: ", message)
+      await sendMessage(message);
+    },
+    [sendMessage]
+  )
 
-  const AccordionSection = ({
-    title,
-    sectionKey,
-    children,
-  }: AccordionProps) => {
-    return (
-      <Accordion
-        expanded={expanded === sectionKey}
-        onChange={() => handleExpand(sectionKey)}
-      >
-        <AccordionSummary expandIcon={<ExpandMore />}>{title}</AccordionSummary>
-        <AccordionDetails>{children}</AccordionDetails>
-      </Accordion>
-    );
+  const handleChange = (panel: string, newExpanded: boolean) => {
+    setFocused(newExpanded ? panel : false);
   };
 
   return (
-    <div>
-      {/* Automatically querying would be better but this works for now */}
-      <div className="full">
-        {/* TermSlider help text may need set here if the internal state isn`&apos;`t preserved */}
-        <AccordionSection title="Change the animation" sectionKey="animation">
-          <div className="full-width">
-            <TermSlider />
-            <ImageSelector />
-            <div className="vert-container full-width">
-              <div className="slider-description hidable-children centered">
-                <div
-                  className={
-                    "description-item" +
-                    (periodHelpHidden != periodHelpRemoved
-                      ? " hidden-item "
-                      : "")
-                  }
-                >
-                  {periodHelpRemoved
-                    ? formatTime(period)
-                    : "Change the period of the animation"}
-                </div>
-              </div>
-              <Slider
-                value={period}
-                onChange={handlePeriodChange}
-                min={3}
-                max={1800}
-              />
-            </div>
-            <Button onClick={toggleBounce}>Toggle Bounce</Button>
-          </div>
-        </AccordionSection>
-        <AccordionSection title="Edit a term" sectionKey="term">
-          <TermEditor />
-        </AccordionSection>
-        <AccordionSection title="Zoom in" sectionKey="zoom">
-          <ZoomSlider />
-        </AccordionSection>
-        <AccordionSection title="Learn More" sectionKey="learn">
-          <div className="vert-container">
-            <p>
-              The Fourier transform is so useful accross so many disparate
-              fields it is almost like magic. Luckily for us, this mathematical
-              tool is far from sorcery; it`&apos;`s relatively easy to
-              understand its basic principles and even easier to apply.
-            </p>
-            <p>
-              Feel free to explore this demonstration and build a better
-              intuition of how this beautiful mathematical tool works.
-            </p>
-            <p>Enjoy!</p>
-            <p>-Christian</p>
-            <h3>Further resources</h3>
-            <p>
-              This demonstration owes much of it`&apos;`s implimentation to{" "}
-              <a href="https://www.jezzamon.com/fourier/index.html">
-                Jez Swanson`&apos;`s amazing article
-              </a>{" "}
-              on the topic. Both his article and the{" "}
-              <a href="https://www.youtube.com/watch?v=r6sGWTCMz2k">
-                videos created by Grant Sanderson
-              </a>{" "}
-              (or 3blue1brown) are fantastic resources to anyone wanting to get
-              a deeper understanding of how these circles learned to cooperate.
-            </p>
-          </div>
-        </AccordionSection>
-      </div>
-    </div>
+    <>
+      <AccordionSection
+        sectionID={"animation"}
+        focused={focused}
+        description={"Change the animation"}
+        onChange={handleChange}
+      >
+        <AnimationSection maxTerm={maxTerm} sendMessage={mySendMessage} />
+      </AccordionSection>
+      <AccordionSection
+        sectionID={"edit"}
+        focused={focused}
+        description={"Edit a term"}
+        onChange={handleChange}
+      >
+        <TermEditor
+          maxTerm={maxTerm}
+          term={currentTerm}
+          currentAmplitude={termAmplitude}
+          currentPhase={termPhase}
+          originalAmplitude={termOriginalAmplitude}
+          originalPhase={termOriginalPhase}
+          sendMessage={mySendMessage}
+        />
+      </AccordionSection>
+      <AccordionSection
+        sectionID={"zoom"}
+        focused={focused}
+        description={"Change the view"}
+        onChange={handleChange}
+      >
+        <ZoomSection sendMessage={mySendMessage} />
+      </AccordionSection>
+      <AccordionSection
+        sectionID={"info"}
+        focused={focused}
+        description={"Learn more"}
+        onChange={handleChange}
+      >
+        <div className="text">
+          <Typography>
+            The Fourier transform is so useful accross so many disparate fields
+            it is almost like magic. Luckily for us, this mathematical tool is
+            far from sorcery; it&apos;s relatively easy to understand its basic
+            principles and even easier to apply.
+          </Typography>
+          <Typography>
+            Feel free to explore this demonstration and build a better intuition
+            of how this beautiful mathematical tool works.
+          </Typography>
+          <Typography>
+            Enjoy!
+            <br />
+            -Christian
+          </Typography>
+          <Typography variant="h5">Further resources</Typography>
+          <Typography>
+            This demonstration owes much of it&apos;s implimentation to{" "}
+            <a href="https://www.jezzamon.com/fourier/index.html">
+              Jez Swanson&apos;s amazing article
+            </a>{" "}
+            on the topic. Both his article and the{" "}
+            <a href="https://www.youtube.com/watch?v=r6sGWTCMz2k">
+              videos created by Grant Sanderson
+            </a>{" "}
+            (3blue1brown) are fantastic resources to anyone wanting to get a
+            deeper understanding of how these circles learned to cooperate.
+          </Typography>
+        </div>
+      </AccordionSection>
+    </>
   );
 };
 

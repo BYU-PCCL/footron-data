@@ -10,7 +10,7 @@ import { bounce, inOutExpo, isAprilFools, sinEaseInOut } from "./util.js";
 // Config variables
 const DISPLAY_ATTRIBUTION_SECONDS = 5
 const DEFAULT_SLIDE_DURATION = 7
-const AUTO_START_SHOW_IN = 15 // How many seconds to wait before starting the slideshow on load
+const AUTO_START_SHOW_IN = 10 // How many seconds to wait before starting the slideshow on load
 const CONTINUE_SHOW_AFTER = 40 // After input has stopped, how long to wait before starting again.
 const MAX_NUM_PATH_POINTS = 2048;
 const MIN_NUM_PATH_POINTS = 1024;
@@ -107,7 +107,7 @@ const ATTRIBUTION_ELEMENT = document.getElementById("attribution")
 const ATTRIBUTION_TIMEOUTS = []
 const CONTROLLER = new EpicyclesController(
     "standardCanvas", RENDER_STEPS, MAX_NUM_PATH_POINTS, MIN_NUM_PATH_POINTS,
-    PERIOD, EASE_TIME, ZOOM_EASE_TIME, EASE_FUNCTION, ZOOM_EASE_FUNCTION, 
+    PERIOD, EASE_TIME, ZOOM_EASE_TIME, EASE_FUNCTION, ZOOM_EASE_FUNCTION,
     MIN_RENDER_AMPLITUDE, FILL_AMOUNT, GOAL_FRAME_RATE, MINIMAL_CHUNK);
 
 let goodRandomChoiceNames = ["Sailor", "Triangle", "Y logo", "Peace", "Po", "Hexagon", "Fourier", "Fouriest", "Infinity"]
@@ -188,19 +188,30 @@ export function maxTerm() {
 }
 
 export function termInfo() {
-    console.log("Sending" + CONTROLLER.currentNumFourierTerms)
     return {
-        maxNumTerms: CONTROLLER.maxTerms(),
-        currentNumTerms: CONTROLLER.currentNumFourierTerms
+        maxTerm: CONTROLLER.maxTerms(),
     }
 }
 
 export function queryTerm(term) {
-    return { ...CONTROLLER.currentFourierData[term], maxTerm: CONTROLLER.sourceFourierData.length, queryTermResult: true };
+    if (term < 1 || term > CONTROLLER.sourceFourierData.length) return;
+    let currentTerm = CONTROLLER.currentFourierData[term - 1]
+    let originalTerm = CONTROLLER.sourceFourierData[term - 1]
+    return { 
+        currentAmplitude: currentTerm.amplitude, 
+        currentPhase: currentTerm.phase, 
+        originalAmplitude: originalTerm.amplitude, 
+        originalPhase: originalTerm.phase, 
+        maxTerm: CONTROLLER.sourceFourierData.length, 
+        term: term,
+    };
 }
 
 export function editTerm(term, phase, amplitude) {
     CONTROLLER.setEpicycle(term, phase, amplitude);
+    return({currentAmplitude: CONTROLLER.targetFourierData[term].amplitude,
+        currentPhase: CONTROLLER.targetFourierData[term].phase
+    })
 }
 
 export function resetTerm(term) {

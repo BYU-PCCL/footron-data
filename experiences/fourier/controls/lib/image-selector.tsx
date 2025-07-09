@@ -1,7 +1,6 @@
-/** @jsxImportSource @emotion/react */
-import React from "react";
 import { FormControl, InputLabel, MenuItem, Select } from "@material-ui/core";
-import { useMessaging } from "@footron/controls-client";
+import { ChangeEvent, useState } from "react";
+import HelpText from "./help-text";
 
 const images = [
   "Peace",
@@ -20,23 +19,34 @@ const images = [
   "Hexagon",
 ];
 
-const ImageSelector = (): JSX.Element => {
-  const [selectedImage, setSelectedImage] = React.useState("");
+type ImageSelectorProps = {
+  sendMessage: (message: any) => void;
+};
 
-  const { sendMessage } = useMessaging()
-  
-  const select = (event: any) => {
-    const image = event.target.value;
-    setSelectedImage(image);
-    sendMessage({ type: "setImage", value: image });
+const ImageSelector = ({ sendMessage }: ImageSelectorProps): JSX.Element => {
+  const [selectedImage, setSelectedImage] = useState("");
+
+  const select = (
+    event: ChangeEvent<{
+      name?: string | undefined;
+      value: unknown;
+    }>
+  ) => {
+    let image = event.target.value;
+    let stringImage = images.find((value) => value == image);
+    if (stringImage == undefined) stringImage = "";
+    setSelectedImage(stringImage);
+    sendMessage({ type: "setImage", value: stringImage });
   };
 
   return (
-    <div className="full-width vert-container hidable-children">
-      <div className="slider-description centered">
-        {"Change the displayed image"}
-      </div>
-      <FormControl>
+    <>
+      <HelpText
+        initialHelp="Change the image"
+        subsequentHelp=""
+        helpUsed={selectedImage != ""}
+      />
+      <FormControl fullWidth={true}>
         <InputLabel>Image</InputLabel>
         <Select value={selectedImage} onChange={select}>
           {images.map((img) => (
@@ -46,7 +56,7 @@ const ImageSelector = (): JSX.Element => {
           ))}
         </Select>
       </FormControl>
-    </div>
+    </>
   );
 };
 

@@ -1,11 +1,15 @@
-import React, { useRef, useEffect } from "react";
+import { Typography } from "@material-ui/core";
+import React from "react";
 
 type TermCanvasProps = {
   phase: number;
   amplitude: number;
-  maxAmplitude: number;
+  initialPhase: number;
+  initialAmplitude: number;
+  disabled: boolean;
 };
 
+// canvas size, not screen
 const width = 300;
 const height = width;
 const midX = width / 2;
@@ -14,16 +18,19 @@ const midY = midX;
 function drawArc(
   context: CanvasRenderingContext2D,
   radius: number,
-  rotation: number,
+  arcStart: number,
+  arcEnd: number,
   color: string,
   alpha: number,
   lineWidth: number
 ) {
+  const start = Math.max(arcStart, arcEnd);
+  const end = Math.min(arcStart, arcEnd);
   context.beginPath();
   context.globalAlpha = alpha;
   context.lineWidth = width * lineWidth;
   context.strokeStyle = color;
-  context.arc(midX, midY, radius, 0, rotation, rotation < 0);
+  context.arc(midX, midY, radius, -start, -end);
   context.stroke();
   context.globalAlpha = 1;
 }
@@ -31,17 +38,18 @@ function drawArc(
 function fillArc(
   context: CanvasRenderingContext2D,
   radius: number,
-  rotation: number,
+  fillStart: number,
+  fillEnd: number,
   color: string,
   alpha: number
 ) {
-  const start = rotation < 0 ? rotation : 0;
-  const end = rotation < 0 ? 0 : rotation;
+  const start = Math.max(fillStart, fillEnd);
+  const end = Math.min(fillStart, fillEnd);
   context.beginPath();
   context.moveTo(midX, midY);
   context.globalAlpha = alpha;
   context.fillStyle = color;
-  context.arc(midX, midY, radius, start, end);
+  context.arc(midX, midY, radius, -start, -end);
   context.lineTo(midX, midY);
   context.fill();
   context.globalAlpha = 1;
@@ -56,7 +64,7 @@ function drawRadius(
   lineWidth: number
 ) {
   const rX = midX + Math.cos(phase) * amplitude;
-  const rY = midY + Math.sin(phase) * amplitude;
+  const rY = midY - Math.sin(phase) * amplitude;
   context.beginPath();
   context.globalAlpha = alpha;
   context.lineWidth = width * lineWidth;
@@ -67,35 +75,102 @@ function drawRadius(
   context.globalAlpha = 1;
 }
 
-export default function TermCanvas({
+function getDisplayPercentages(initial: number, current: number) {
+  let initialPercentage = 0.5;
+  let currentPercentage = initial == 0 ? 1 : current / (2 * initial);
+  if (current > 2 * initial) {
+    currentPercentage = 1;
+    initialPercentage = initial / current;
+  }
+  return {
+    initialPercentage: initialPercentage,
+    currentPercentage: currentPercentage,
+  };
+}
+
+const TermCanvas = ({
   phase,
   amplitude,
-  maxAmplitude,
-}: TermCanvasProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const frameRef = useRef<number>(0);
+  initialPhase,
+  initialAmplitude,
+  disabled,
+}: TermCanvasProps): JSX.Element => {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const frameRef = React.useRef<number>(0);
 
-  useEffect(() => {
+  React.useEffect(() => {
     function draw(context: CanvasRenderingContext2D) {
       if (context) {
+        const { initialPercentage, currentPercentage } = getDisplayPercentages(
+          initialAmplitude,
+          amplitude
+        );
         const full = 2 * Math.PI;
         // A little buffer so the circle stays on screen
         const onCanvasMaxAmplitude = width / 2.2;
-        const onCanvasAmplitude =
-          (onCanvasMaxAmplitude * Math.abs(amplitude)) / maxAmplitude;
-        const onCanvasPhase = amplitude > 0 ? phase : -1 * phase;
+        const onCanvasAmplitude = onCanvasMaxAmplitude * currentPercentage;
+        const onCanvasInitialAmplitude =
+          onCanvasMaxAmplitude * initialPercentage;
+        const onCanvasPhase = amplitude >= 0 ? phase : -1 * phase;
         // currentPhasefill
-        fillArc(context, onCanvasAmplitude, phase, "yellow", 0.3);
-        fillArc(context, onCanvasAmplitude, phase, "yellow", 0.2);
-        // Max Circle
-        drawArc(context, onCanvasMaxAmplitude, full, "lightgray", 1, 0.03);
-        drawArc(context, onCanvasMaxAmplitude, full, "lightgray", 0.5, 0.02);
+        fillArc(
+          context,
+          onCanvasAmplitude,
+          onCanvasPhase,
+          initialPhase,
+          "yellow",
+          0.3
+        );
+        fillArc(
+          context,
+          onCanvasAmplitude,
+          onCanvasPhase,
+          initialPhase,
+          "yellow",
+          0.2
+        );
+        // Initial Circle
+        drawArc(
+          context,
+          onCanvasInitialAmplitude,
+          0,
+          full,
+          "lightgray",
+          1,
+          0.03
+        );
+        drawArc(
+          context,
+          onCanvasInitialAmplitude,
+          0,
+          full,
+          "lightgray",
+          0.5,
+          0.02
+        );
         // Start Radius
-        drawRadius(context, onCanvasMaxAmplitude, 0, "lightgray", 1, 0.03);
-        drawRadius(context, onCanvasMaxAmplitude, 0, "lightgray", 0.5, 0.02);
+        drawRadius(
+          context,
+          onCanvasInitialAmplitude,
+          initialPhase,
+          "lightgray",
+          1,
+          0.03
+        );
+        drawRadius(
+          context,
+          onCanvasInitialAmplitude,
+          initialPhase,
+          "lightgray",
+          0.5,
+          0.02
+        );
+        // currentPhase
+        drawArc(context, onCanvasInitialAmplitude, initialPhase, phase, "yellow", 1, 0.03);
+        drawArc(context, onCanvasInitialAmplitude, initialPhase, phase, "yellow", 0.5, 0.02);
         // currentCircle
-        drawArc(context, onCanvasAmplitude, full, "black", 1, 0.02);
-        drawArc(context, onCanvasAmplitude, full, "black", 0.5, 0.01);
+        drawArc(context, onCanvasAmplitude, 0, full, "black", 1, 0.02);
+        drawArc(context, onCanvasAmplitude, 0, full, "black", 0.5, 0.01);
         // Current Radius
         context.lineCap = "round";
         drawRadius(context, onCanvasAmplitude, onCanvasPhase, "blue", 1, 0.03);
@@ -107,11 +182,9 @@ export default function TermCanvas({
           0.5,
           0.02
         );
-        // currentPhase
-        drawArc(context, onCanvasMaxAmplitude, phase, "yellow", 1, 0.03);
-        drawArc(context, onCanvasMaxAmplitude, phase, "yellow", 0.5, 0.02);
       }
     }
+
     if (canvasRef.current) {
       const context = canvasRef.current.getContext("2d");
 
@@ -123,7 +196,17 @@ export default function TermCanvas({
       }
     }
     return () => cancelAnimationFrame(frameRef.current);
-  }, [phase, amplitude]);
+  }, [phase, amplitude, initialPhase, initialAmplitude]);
 
-  return <canvas ref={canvasRef} className="full" />;
-}
+  return (
+    <>
+      {disabled ? (
+        <Typography className="term-canvas">Loading...</Typography>
+      ) : (
+        <canvas ref={canvasRef} className="term-canvas" />
+      )}
+    </>
+  );
+};
+
+export default TermCanvas;

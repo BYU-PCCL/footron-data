@@ -1,240 +1,168 @@
-/** @jsxImportSource @emotion/react */
-import React, { useState, useCallback } from "react";
-import { Button, IconButton, Slider } from "@material-ui/core";
-import { ChevronLeft, ChevronRight } from "@material-ui/icons";
+import { Button, Slider } from "@material-ui/core";
+import React, { useState } from "react";
+import HelpText from "./help-text";
 import TermCanvas from "./term-canvas";
-import { useMessaging } from "@footron/controls-client";
+import TermSlider from "./term-slider";
 
-export type TermChange = {
-  term: number;
-  phase: number;
-  amplitude: number;
-};
+function displayPhase(value: number): string {
+  return (value / Math.PI).toFixed(2) + "π radians";
+}
 
-type TermProps = {
-  queryTermResult: undefined;
-  phase: number;
-  amplitude: number;
+/**
+ * maps 0 - 1 to 0px - 500px
+ */
+function exponentialAmplitude(value: number): number {
+  const MAX = 500;
+  return (MAX + 1) ** value - 1;
+}
+
+function amplitudeToSliderValue(value: number): number {
+  const MAX = 500;
+  return Math.log2(value + 1) / Math.log2(MAX + 1);
+}
+
+function displayAmplitude(value: number): string {
+  const PIXELS_PER_METER = 800; // FIXME: This is a total guess
+  const meters = value / PIXELS_PER_METER;
+
+  if (meters > 1) return meters.toFixed(2) + " Meters";
+  let centimeters = meters * 100;
+  if (centimeters > 1) return centimeters.toFixed(2) + " cm";
+  let milimeters = meters * 1000;
+  if (milimeters > 1) return milimeters.toFixed(2) + " mm";
+  let micrometers = meters * 1000000;
+  return micrometers.toFixed(2) + " μm";
+}
+
+function displayTerm(term: number) {
+  return "Term: " + term;
+}
+
+type TermEditorProps = {
   maxTerm: number;
+  term: number | false;
+  currentAmplitude: number | false;
+  originalAmplitude: number | false;
+  currentPhase: number | false;
+  originalPhase: number | false;
+  sendMessage: (message: any) => void;
 };
 
-const helpUiDelay = 1000;
+const MAX_EDITABLE_TERM = 512;
 
-function getAmplitude(percent: number) {
-  return 500 * percent ** 4;
-}
-
-function formattedAmplitude(amplitude: number) {
-  amplitude = getAmplitude(amplitude);
-  return amplitude < 1e-14
-    ? 0
-    : amplitude < 0.01
-    ? amplitude.toExponential(2)
-    : amplitude.toFixed(2);
-}
-
-const TermEditor = (): JSX.Element => {
-  const [maxTerm, setMaxTerm] = useState<number>(1);
-  const [term, setTerm] = useState<number>(1);
+const TermEditor = ({
+  maxTerm,
+  term,
+  currentAmplitude,
+  originalAmplitude,
+  currentPhase,
+  originalPhase,
+  sendMessage,
+}: TermEditorProps): JSX.Element => {
+  const minTerm = 1;
+  const [selectedTerm, setSelectedTerm] = useState<number | false>(false);
   const [phase, setPhase] = useState<number>(0);
   const [amplitude, setAmplitude] = useState<number>(0);
-  const [haveLiveValues, setHaveLiveValues] = useState<boolean>(false);
-  const [queryFailed, setQueryFailed] = useState<boolean>(false);
-  const [PAHelpUsed, setPAHelpUsed] = useState<boolean>(false);
-  const [PAHelpHidden, setPAHelpHidden] = useState<boolean>(false);
-  const [PAHelpRemoved, setPAHelpRemoved] = useState<boolean>(false);
-  const [termHelpUsed, setTermHelpUsed] = useState<boolean>(false);
-  const [termHelpHidden, setTermHelpHidden] = useState<boolean>(false);
-  const [termHelpRemoved, setTermHelpRemoved] = useState<boolean>(false);
+  const [phaseUsed, setPhaseUsed] = useState<boolean>(false);
+  const [amplitudeUsed, setAmplitudeUsed] = useState<boolean>(false);
 
-  const { sendMessage } = useMessaging<TermProps>((message) => {
-    if (message.queryTermResult) {
-      setPhase(message.phase);
-      const newAmplitude = (message.amplitude / 400) ** 0.25;
-      setAmplitude(newAmplitude);
-      setMaxTerm(message.maxTerm);
-      setHaveLiveValues(true);
-    }
-    if (message.maxTerm) {
-      setMaxTerm(message.maxTerm);
-    }
-  });
-
-  const resetTerm = () => {
-    sendMessage({ type: "resetTerm", value: term });
+  const handleTermChange = (term: number) => {
+    setSelectedTerm(term);
+    sendMessage({ type: "queryTerm", value: term });
   };
 
-  const resetAll = () => {
-    sendMessage({ type: "resetAllTerms" });
-  };
-
-  const queryTerm = useCallback(
-    async (term: number) => {
-      await sendMessage({ type: "queryTerm", value: term });
-    },
-    [sendMessage]
-  );
-
-  function handleUpdate() {
-    sendMessage({type: "editTerm", term: term, phase: phase, amplitude: getAmplitude(amplitude) });
-  }
-
-  async function handleTermChange(event: any, value: number | number[]) {
-    setTerm(value as number);
-    setHaveLiveValues(false);
-    changeTermHelpText();
-    const getTermInfoTimer = setTimeout(() => {
-      setQueryFailed(true);
-      return;
-    });
-    await queryTerm(term)
-      .then(() => {
-        clearTimeout(getTermInfoTimer);
-        setQueryFailed(false);
-      })
-      .catch(() => {
-        clearTimeout(getTermInfoTimer);
-        setHaveLiveValues(false);
-        setQueryFailed(true);
-      });
-  }
-
-  const handlePhaseChange = (_: any, value: number | number[]) => {
-    if (Array.isArray(value)) return
+  const handlePhaseChange = (
+    _: React.ChangeEvent<{}>,
+    value: number | number[]
+  ) => {
+    if (Array.isArray(value)) return;
     setPhase(value);
-    changePAHelpText();
-    handleUpdate();
-  };
-  const handleAmplitudeChange = (_: any, value: number | number[]) => {
-    if (Array.isArray(value)) return
-    setAmplitude(value);
-    changePAHelpText();
-    handleUpdate();
+    setPhaseUsed(true);
+    sendMessage({ type: "editTerm", term: selectedTerm, amplitude: amplitude, phase: value });
   };
 
-  const changePAHelpText = () => {
-    if (!PAHelpUsed) {
-      setPAHelpUsed(true);
-      setPAHelpHidden(true);
-      setTimeout(() => {
-        setPAHelpRemoved(true);
-      }, helpUiDelay);
-    }
+  const handleAmplitudeChange = (
+    _: React.ChangeEvent<{}>,
+    value: number | number[]
+  ) => {
+    if (Array.isArray(value)) return;
+    setAmplitude(value);
+    setAmplitudeUsed(true);
+    let exponentialValue = exponentialAmplitude(value);
+    sendMessage({
+      type: "editTerm",
+      term: selectedTerm,
+      amplitude: exponentialValue,
+      phase: phase,
+    });
   };
-  const changeTermHelpText = () => {
-    if (!termHelpUsed) {
-      setTermHelpUsed(true);
-      setTermHelpHidden(true);
-      setTimeout(() => {
-        setTermHelpRemoved(true);
-      }, helpUiDelay);
-    }
-  };
+
+  const handleResetTerm = () => {
+    sendMessage({type: "resetTerm", value: selectedTerm})
+  }
+
+  const handleResetAll = () => {
+    sendMessage({type: "resetAll"})
+  }
 
   return (
-    <div className="term-container full-width">
-      <div className="slider-description hidable-children centered">
+    <>
+      <TermSlider
+        initialHelp="Select a term to edit"
+        subsequentHelp={displayTerm}
+        minTerm={minTerm}
+        maxTerm={Math.min(maxTerm, MAX_EDITABLE_TERM)}
+        onChange={handleTermChange}
+        defaultTerm={1}
+      />
+      <div className="horizontal-container full">
+        <TermCanvas
+          phase={phase}
+          amplitude={exponentialAmplitude(amplitude)}
+          initialPhase={originalPhase ? originalPhase : 0}
+          initialAmplitude={originalAmplitude ? originalAmplitude : 0}
+          disabled={term == false || term != selectedTerm}
+        />
         <div
           className={
-            "description-item" +
-            (termHelpHidden != termHelpRemoved ? " hidden-item " : "")
+            term != selectedTerm
+              ? "disabled vertical-container edit-controls"
+              : "vertical-container edit-controls"
           }
         >
-          {termHelpRemoved ? "Term: " + term : "Select which term to change"}
-        </div>
-      </div>
-      <div className="slider-container">
-        <IconButton
-          disabled={term <= 1}
-          onClick={() => handleTermChange(null, term - 1)}
-        >
-          <ChevronLeft />
-        </IconButton>
-        <Slider
-          value={Math.min(term, maxTerm)}
-          min={1}
-          max={Math.min(maxTerm, 512)}
-          onChange={handleTermChange}
-        />
-        <IconButton
-          disabled={term >= maxTerm}
-          onClick={() => handleTermChange(null, term + 1)}
-        >
-          <ChevronRight />
-        </IconButton>
-      </div>
-      <div className="slider-container">
-        <div className="canvas-container">
-          {queryFailed ? (
-            <div>{"Couldn't get live data, please try again"}</div>
-          ) : haveLiveValues ? (
-            <div className="full">
-              <TermCanvas
-                phase={phase}
-                amplitude={getAmplitude(amplitude)}
-                maxAmplitude={100}
-              />
-            </div>
-          ) : (
-            <div>{"Loading data..."}</div>
-          )}
-        </div>
-        <div className="vert-container p-a-container">
-          <div className="vert-item">
-            <div className="slider-description hidable-children">
-              <div
-                className={
-                  "description-item" +
-                  (PAHelpHidden != PAHelpRemoved ? " hidden-item " : "")
-                }
-              >
-                {PAHelpRemoved
-                  ? "Phase: " + (phase / Math.PI).toFixed(2) + " π"
-                  : "Change the phase"}
-              </div>
-            </div>
-            <Slider
-              disabled={!haveLiveValues}
-              min={-Math.PI}
-              max={Math.PI}
-              value={phase}
-              onChange={handlePhaseChange}
-            />
-          </div>
-          <div className="vert-item">
-            {/* Amplitude */}
-            <div className="slider-description hidable-children">
-              <div
-                className={
-                  "description-item" +
-                  (PAHelpHidden != PAHelpRemoved ? " hidden-item " : "")
-                }
-              >
-                {PAHelpRemoved
-                  ? "Amplitude: " + formattedAmplitude(amplitude)
-                  : "Change the amplitude"}
-              </div>
-            </div>
-            <Slider
-              disabled={!haveLiveValues}
-              min={0}
-              max={1}
-              step={0.01}
-              value={amplitude}
-              onChange={handleAmplitudeChange}
-            />
-          </div>
-          <div className="vert-item">
-            <Button color="primary" variant="contained" onClick={resetTerm}>
-              Reset Term
-            </Button>
-            <Button color="primary" variant="contained" onClick={resetAll}>
-              Reset All
-            </Button>
+          <HelpText
+            initialHelp="Change the phase"
+            subsequentHelp={displayPhase(phase)}
+            helpUsed={phaseUsed}
+          />
+          <Slider
+            value={phase}
+            min={-1 * Math.PI}
+            max={1 * Math.PI}
+            step={0.01}
+            onChange={handlePhaseChange}
+            disabled={term == false || term != selectedTerm}
+          />
+          <HelpText
+            initialHelp="Change the amplitude"
+            subsequentHelp={displayAmplitude(exponentialAmplitude(amplitude))}
+            helpUsed={amplitudeUsed}
+          />
+          <Slider
+            value={amplitude}
+            min={0}
+            max={1}
+            step={0.005}
+            onChange={handleAmplitudeChange}
+            disabled={term == false || term != selectedTerm}
+          />
+          <div className="horizontal-container">
+            <Button color="primary" variant="contained" onClick={handleResetTerm}>Reset Term</Button>
+            <Button color="primary" variant="contained" onClick={handleResetAll}>Reset All</Button>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

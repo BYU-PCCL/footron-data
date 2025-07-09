@@ -19,20 +19,20 @@ export async function messageHandler(message) {
       setFollowIndex(null)
       break;
     case "setImage":
-      client.sendMessage({ maxTerm: setImage(message.value, false, true) });
+      sendMessage({ maxTerm: setImage(message.value, false, true) });
       break;
     case "maxTerm":
-      client.sendMessage({ maxTerm: maxTerm() });
+      sendMessage({ maxTerm: maxTerm() });
       break;
     case "termInfo":
-      client.sendMessage(termInfo())
+      sendMessage(termInfo())
       break;
     case "queryTerm":
-      client.sendMessage(queryTerm(message.value))
+      sendMessage(queryTerm(message.value))
       break;
     case "setNumTerms":
       setFourierAmt(message.value)
-      client.sendMessage(termInfo())
+      sendMessage(termInfo())
       break;
     case "setPeriod":
       setPeriod(message.value)
@@ -41,7 +41,7 @@ export async function messageHandler(message) {
       setZoom(message.value, message.x, message.y);
       break;
     case "editTerm":
-      editTerm(message.term, message.phase, message.amplitude)
+      sendMessage(editTerm(message.term, message.phase, message.amplitude))
       break;
     case "resetTerm":
       resetTerm(message.value)
@@ -77,5 +77,9 @@ export async function messageHandler(message) {
 }
 
 const client = new FootronMessaging.Messaging();
+const sendMessage = (message) => {
+  console.log("sending Message", message);
+  client.sendMessage(message)
+}
 client.mount();
 client.addMessageListener(messageHandler);
