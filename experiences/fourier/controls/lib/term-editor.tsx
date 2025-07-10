@@ -26,11 +26,11 @@ function displayAmplitude(value: number): string {
   const meters = value / PIXELS_PER_METER;
 
   if (meters > 1) return meters.toFixed(2) + " Meters";
-  let centimeters = meters * 100;
+  const centimeters = meters * 100;
   if (centimeters > 1) return centimeters.toFixed(2) + " cm";
-  let milimeters = meters * 1000;
+  const milimeters = meters * 1000;
   if (milimeters > 1) return milimeters.toFixed(2) + " mm";
-  let micrometers = meters * 1000000;
+  const micrometers = meters * 1000000;
   return micrometers.toFixed(2) + " μm";
 }
 
@@ -72,7 +72,7 @@ const TermEditor = ({
   };
 
   const handlePhaseChange = (
-    _: React.ChangeEvent<{}>,
+    _: React.ChangeEvent<unknown>,
     value: number | number[]
   ) => {
     if (Array.isArray(value)) return;
@@ -82,13 +82,13 @@ const TermEditor = ({
   };
 
   const handleAmplitudeChange = (
-    _: React.ChangeEvent<{}>,
+    _: React.ChangeEvent<unknown>,
     value: number | number[]
   ) => {
     if (Array.isArray(value)) return;
     setAmplitude(value);
     setAmplitudeUsed(true);
-    let exponentialValue = exponentialAmplitude(value);
+    const exponentialValue = exponentialAmplitude(value);
     sendMessage({
       type: "editTerm",
       term: selectedTerm,

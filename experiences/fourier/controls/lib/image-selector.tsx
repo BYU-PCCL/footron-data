@@ -1,5 +1,5 @@
+import React, { ChangeEvent, useState } from "react";
 import { FormControl, InputLabel, MenuItem, Select } from "@material-ui/core";
-import { ChangeEvent, useState } from "react";
 import HelpText from "./help-text";
 
 const images = [
@@ -32,7 +32,7 @@ const ImageSelector = ({ sendMessage }: ImageSelectorProps): JSX.Element => {
       value: unknown;
     }>
   ) => {
-    let image = event.target.value;
+    const image = event.target.value;
     let stringImage = images.find((value) => value == image);
     if (stringImage == undefined) stringImage = "";
     setSelectedImage(stringImage);

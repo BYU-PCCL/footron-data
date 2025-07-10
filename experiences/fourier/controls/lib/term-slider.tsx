@@ -1,6 +1,6 @@
+import React, { ChangeEvent, useState } from "react";
 import { IconButton, Slider, SvgIcon } from "@material-ui/core";
 import { KeyboardArrowLeft, KeyboardArrowRight } from "@material-ui/icons";
-import { ChangeEvent, useState } from "react";
 import HelpText from "./help-text";
 
 type TermSliderProps = {
@@ -41,7 +41,7 @@ const TermSlider = ({
     clamp(sliderMin, bLog(defaultTerm ? defaultTerm : 0), sliderMax)
   );
 
-  const handleChange = (_: ChangeEvent<{}>, newVal: number | number[]) => {
+  const handleChange = (_: ChangeEvent<unknown>, newVal: number | number[]) => {
     if (Array.isArray(newVal)) return;
     update(newVal);
   };
@@ -52,8 +52,9 @@ const TermSlider = ({
     onChange(termFromVal(val));
   };
 
+  // These change the slider value directly and are unintuitive because the slider uses a log scale
   const half = () => {
-    let val = sliderVal - 1;
+    const val = sliderVal - 1;
     update(val);
   };
 
@@ -70,7 +71,7 @@ const TermSlider = ({
   };
 
   const double = () => {
-    let val = sliderVal + 1;
+    const val = sliderVal + 1;
     update(val);
   };
 

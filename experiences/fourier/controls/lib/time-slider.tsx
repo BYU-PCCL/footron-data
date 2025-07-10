@@ -1,5 +1,5 @@
-import { Slider } from "@material-ui/core";
 import React, { useState } from "react";
+import { Slider } from "@material-ui/core";
 import HelpText from "./help-text";
 
 function exponentialTime(val: number): number {
@@ -33,7 +33,7 @@ const TimeSlider = ({sendMessage}: TimeSliderProps): JSX.Element => {
     const startValue = 0.47;
   const [sliderVal, setSliderVal] = useState(startValue);
 
-  const handleChange = (_: React.ChangeEvent<{}>, value: number | number[]) => {
+  const handleChange = (_: React.ChangeEvent<unknown>, value: number | number[]) => {
     if (Array.isArray(value)) return;
     setSliderVal(value);
     console.log("send 'setPeriod': ", exponentialTime(value));

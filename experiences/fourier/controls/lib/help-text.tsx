@@ -1,5 +1,5 @@
+import React, { useState } from "react";
 import { Typography } from "@material-ui/core";
-import { useState } from "react";
 
 type HelpTextTerms = {
   initialHelp: string;

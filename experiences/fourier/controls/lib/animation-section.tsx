@@ -1,3 +1,4 @@
+import React from "react";
 import { Button } from "@material-ui/core";
 import ImageSelector from "./image-selector";
 import TermSlider from "./term-slider";

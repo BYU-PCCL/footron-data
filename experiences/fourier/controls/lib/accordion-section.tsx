@@ -1,11 +1,10 @@
-/** @jsxImportSource @emotion/react */
 import React, { ChangeEvent, PropsWithChildren } from "react";
 import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
 } from "@material-ui/core";
-import { ArrowDownward, ArrowDropDown } from "@material-ui/icons";
+import { ArrowDropDown } from "@material-ui/icons";
 
 type AccordionSectionProps = {
   sectionID: string;
@@ -21,7 +20,7 @@ const AccordionSection = ({
   onChange,
   children,
 }: PropsWithChildren<AccordionSectionProps>): JSX.Element => {
-  const handleChange = (_: ChangeEvent<{}>, newExpanded: boolean) => {
+  const handleChange = (_: ChangeEvent<unknown>, newExpanded: boolean) => {
     onChange(sectionID, newExpanded)
   }
   return (
