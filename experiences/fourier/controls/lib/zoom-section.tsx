@@ -1,5 +1,5 @@
+import React, { ChangeEvent, useState } from "react"
 import { Button, Slider } from "@material-ui/core";
-import { ChangeEvent, useState } from "react"
 import HelpText from "./help-text"
 
 type ZoomSectionProps = {
@@ -10,7 +10,7 @@ const ZoomSection = ({sendMessage}: ZoomSectionProps): JSX.Element => {
     const [zoom, setZoom] = useState<number>(1);
     const zoomValue = "Zoom: " + zoom.toFixed(1) + "x"
 
-    const handleZoomChange = (_: ChangeEvent<{}>, newVal: number | number[]) => {
+    const handleZoomChange = (_: ChangeEvent<unknown>, newVal: number | number[]) => {
         if (Array.isArray(newVal)) return;
         setZoom(newVal);
         sendMessage({type: "setZoom", value: newVal})
