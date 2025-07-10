@@ -14,8 +14,8 @@ const AnimationSection = ({
   sendMessage,
 }: AnimationSectionProps): JSX.Element => {
   const helpText = (term: number): string => {
-    if (term == 1) {
-      return "1 term. The first term is the stationary central term";
+    if (term == 2) {
+      return "2 terms (The first term is the stationary central term)";
     }
     return term + " terms";
   };
@@ -33,7 +33,7 @@ const AnimationSection = ({
       <TermSlider
         initialHelp="Choose how many terms are displayed"
         subsequentHelp={helpText}
-        minTerm={1}
+        minTerm={2}
         maxTerm={maxTerm == false ? 512 : maxTerm}
         onChange={handleChange}
       />

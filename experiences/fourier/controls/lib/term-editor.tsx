@@ -16,13 +16,8 @@ function exponentialAmplitude(value: number): number {
   return (MAX + 1) ** value - 1;
 }
 
-function amplitudeToSliderValue(value: number): number {
-  const MAX = 500;
-  return Math.log2(value + 1) / Math.log2(MAX + 1);
-}
-
 function displayAmplitude(value: number): string {
-  const PIXELS_PER_METER = 800; // FIXME: This is a total guess
+  const PIXELS_PER_METER = 570; // 1216px and 7' tall  1216px / 2.1336m = 569.93...
   const meters = value / PIXELS_PER_METER;
 
   if (meters > 1) return meters.toFixed(2) + " Meters";
@@ -41,9 +36,7 @@ function displayTerm(term: number) {
 type TermEditorProps = {
   maxTerm: number;
   term: number | false;
-  currentAmplitude: number | false;
   originalAmplitude: number | false;
-  currentPhase: number | false;
   originalPhase: number | false;
   sendMessage: (message: any) => void;
 };
@@ -53,9 +46,7 @@ const MAX_EDITABLE_TERM = 512;
 const TermEditor = ({
   maxTerm,
   term,
-  currentAmplitude,
   originalAmplitude,
-  currentPhase,
   originalPhase,
   sendMessage,
 }: TermEditorProps): JSX.Element => {
@@ -78,7 +69,7 @@ const TermEditor = ({
     if (Array.isArray(value)) return;
     setPhase(value);
     setPhaseUsed(true);
-    sendMessage({ type: "editTerm", term: selectedTerm, amplitude: amplitude, phase: value });
+    sendMessage({ type: "editTerm", term: selectedTerm, phase: value });
   };
 
   const handleAmplitudeChange = (
@@ -93,7 +84,6 @@ const TermEditor = ({
       type: "editTerm",
       term: selectedTerm,
       amplitude: exponentialValue,
-      phase: phase,
     });
   };
 

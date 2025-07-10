@@ -337,8 +337,8 @@ export default class EpicyclesController {
     if (index < 0 || index >= this.sourceFourierData.length) {
       return;
     }
-    if (!isNaN(amplitude)) this.targetFourierData[index].amplitude = amplitude;
-    if (!isNaN(phase)) this.targetFourierData[index].phase = phase;
+    if (!isNaN(amplitude) && null != amplitude) this.targetFourierData[index].amplitude = amplitude;
+    if (!isNaN(phase) && null != phase) this.targetFourierData[index].phase = phase;
     this.#resetEase(this.currentFourierData);
   }
 

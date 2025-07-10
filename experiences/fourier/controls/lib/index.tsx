@@ -1,11 +1,8 @@
 /** @jsxImportSource @emotion/react */
 import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
   Typography,
 } from "@material-ui/core";
-import React, { ChangeEvent, useCallback, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useMessaging } from "@footron/controls-client";
 import "./index.css";
 import AccordionSection from "./accordion-section";
@@ -29,7 +26,6 @@ const ControlsComponent = (): JSX.Element => {
   
   const { sendMessage } = useMessaging((message: any) => {
     if (!message) return;
-    console.log("Message received: ", message);
     const {
       maxTerm: newMaxTerm,
       term: newTerm,
@@ -38,7 +34,6 @@ const ControlsComponent = (): JSX.Element => {
       originalAmplitude: newOrigAmplitude,
       originalPhase: newOrigPhase,
     } = message;
-    // debugger;
     if (newMaxTerm) {
       setMaxTerm(newMaxTerm);
     }
@@ -61,7 +56,6 @@ const ControlsComponent = (): JSX.Element => {
 
   const mySendMessage = useCallback(
     async (message: any) => {
-      console.log("sending message: ", message)
       await sendMessage(message);
     },
     [sendMessage]
@@ -90,8 +84,6 @@ const ControlsComponent = (): JSX.Element => {
         <TermEditor
           maxTerm={maxTerm}
           term={currentTerm}
-          currentAmplitude={termAmplitude}
-          currentPhase={termPhase}
           originalAmplitude={termOriginalAmplitude}
           originalPhase={termOriginalPhase}
           sendMessage={mySendMessage}
