@@ -6,7 +6,6 @@ let DEMO_SLIDES = [
   "Fourier",
   "Fouriest",
   "Pentagon",
-  "Hexagon",
   "Po",
   "Infinity",
 ]
