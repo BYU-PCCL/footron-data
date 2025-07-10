@@ -9,10 +9,10 @@ function displayPhase(value: number): string {
 }
 
 /**
- * maps 0 - 1 to 0px - 500px
+ * maps 0 - 1 to 0px - 570px
  */
 function exponentialAmplitude(value: number): number {
-  const MAX = 500;
+  const MAX = 570; // 1 meter on screen
   return (MAX + 1) ** value - 1;
 }
 
