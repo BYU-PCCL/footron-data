@@ -22,7 +22,8 @@ experiences = [
   "fractals",
   "butterfly",
   "maze-generation",
-  "bus-bunching"
+  "bus-bunching",
+  "opinion-dynamics"
 ]
 
 [game]
