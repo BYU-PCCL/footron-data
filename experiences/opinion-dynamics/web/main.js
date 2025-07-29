@@ -224,6 +224,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initialize();
 
+    // Expose functions to global scope for messaging
+    window.state = state;
+    window.updateSimulationButton = updateSimulationButton;
+    window.handleResetSimulation = handleResetSimulation;
+    window.sendSimulationMessage = sendSimulationMessage;
+
     state.simulationRunning = true;
 
     // Simulation loop with speed control and automatic post generation
