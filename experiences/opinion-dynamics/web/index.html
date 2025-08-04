@@ -7,10 +7,65 @@
     <title>Opinion Dynamics Network</title>
     <link rel="stylesheet" type="text/css" href="./style.css" />
     <link rel="stylesheet" href="./assets/fontawesome/css/all.min.css" />
+    <script src="footron-messaging.development.js" type="text/javascript"></script>
     <script src="./assets/d3/d3.v7.min.js"></script>
     <script type="module" src="./main.js"></script>
+    <script type="text/javascript">
+        // Set up messaging client to receive messages from controls
+        var client;
+        function messageHandler(message) {
+            console.log("GOT MESSAGE:", message);
+            
+            if (message.type === "simulation") {
+                switch (message.action) {
+                    case "play":
+                        if (window.state) window.state.simulationRunning = true;
+                        if (window.updateSimulationButton) window.updateSimulationButton();
+                        break;
+                    case "pause":
+                        if (window.state) window.state.simulationRunning = false;
+                        if (window.updateSimulationButton) window.updateSimulationButton();
+                        break;
+                    case "reset":
+                        if (window.handleResetSimulation) window.handleResetSimulation();
+                        break;
+                }
+            } else if (message.type === "message") {
+                // Handle user message from controls
+                if (window.sendSimulationMessage) window.sendSimulationMessage(message.value);
+            }
+        }
+
+        function start() {
+            console.log("Starting messaging client...");
+            client = new FootronMessaging.Messaging();
+            client.mount();
+            client.addMessageListener(messageHandler);
+        }
+
+        window.addEventListener('load', start);
+    </script>
   </head>
   <body>
+    <div class="sidebar">
+      <div id="description-panel">
+        <h2>AI + Opinion Dynamics</h2>
+        <p><strong>What You See:</strong> Opinions shift and evolve across a network as agents reinforce ties with those they agree with and drift from those they don't.</p>
+        <p><strong>Your Goal:</strong> Try to steer the crowd toward a consensus on the age-old debate: does pineapple belong on pizza?</p>
+        <p><strong>Why It Matters:</strong> Behind the fun is real research on how bots and AI-powered influencers can sway public opinion, fueling unity, polarization, or manipulation.</p>
+      </div>
+      <!-- <div id="controls-panel">
+        <div class="button-container">
+          <button id="toggle-simulation"><i class="fas fa-play"></i></button>
+          <button id="reset-button"><i class="fas fa-redo"></i></button>
+        </div>
+        <br />
+      </div>
+      <div class="feed-input-area">
+        <textarea id="message-input" placeholder="Enter your message..."></textarea>
+        <button id="send-button">Send</button>
+      </div> -->
+    </div>
     <div class="main-content">
       <div id="visualization-container">
         <h1>🍍 Does Pineapple Go on Pizza? 🍕</h1>
@@ -30,25 +85,6 @@
           </div>
         </div>
       </div>
-    </div>
-    <div class="sidebar">
-      <div id="description-panel">
-        <h2>AI + Opinion Dynamics</h2>
-        <p><strong>What You See:</strong> Opinions shift and evolve across a network as agents reinforce ties with those they agree with and drift from those they don't.</p>
-        <p><strong>Your Goal:</strong> Try to steer the crowd toward a consensus on the age-old debate: does pineapple belong on pizza?</p>
-        <p><strong>Why It Matters:</strong> Behind the fun is real research on how bots and AI-powered influencers can sway public opinion, fueling unity, polarization, or manipulation.</p>
-      </div>
-      <!-- <div id="controls-panel">
-        <div class="button-container">
-          <button id="toggle-simulation"><i class="fas fa-play"></i></button>
-          <button id="reset-button"><i class="fas fa-redo"></i></button>
-        </div>
-        <br />
-      </div>
-      <div class="feed-input-area">
-        <textarea id="message-input" placeholder="Enter your message..."></textarea>
-        <button id="send-button">Send</button>
-      </div> -->
     </div>
   </body>
 </html>
