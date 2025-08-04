@@ -23,7 +23,7 @@ body {
     flex-grow: 3; /* Takes 3 parts of space */
     display: flex;
     flex-direction: column;
-    border-right: 1px solid #3a3a3a;
+    border-left: 1px solid #3a3a3a;
     overflow: hidden; /* Prevent content from breaking layout */
 }
 
