@@ -11,6 +11,8 @@ import { css } from "@emotion/react";
 import IconButton from "@material-ui/core/IconButton";
 import Button from "@material-ui/core/Button";
 import TextField from "@material-ui/core/TextField";
+import Slider from "@material-ui/core/Slider";
+import Typography from "@material-ui/core/Typography";
 import PlayArrowIcon from "@material-ui/icons/PlayArrow";
 import PauseIcon from "@material-ui/icons/Pause";
 import RefreshIcon from "@material-ui/icons/Refresh";
@@ -36,6 +38,7 @@ const SimulationControls = () => {
   const [simulationRunning, setSimulationRunning] = useState(false);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [speed, setSpeed] = useState(1);
   const { sendMessage } = useMessaging();
 
   const handleToggleSimulation = useCallback(async () => {
@@ -49,6 +52,11 @@ const SimulationControls = () => {
   const handleReset = useCallback(() => {
     setSimulationRunning(false);
     sendMessage({ type: "simulation", action: "reset" });
+  }, [sendMessage]);
+
+  const handleSpeedChange = useCallback((event, newValue) => {
+    setSpeed(newValue);
+    sendMessage({ type: "speed", value: newValue });
   }, [sendMessage]);
 
   const handleSend = useCallback(async () => {
@@ -80,6 +88,25 @@ const SimulationControls = () => {
         <IconButton onClick={handleReset} color="secondary" aria-label="reset simulation">
           <RefreshIcon />
         </IconButton>
+      </div>
+      <div>
+        <Typography id="speed-slider-label" gutterBottom>
+          Posting Speed: {speed}x
+        </Typography>
+        <Slider
+          value={speed}
+          onChange={handleSpeedChange}
+          aria-labelledby="speed-slider-label"
+          min={0.5}
+          max={10}
+          step={0.1}
+          marks={[
+            { value: 0.5, label: '0.5x' },
+            { value: 1, label: '1x' },
+            { value: 5, label: '5x' },
+            { value: 10, label: '10x' }
+          ]}
+        />
       </div>
       <TextField
         label="Enter your message..."

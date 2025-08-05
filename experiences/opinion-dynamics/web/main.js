@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastPostTime = 0;
     let lastSimulationUpdate = 0;
     const simulationSpeed = 5000; // Fixed: 5 seconds between updates (matching Python backend)
-    const postInterval = 5000; // 5 seconds between posts (matching Python backend)
+    let postInterval = 5000; // Dynamic: 1-10 seconds between posts (controlled by slider)
 
     function updateSimulationButton() {
         if (elements.toggleSimulationButton) {
@@ -167,6 +167,9 @@ document.addEventListener('DOMContentLoaded', () => {
             updateSimulationButton();
             lastPostTime = 0;
             lastSimulationUpdate = 0;
+            
+
+            
             console.log('Simulation reset successfully');
         } catch (error) {
             console.error('Error resetting simulation:', error);
@@ -178,6 +181,30 @@ document.addEventListener('DOMContentLoaded', () => {
         state.simulationRunning = !state.simulationRunning;
         updateSimulationButton();
         console.log(`Simulation ${state.simulationRunning ? 'started' : 'stopped'}`);
+    }
+
+    function updateSpeed() {
+        const sliderValue = parseFloat(elements.speedSlider.value);
+        // Slider value directly represents speed multiplier relative to 5s baseline
+        const actualSpeed = 5 / sliderValue; // Calculate actual posting speed
+        postInterval = actualSpeed * 1000; // Convert to milliseconds
+        
+        // Display the slider value as the speed multiplier
+        const displayValue = sliderValue < 1 ? sliderValue.toFixed(1) : Math.round(sliderValue);
+        
+        if (elements.speedValue) {
+            elements.speedValue.textContent = `${displayValue}x`;
+        }
+        
+        console.log(`Posting speed updated to ${actualSpeed} seconds`);
+    }
+
+    function updateSpeedFromController(speedValue) {
+        // Speed value from controller is already the multiplier
+        const actualSpeed = 5 / speedValue; // Calculate actual posting speed
+        postInterval = actualSpeed * 1000; // Convert to milliseconds
+        
+        console.log(`Posting speed updated from controller to ${actualSpeed} seconds (${speedValue}x)`);
     }
 
     function initialize() {
@@ -228,6 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.updateSimulationButton = updateSimulationButton;
     window.handleResetSimulation = handleResetSimulation;
     window.sendSimulationMessage = sendSimulationMessage;
+    window.updateSpeedFromController = updateSpeedFromController;
 
     state.simulationRunning = true;
 

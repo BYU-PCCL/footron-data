@@ -33,6 +33,9 @@
             } else if (message.type === "message") {
                 // Handle user message from controls
                 if (window.sendSimulationMessage) window.sendSimulationMessage(message.value);
+            } else if (message.type === "speed") {
+                // Handle speed change from controls
+                if (window.updateSpeedFromController) window.updateSpeedFromController(message.value);
             }
         }
 
