@@ -1,0 +1,10 @@
+{
+    "id": "solarshowdown",
+    "title": "Solar Showdown",
+    "description": "Built by BYU students, Solar Showdown is an edge-of-your-seat couch competitive game where you take on the roles of a farmer and a botanist, both harvesting solar power to build defenses and produce minions to attack your opponent's towers.",
+    "artist": "BYU Animation",
+    "type": "capture",
+    "lifetime": 360,
+    "queueable": false,
+    "path": "Windows/SolarShowdownv2.exe"
+}
