@@ -27,7 +27,7 @@ experiences = [
 
 [game]
 title = "BYU Games"
-experiences = [ "liminus", "brawlers", "beatboxers", "neokaiju", "avastye" ]
+experiences = [ "liminus", "brawlers", "beatboxers", "neokaiju", "avastye", "solarshowdown" ]
 
 [animation]
 title = "BYU Animation"
