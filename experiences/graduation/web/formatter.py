@@ -5,9 +5,15 @@ df = pd.read_csv( "./data_sorted.csv" )
 for i in range(len(df)):
     last_name = df.iloc[i]['Last Name']
     first_name = df.iloc[i]['Preferred First Name']
-    degree = df.iloc[i]['Degree']
+#    degree = df.iloc[i]['Degree']
+    degree = df.iloc[i]['Primary Major Description']
 
-    print( f"<div id='name_{i}' class='fader'><div class='text2'>{first_name} {last_name}, {degree}</div></div>" )  # in {major}
+    emphasis = df.iloc[i]['Primary Major Emphasis Description']
+
+    if not pd.isna(emphasis) and len(emphasis)>0:
+        print( f"<div id='name_{i}' class='fader'><div class='text2'>{first_name} {last_name}, {degree} ({emphasis})</div></div>" )
+    else:
+        print( f"<div id='name_{i}' class='fader'><div class='text2'>{first_name} {last_name}, {degree}</div></div>" )
 
 #    major = df.iloc[i]['Major']
 #    img = str( df.iloc[i]['Image'] )
