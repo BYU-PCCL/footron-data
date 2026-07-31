@@ -1,12 +1,10 @@
 {
     "id": "fluid",
-    "type": "docker",
+    "type": "web",
     "title": "Chroma Fluids",
     "description": "Explore colorful, real-time fluid simulations on the GPU with gesture-based interactions.",
     "artist": "David Wingate",
     "queueable": true,
-    "unlisted": true,
     "layout": "full",
-    "image_id": "pccl/app_fluid:0.1",
     "lifetime": 250
 }

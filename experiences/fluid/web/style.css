@@ -1,0 +1,120 @@
+@font-face {
+    font-family: 'Urbanist';
+    src: url('assets/Urbanist-Medium.ttf') format('truetype');
+}
+
+/* Fill whatever display we are on — a 2736x1216 video wall, a laptop, a
+   browser window being used to tune the installation. */
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #000000;
+    font-family: 'Urbanist', system-ui, sans-serif;
+    cursor: none;
+}
+
+#canvas {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.hidden { display: none !important; }
+
+/* The preview is hidden by going transparent rather than display:none — the
+   <video> in it is the tracker's input, and a video removed from the render
+   tree is not guaranteed to keep delivering frames. */
+.off { opacity: 0 !important; pointer-events: none; }
+
+/* ---- Captions ---------------------------------------------------------- */
+
+.caption {
+    position: absolute;
+    top: 6vh;
+    right: 5vh;
+    max-width: min(500px, 30vw);
+    padding: 30px;
+    opacity: 0;
+    visibility: hidden;
+
+    border: solid rgba(128, 128, 128, 1) 1px;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+    text-shadow: 2px 2px 10px rgba(0, 0, 0, 1.0);
+    filter: drop-shadow(rgba(0, 0, 0, 0.5) 4px 4px 5px);
+
+    text-align: right;
+    font-size: clamp(1.1rem, 1.5vw, 2.2rem);
+    line-height: 1.5em;
+}
+
+/* ---- Webcam preview ---------------------------------------------------- */
+
+#preview {
+    position: absolute;
+    right: 32px;
+    bottom: 32px;
+    width: 320px;
+    z-index: 10;
+}
+
+#preview-frame {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.6);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+    /* Mirrored so the preview reads like a mirror, matching where the paint
+       lands on the wall. app.js removes this when tracking.mirror is false. */
+    transform: scaleX(-1);
+}
+
+#preview-video,
+#preview-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#preview-video {
+    object-fit: cover;
+    opacity: 0.85;
+}
+
+#preview-status {
+    margin-top: 6px;
+    min-height: 1.2em;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 13px;
+    text-align: right;
+    text-shadow: 0 1px 4px #000;
+}
+
+#preview.error #preview-frame { border-color: rgba(255, 90, 90, 0.8); }
+#preview.error #preview-status { color: rgba(255, 140, 140, 0.95); }
+
+/* ---- Stats ------------------------------------------------------------- */
+
+#hud {
+    position: absolute;
+    left: 24px;
+    bottom: 24px;
+    padding: 8px 12px;
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 13px;
+    z-index: 10;
+}
