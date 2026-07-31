@@ -1,86 +1,136 @@
 // Installation settings for the fluid wall.
 //
-// This file is plain data: edit it on site, reload the page, done. Everything
-// here has a sane default in code, so it is safe to delete a key you do not
-// care about.
+// Plain data: edit on site, reload the page, done. Everything has a default in
+// code, so deleting a key you do not care about is safe.
+
+// ---------------------------------------------------------------------------
+// Performance preset. Start here if the wall stutters.
+//
+//   'quality'      everything on, full resolution. Wants a strong GPU.
+//   'balanced'     the default: 3/4 render scale, half the dye resolution,
+//                  no sunrays. Reads almost identically from a few metres.
+//   'performance'  for a big wall or a busy scene — noticeably softer, but it
+//                  will hold 60fps with several people painting.
+//
+// Cost, roughly in order of impact on a wall-sized canvas:
+//   fluid.RENDER_SCALE    quadratic in every full-screen pass
+//   fluid.DYE_RESOLUTION  quadratic; the advection pass is the sim's hot spot
+//   fluid.SUNRAYS/BLOOM   several extra full-screen passes each
+//   detector.fps          inference cost per second
+//   detector.model        'full' is ~2x 'lite' for a small accuracy gain
+//   detector.numPoses     each extra person is another landmark pass
+const PRESET = 'balanced';
+
+const PRESETS = {
+    quality: {
+        fluid: { RENDER_SCALE: 1.0, DYE_RESOLUTION: 1024, SIM_RESOLUTION: 128,
+                 BLOOM: true, SUNRAYS: true, SHADING: true, PRESSURE_ITERATIONS: 20 },
+        detector: { fps: 30, model: 'full' },
+    },
+    balanced: {
+        fluid: { RENDER_SCALE: 0.75, DYE_RESOLUTION: 512, SIM_RESOLUTION: 128,
+                 BLOOM: true, SUNRAYS: false, SHADING: true, PRESSURE_ITERATIONS: 20 },
+        detector: { fps: 24, model: 'lite' },
+    },
+    performance: {
+        fluid: { RENDER_SCALE: 0.6, DYE_RESOLUTION: 384, SIM_RESOLUTION: 96,
+                 BLOOM: false, SUNRAYS: false, SHADING: true, PRESSURE_ITERATIONS: 12 },
+        detector: { fps: 15, model: 'lite' },
+    },
+};
 
 window.APP_CONFIG = {
 
     // ---- Fluid simulation -------------------------------------------------
-    // Overrides for the WebGL-Fluid-Simulation config block in js/fluid.js.
-    fluid: {
-        SIM_RESOLUTION: 128,
-        DYE_RESOLUTION: 1024,
+    // Overrides for the config block in js/fluid.js.
+    fluid: Object.assign({
         DENSITY_DISSIPATION: 1,
         VELOCITY_DISSIPATION: 0.2,
         SPLAT_RADIUS: 0.25,
         SPLAT_FORCE: 6000,
-        BLOOM: true,
-        SUNRAYS: true,
-    },
+        MAX_PIXEL_RATIO: 1,     // a video wall is 1:1; HiDPI scaling just costs
+    }, PRESETS[PRESET].fluid),
 
     // ---- Camera -----------------------------------------------------------
     camera: {
-        width: 1280,
+        width: 1280,            // detection quality at distance comes from here
         height: 720,
-        // Leave null to use the default camera, or paste a deviceId string.
-        // Press "L" in the running app to list device ids in the console.
-        deviceId: null,
+        fps: 30,                // capture rate; detector.fps is the inference rate
+        deviceId: null,         // press "L" in the app to list device ids
         facingMode: 'user',
     },
 
-    // ---- Hand tracking ----------------------------------------------------
+    // ---- Detector ---------------------------------------------------------
+    detector: Object.assign({
+        // 'pose'  full-body pose, painting from the ends of the arms. Works at
+        //         3-4 m, where a hand is only a few dozen pixels across.
+        // 'hands' hand landmarker: fingertip precision, but the hand has to
+        //         fill a good part of the frame. Kiosk distance only.
+        backend: 'pose',
+
+        // Where inference runs. 'auto' uses a worker thread when the browser
+        // allows it, so inference never blocks the simulation; 'main' is the
+        // old single-threaded behaviour, for debugging.
+        mode: 'auto',
+        frames: 'auto',         // 'auto' | 'bitmap' (force the copy path)
+
+        numPoses: 4,            // people tracked at once (pose backend)
+        numHands: 4,            // hands tracked at once (hands backend)
+
+        minDetectionConfidence: 0.5,   // lower finds distant people, costs noise
+        minPresenceConfidence: 0.5,
+        minTrackingConfidence: 0.5,
+    }, PRESETS[PRESET].detector),
+
+    // ---- Painting ---------------------------------------------------------
     tracking: {
-        maxHands: 4,               // how many painters can be active at once
+        // pose backend:  'hand' (out at the fingers) | 'wrist' (steadiest)
+        // hands backend: 'index' | 'palm' | 'fingertips'
+        paintPoint: 'hand',
 
-        // Where on the hand the paint comes from:
-        //   'index'      - tip of the index finger (pointing at the wall)
-        //   'palm'       - centre of the palm (steadiest)
-        //   'fingertips' - all five fingertips splat independently
-        paintPoint: 'index',
+        minVisibility: 0.5,        // pose: how sure the model must be about an arm
+        requireRaisedArms: false,  // pose: only paint from arms lifted above the elbow
 
-        // The camera sees the user, so left/right must be flipped for the
-        // paint to land where the user is pointing. Turn this off if the
-        // camera is mounted behind the wall / already mirrored.
+        // The camera faces the audience, so left/right is flipped to put the
+        // paint under the hand people are pointing with. Turn off if the
+        // camera feed is already mirrored.
         mirror: true,
 
         // Zoom of the camera frame onto the wall, about the frame centre.
-        // >1 means the user reaches the wall edges with a smaller gesture.
+        // Above 1 means people reach the wall edges with a smaller gesture —
+        // worth raising when the camera sees a much wider area than the wall.
         mapScaleX: 1.0,
         mapScaleY: 1.0,
-        mapOffsetX: 0.0,           // shift, in wall widths, after scaling
+        mapOffsetX: 0.0,
         mapOffsetY: 0.0,
 
-        // Detector thresholds (0..1). Raise if the wall reacts to noise,
-        // lower if hands are missed at a distance.
-        minHandDetectionConfidence: 0.5,
-        minHandPresenceConfidence: 0.5,
-        minTrackingConfidence: 0.5,
+        smoothing: 0.5,            // 0 = raw and jittery, 0.9 = very sluggish
+        matchRadius: 0.22,         // frame-widths a painter may jump per frame
+        trackTimeout: 0.4,         // seconds a lost painter keeps its colour
 
-        smoothing: 0.45,           // 0 = no smoothing, 0.9 = very sluggish
-        matchRadius: 0.22,         // frame-widths a hand may jump between frames
-        trackTimeout: 0.4,         // seconds a lost hand keeps its identity/colour
-
-        splatForce: 6000,          // stroke strength
-        maxSpeed: 2.5,             // clamp on hand speed, wall-widths/second
-        deadZone: 0.0015,          // movement below this is treated as "still"
-        holdInterval: 0.12,        // seconds between soft splats from a still hand
+        splatForce: 6000,
+        maxSpeed: 2.5,             // clamp, wall-widths per second
+        deadZone: 0.0015,          // movement below this counts as "still"
+        maxSubSteps: 4,            // splats interpolated along fast strokes, so
+                                   // a 20fps detector still draws a smooth line
+        holdInterval: 0,           // seconds between soft splats from a still
+                                   // painter; 0 disables (sensible for pose,
+                                   // where everyone in frame has two of them)
         colorCycle: 2.5,           // seconds before a painter picks a new colour
     },
 
     // ---- Webcam preview (lower-right corner) ------------------------------
     preview: {
         visible: true,
-        width: 320,                // px
-        skeleton: true,            // draw the hand wireframe over the video
+        width: 320,
+        skeleton: true,
     },
 
     // ---- Attract mode -----------------------------------------------------
-    // Random splats when nobody is playing, so the wall is never blank.
     attract: {
         enabled: true,
-        idleAfterSeconds: 10,      // no hands for this long -> attract mode
-        intervalSeconds: 3,        // time between random strokes
+        idleAfterSeconds: 10,
+        intervalSeconds: 3,
     },
 
     // ---- Captions ---------------------------------------------------------
@@ -92,3 +142,51 @@ window.APP_CONFIG = {
         delaynext: 6000,
     },
 };
+
+// ---------------------------------------------------------------------------
+// Query-string overrides, for trying settings on the wall without editing this
+// file:
+//
+//   ?preset=performance          whole preset
+//   ?backend=hands&fps=15        detector
+//   ?renderScale=0.5&dye=384     simulation
+//   ?mode=main                   run inference on the main thread (debugging)
+//   ?paintPoint=wrist&mapScaleX=1.3
+(function () {
+    const q = new URLSearchParams(location.search);
+    if (!q.toString()) return;
+    const C = window.APP_CONFIG;
+    const num = (k, f) => { if (q.has(k)) f(Number(q.get(k))); };
+    const str = (k, f) => { if (q.has(k)) f(q.get(k)); };
+    const bool = (k, f) => { if (q.has(k)) f(q.get(k) !== 'false' && q.get(k) !== '0'); };
+
+    str('preset', v => {
+        if (!PRESETS[v]) return;
+        Object.assign(C.fluid, PRESETS[v].fluid);
+        Object.assign(C.detector, PRESETS[v].detector);
+    });
+    num('renderScale', v => C.fluid.RENDER_SCALE = v);
+    num('dye', v => C.fluid.DYE_RESOLUTION = v);
+    num('sim', v => C.fluid.SIM_RESOLUTION = v);
+    bool('bloom', v => C.fluid.BLOOM = v);
+    bool('sunrays', v => C.fluid.SUNRAYS = v);
+    str('backend', v => C.detector.backend = v);
+    str('model', v => C.detector.model = v);
+    str('mode', v => C.detector.mode = v);
+    str('frames', v => C.detector.frames = v);
+    num('fps', v => C.detector.fps = v);
+    num('numPoses', v => C.detector.numPoses = v);
+    num('numHands', v => C.detector.numHands = v);
+    num('camWidth', v => C.camera.width = v);
+    num('camHeight', v => C.camera.height = v);
+    str('paintPoint', v => C.tracking.paintPoint = v);
+    num('mapScaleX', v => C.tracking.mapScaleX = v);
+    num('mapScaleY', v => C.tracking.mapScaleY = v);
+    num('smoothing', v => C.tracking.smoothing = v);
+    num('holdInterval', v => C.tracking.holdInterval = v);
+    bool('raisedArms', v => C.tracking.requireRaisedArms = v);
+    bool('mirror', v => C.tracking.mirror = v);
+    bool('preview', v => C.preview.visible = v);
+    bool('attract', v => C.attract.enabled = v);
+    bool('captions', v => C.captions.enabled = v);
+})();
