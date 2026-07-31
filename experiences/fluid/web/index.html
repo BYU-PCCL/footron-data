@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Fluid Wall</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="style.css">
+    <script src="js/config.js"></script>
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div id="captions">
+        <div class="caption fader">
+            Modern graphics processing units (GPUs) make some amazing things possible!
+        </div>
+        <div class="caption fader">
+            This is a real-time fluid simulation made possible by a GPU.
+        </div>
+        <div class="caption fader">
+            The GPU can accelerate complex calculations by parallelizing them.
+        </div>
+        <div class="caption fader">
+            The result is fast, efficient and beautiful!
+        </div>
+        <div class="caption fader">
+            Raise your hands and paint the wall — every hand gets its own color!
+        </div>
+    </div>
+
+    <!-- Webcam preview, lower-right. Toggle with "h". -->
+    <div id="preview">
+        <div id="preview-frame">
+            <video id="preview-video" autoplay muted playsinline></video>
+            <canvas id="preview-overlay"></canvas>
+        </div>
+        <div id="preview-status"></div>
+    </div>
+
+    <!-- Stats overlay. Toggle with "d". -->
+    <div id="hud" class="hidden" data-on="false"></div>
+
+    <script src="js/fluid.js"></script>
+    <script src="js/fader.js"></script>
+    <script type="module" src="js/app.js"></script>
+    <script>
+        (function () {
+            var captions = (window.APP_CONFIG && window.APP_CONFIG.captions) || {};
+            if (captions.enabled === false) {
+                document.getElementById('captions').classList.add('hidden');
+            } else {
+                window.addEventListener('load', function () { startCaptions(captions); });
+            }
+        })();
+    </script>
+</body>
+</html>
