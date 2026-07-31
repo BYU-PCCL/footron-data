@@ -27,7 +27,6 @@ SOFTWARE.
 // Simulation section
 
 const canvas = document.getElementById('canvas');
-resizeCanvas();
 
 let config = {
     SIM_RESOLUTION: 128,
@@ -55,11 +54,17 @@ let config = {
     SUNRAYS: true,
     SUNRAYS_RESOLUTION: 196,
     SUNRAYS_WEIGHT: 1.0,
+    RENDER_SCALE: 1.0,      // fraction of the display resolution to render at
+    MAX_PIXEL_RATIO: 1,     // ignore HiDPI scaling above this
 }
 
 // Installation overrides from js/config.js, applied before anything initializes.
 if (window.APP_CONFIG && window.APP_CONFIG.fluid)
     Object.assign(config, window.APP_CONFIG.fluid);
+
+// Sized only now: RENDER_SCALE lives in the config above, and the original
+// call sat before it.
+resizeCanvas();
 
 function pointerPrototype () {
     this.id = -1;
@@ -1612,7 +1617,11 @@ function getTextureScale (texture, width, height) {
 
 function scaleByPixelRatio (input) {
     let pixelRatio = window.devicePixelRatio || 1;
-    return Math.floor(input * pixelRatio);
+    // RENDER_SCALE below 1 renders the fluid smaller than the display and lets
+    // the panel scale it up. On a wall-sized canvas this is the cheapest big
+    // win there is, and on smooth dye it is close to invisible.
+    if (config.MAX_PIXEL_RATIO) pixelRatio = Math.min(pixelRatio, config.MAX_PIXEL_RATIO);
+    return Math.floor(input * pixelRatio * (config.RENDER_SCALE || 1));
 }
 
 function hashCode (s) {

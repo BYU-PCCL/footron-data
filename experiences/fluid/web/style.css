@@ -116,5 +116,7 @@ html, body {
     border-radius: 4px;
     font-family: ui-monospace, Menlo, Consolas, monospace;
     font-size: 13px;
+    line-height: 1.6;
+    white-space: pre;
     z-index: 10;
 }

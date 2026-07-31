@@ -1,24 +1,31 @@
-// Glue: camera -> hand tracks -> fluid splats, plus the corner preview,
-// attract mode and the on-wall HUD.
+// Glue: camera -> painters -> fluid splats, plus the corner preview, attract
+// mode and the on-wall stats.
 
-import {
-    HandTracker, startCamera, listCameras,
-    HAND_CONNECTIONS, FINGERTIPS,
-} from './handtracking.js';
+import { Detector, startCamera, listCameras } from './detector.js';
+import { Tracker, FINGERTIPS } from './tracking.js';
 
 const CFG = window.APP_CONFIG || {};
 const T = Object.assign({
-    maxHands: 4,
-    paintPoint: 'index',
+    paintPoint: 'hand',
+    minVisibility: 0.5,
+    requireRaisedArms: false,
     mirror: true,
     mapScaleX: 1.0, mapScaleY: 1.0, mapOffsetX: 0.0, mapOffsetY: 0.0,
-    smoothing: 0.45,
+    smoothing: 0.5,
+    matchRadius: 0.22,
+    trackTimeout: 0.4,
     splatForce: 6000,
     maxSpeed: 2.5,
     deadZone: 0.0015,
-    holdInterval: 0.12,
+    maxSubSteps: 4,
+    holdInterval: 0,
     colorCycle: 2.5,
 }, CFG.tracking || {});
+const DET = Object.assign({
+    backend: 'pose', mode: 'auto', frames: 'auto', model: 'lite', fps: 24,
+    numPoses: 4, numHands: 4,
+    minDetectionConfidence: 0.5, minPresenceConfidence: 0.5, minTrackingConfidence: 0.5,
+}, CFG.detector || {});
 const PREVIEW = Object.assign({ visible: true, width: 320, skeleton: true }, CFG.preview || {});
 const ATTRACT = Object.assign({ enabled: true, idleAfterSeconds: 10, intervalSeconds: 3 }, CFG.attract || {});
 
@@ -32,11 +39,10 @@ const previewFrame = document.getElementById('preview-frame');
 const previewStatus = document.getElementById('preview-status');
 const hud = document.getElementById('hud');
 
-let tracker = null;
-let cameraOk = false;
+const tracker = new Tracker(Object.assign({ backend: DET.backend }, T));
+let detector = null;
 let lastHandTime = -Infinity;
 let lastAttract = 0;
-let lastProcessedFrame = -1;
 let fpsSmoothed = 0;
 let lastRaf = performance.now();
 
@@ -44,7 +50,7 @@ let lastRaf = performance.now();
 // Camera space -> wall space
 //
 // The camera looks back at the user, so left/right is flipped to put the paint
-// under the hand the user is pointing with. Image y runs downwards while the
+// under the hand they are pointing with. Image y runs downwards while the
 // simulation's y runs upwards, hence the second flip.
 
 function mapToWall (x, y) {
@@ -55,8 +61,8 @@ function mapToWall (x, y) {
     return { x: sx, y: sy };
 }
 
-// Same aspect-ratio correction the simulation applies to mouse/touch deltas,
-// so a diagonal gesture stays diagonal on a very wide wall.
+// Same aspect-ratio correction the simulation applies to mouse deltas, so a
+// diagonal gesture stays diagonal on a very wide wall.
 function correctDelta (dx, dy) {
     const aspect = Fluid.canvas.width / Fluid.canvas.height;
     if (aspect > 1) dy /= aspect;
@@ -67,13 +73,17 @@ function correctDelta (dx, dy) {
 // ---------------------------------------------------------------------------
 // Painting
 
-// Turn one point's motion between camera frames into a splat.
+// One painter's motion between two detections becomes a short stroke.
+//
+// dt is the time since the last detection, which is well below the render rate
+// — the detector might be running at 20Hz against a 60Hz wall. Velocity is
+// normalised to "movement per 60Hz frame" and the gap is filled with that many
+// splats along the path, so the stroke looks the same as painting at 60Hz and
+// stops depending on how fast inference happens to be.
 function paintPoint (x, y, prevX, prevY, color, dt, force) {
     const p = mapToWall(x, y);
     const q = mapToWall(prevX, prevY);
 
-    // Normalise to "movement per 60Hz frame" so stroke strength does not
-    // depend on how fast the detector happens to be running.
     const norm = Math.min(4, (1 / 60) / dt);
     let dx = (p.x - q.x) * norm;
     let dy = (p.y - q.y) * norm;
@@ -84,17 +94,21 @@ function paintPoint (x, y, prevX, prevY, color, dt, force) {
         dx *= maxPerFrame / speed;
         dy *= maxPerFrame / speed;
     }
-
-    const moved = speed > T.deadZone;
-    if (!moved) return false;
+    if (speed <= T.deadZone) return false;
 
     const [cdx, cdy] = correctDelta(dx, dy);
-    Fluid.splat(p.x, p.y, cdx * force, cdy * force, color);
+    const steps = Math.max(1, Math.min(T.maxSubSteps, Math.round(dt * 60)));
+    for (let i = 1; i <= steps; i++) {
+        const t = i / steps;
+        Fluid.splat(q.x + (p.x - q.x) * t, q.y + (p.y - q.y) * t,
+                    cdx * force, cdy * force, color);
+    }
     return true;
 }
 
-// A hand held still still leaves a glow, so users get feedback before they
-// figure out that motion is what paints.
+// A painter held still leaves a glow, so people get feedback before they work
+// out that motion is what paints. Off by default for the pose backend, where
+// everyone in frame carries two painters around with them.
 function paintHold (x, y, color, force) {
     const p = mapToWall(x, y);
     const a = Math.random() * Math.PI * 2;
@@ -110,7 +124,7 @@ function paintTrack (track, now, dt) {
     }
 
     let painted = false;
-    if (T.paintPoint === 'fingertips') {
+    if (T.paintPoint === 'fingertips' && track.tips) {
         // Five thinner strokes instead of one, so an open hand smears.
         for (const tip of track.tips)
             painted = paintPoint(tip.x, tip.y, tip.prevX, tip.prevY,
@@ -121,10 +135,18 @@ function paintTrack (track, now, dt) {
     }
 
     if (painted) track.lastSplat = now;
-    else if (now - track.lastSplat > T.holdInterval) {
+    else if (T.holdInterval > 0 && now - track.lastSplat > T.holdInterval) {
         paintHold(track.x, track.y, track.color, T.splatForce);
         track.lastSplat = now;
     }
+}
+
+// Results arrive from the detector thread whenever inference finishes.
+function onDetections (detections) {
+    const now = performance.now() / 1000;
+    const tracks = tracker.update(detections, now);
+    for (const track of tracks) paintTrack(track, now, tracker.frameDt);
+    if (tracks.length > 0) lastHandTime = now;
 }
 
 // ---------------------------------------------------------------------------
@@ -155,10 +177,7 @@ function attractSplat () {
 function colorToCss (c, alpha = 1) {
     // Splat colours are dim on purpose; scale to full brightness for the UI.
     const max = Math.max(c.r, c.g, c.b, 1e-6);
-    const r = Math.round(255 * c.r / max);
-    const g = Math.round(255 * c.g / max);
-    const b = Math.round(255 * c.b / max);
-    return `rgba(${r},${g},${b},${alpha})`;
+    return `rgba(${Math.round(255 * c.r / max)},${Math.round(255 * c.g / max)},${Math.round(255 * c.b / max)},${alpha})`;
 }
 
 function resizeOverlay () {
@@ -172,38 +191,33 @@ function resizeOverlay () {
     }
 }
 
-function drawPreview (tracks) {
+function drawPreview () {
     if (!PREVIEW.visible) return;
     resizeOverlay();
     const W = overlay.width, H = overlay.height;
     overlayCtx.clearRect(0, 0, W, H);
-    const s = W / 640;   // line weights scale with the preview size
+    const s = W / 640;
+    const tracks = tracker.visibleTracks;
 
-    for (const track of tracks) {
-        const css = track.color ? colorToCss(track.color) : '#ffffff';
-
-        if (PREVIEW.skeleton && track.landmarks) {
-            overlayCtx.strokeStyle = colorToCss(track.color || { r: 1, g: 1, b: 1 }, 0.75);
-            overlayCtx.lineWidth = 3 * s;
-            overlayCtx.beginPath();
-            for (const [a, b] of HAND_CONNECTIONS) {
-                const p = track.landmarks[a], q = track.landmarks[b];
+    // Skeletons first, one per detected body or hand, underneath the dots.
+    if (PREVIEW.skeleton) {
+        overlayCtx.strokeStyle = 'rgba(255,255,255,0.5)';
+        overlayCtx.lineWidth = 2 * s;
+        overlayCtx.beginPath();
+        for (const det of tracker.detections) {
+            for (const [a, b] of tracker.connections) {
+                const p = det.landmarks[a], q = det.landmarks[b];
+                if (!p || !q) continue;
                 overlayCtx.moveTo(p.x * W, p.y * H);
                 overlayCtx.lineTo(q.x * W, q.y * H);
             }
-            overlayCtx.stroke();
-
-            overlayCtx.fillStyle = 'rgba(255,255,255,0.85)';
-            for (const i of FINGERTIPS) {
-                const p = track.landmarks[i];
-                overlayCtx.beginPath();
-                overlayCtx.arc(p.x * W, p.y * H, 3.5 * s, 0, Math.PI * 2);
-                overlayCtx.fill();
-            }
         }
+        overlayCtx.stroke();
+    }
 
-        // The paint point itself: a filled dot with a halo, in the colour that
-        // hand is currently painting with.
+    // Then the painters, in the colour each one is currently painting with.
+    for (const track of tracks) {
+        const css = track.color ? colorToCss(track.color) : '#ffffff';
         const px = track.x * W, py = track.y * H;
         overlayCtx.beginPath();
         overlayCtx.arc(px, py, 13 * s, 0, Math.PI * 2);
@@ -214,6 +228,16 @@ function drawPreview (tracks) {
         overlayCtx.arc(px, py, 6 * s, 0, Math.PI * 2);
         overlayCtx.fillStyle = css;
         overlayCtx.fill();
+
+        if (PREVIEW.skeleton && track.tips) {
+            overlayCtx.fillStyle = 'rgba(255,255,255,0.85)';
+            for (const i of FINGERTIPS) {
+                const p = track.landmarks[i];
+                overlayCtx.beginPath();
+                overlayCtx.arc(p.x * W, p.y * H, 3.5 * s, 0, Math.PI * 2);
+                overlayCtx.fill();
+            }
+        }
     }
 }
 
@@ -223,8 +247,13 @@ function setStatus (text) {
 
 // ---------------------------------------------------------------------------
 // Main loop
+//
+// Inference is not driven from here — the worker delivers results as they
+// finish. This loop only draws the preview, runs attract mode, and keeps the
+// stats fresh, so a slow detector can never stall the simulation.
 
 function frame () {
+    if (!Fluid) return;
     requestAnimationFrame(frame);
 
     const nowMs = performance.now();
@@ -233,18 +262,9 @@ function frame () {
     lastRaf = nowMs;
     fpsSmoothed += ((rafDt > 0 ? 1 / rafDt : 0) - fpsSmoothed) * 0.05;
 
-    let tracks = [];
-    if (cameraOk && tracker) {
-        tracks = tracker.detect(video, nowMs);
-
-        // Only paint on frames the detector actually processed — otherwise a
-        // 120Hz display would replay the same hand position as "no movement".
-        if (tracker.frameId !== lastProcessedFrame) {
-            lastProcessedFrame = tracker.frameId;
-            for (const track of tracks) paintTrack(track, now, tracker.frameDt);
-            if (tracks.length > 0) lastHandTime = now;
-        }
-        drawPreview(tracks);
+    if (detector) {
+        detector.tick(nowMs);       // no-op unless we fell back to main-thread
+        drawPreview();
     }
 
     if (ATTRACT.enabled &&
@@ -256,13 +276,16 @@ function frame () {
 
     if (hud.dataset.on === 'true') {
         const idle = now - lastHandTime > ATTRACT.idleAfterSeconds;
+        const painters = tracker.visibleTracks.length;
         hud.textContent =
-            `${fpsSmoothed.toFixed(0)} fps render · ` +
-            `${tracker ? (1 / tracker.frameDt).toFixed(0) : '--'} fps track (${tracker ? tracker.delegate : '--'}) · ` +
-            `hands ${tracks.length}/${T.maxHands} · ` +
-            `paint ${T.paintPoint} · ` +
-            `${video.videoWidth || 0}x${video.videoHeight || 0} · ` +
-            `${Fluid.canvas.width}x${Fluid.canvas.height} · ` +
+            `render ${fpsSmoothed.toFixed(0)}fps ${Fluid.canvas.width}x${Fluid.canvas.height} ` +
+            `(scale ${Fluid.config.RENDER_SCALE}, dye ${Fluid.config.DYE_RESOLUTION}` +
+            `${Fluid.config.BLOOM ? ', bloom' : ''}${Fluid.config.SUNRAYS ? ', sunrays' : ''})\n` +
+            `detect ${(1 / tracker.frameDt).toFixed(0)}fps ` +
+            `${detector ? detector.detectMs.toFixed(1) : '--'}ms ` +
+            `${DET.backend}/${DET.model} ${detector ? detector.mode + '/' + detector.delegate : '--'} ` +
+            `cap ${DET.fps}fps ${video.videoWidth || 0}x${video.videoHeight || 0}\n` +
+            `painters ${painters} · bodies ${tracker.detections.length} · ` +
             (idle ? 'attract' : 'interactive');
     }
 }
@@ -271,6 +294,14 @@ function frame () {
 // Startup
 
 async function main () {
+    if (!Fluid) {
+        // fluid.js threw during setup; say so once instead of failing 60x a
+        // second in the render loop.
+        setStatus('simulation failed to start — see the console');
+        previewBox.classList.add('error');
+        return;
+    }
+
     if (PREVIEW.width) previewBox.style.width = PREVIEW.width + 'px';
     previewBox.classList.toggle('off', !PREVIEW.visible);
     previewFrame.style.transform = T.mirror ? 'scaleX(-1)' : 'none';
@@ -278,9 +309,9 @@ async function main () {
     requestAnimationFrame(frame);   // fluid + attract mode run regardless
 
     setStatus('starting camera…');
+    let stream;
     try {
-        await startCamera(video, CFG.camera || {});
-        cameraOk = true;
+        stream = await startCamera(video, CFG.camera || {});
     } catch (err) {
         console.error('Camera failed:', err);
         setStatus('no camera: ' + (err.message || err.name));
@@ -288,18 +319,23 @@ async function main () {
         return;
     }
 
-    setStatus('loading hand tracker…');
+    setStatus(`loading ${DET.backend} model…`);
     try {
-        tracker = await new HandTracker(T).load();
+        detector = new Detector(DET);
+        detector.onResult = onDetections;
+        detector.onError = msg => console.warn('detector:', msg);
+        await detector.start(video, stream);
     } catch (err) {
-        console.error('Hand tracker failed to load:', err);
-        setStatus('hand tracker failed: ' + (err.message || err));
+        console.error('Detector failed to load:', err);
+        setStatus('detector failed: ' + (err.message || err));
         previewBox.classList.add('error');
-        cameraOk = false;
+        detector = null;
         return;
     }
 
-    setStatus(`${video.videoWidth}x${video.videoHeight} · ${tracker.delegate}`);
+    console.log(`fluid wall: ${DET.backend}/${DET.model} on ${detector.mode} (${detector.delegate}), ` +
+                `${video.videoWidth}x${video.videoHeight} @ ${DET.fps}fps cap`);
+    setStatus(`${video.videoWidth}x${video.videoHeight} · ${detector.delegate} · ${detector.mode}`);
     // Once tracking is live the status line is just clutter on a video wall.
     setTimeout(() => setStatus(''), 5000);
 }
@@ -308,13 +344,18 @@ async function main () {
 // the tracker, and the camera->wall mapping.
 window.FluidWall = {
     config: T,
+    detectorConfig: DET,
     preview: PREVIEW,
     attract: ATTRACT,
+    tracker,
     mapToWall,
     paintTrack,
     attractSplat,
-    get tracker () { return tracker; },
-    get tracks () { return tracker ? tracker.visibleTracks : []; },
+    get detector () { return detector; },
+    get tracks () { return tracker.visibleTracks; },
+    // Live perf tuning: FluidWall.setQuality({RENDER_SCALE: 0.6, SUNRAYS: false})
+    setQuality (overrides) { Object.assign(Fluid.config, overrides); },
+    setDetectFps (fps) { if (detector) detector.setFps(fps); DET.fps = fps; },
 };
 
 window.addEventListener('keydown', e => {
