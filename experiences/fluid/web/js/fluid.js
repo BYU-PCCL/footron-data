@@ -56,6 +56,7 @@ let config = {
     SUNRAYS_WEIGHT: 1.0,
     RENDER_SCALE: 1.0,      // fraction of the display resolution to render at
     MAX_PIXEL_RATIO: 1,     // ignore HiDPI scaling above this
+    BALLS: true,            // draw the painters as glass spheres in the fluid
 }
 
 // Installation overrides from js/config.js, applied before anything initializes.
@@ -963,6 +964,150 @@ const gradienSubtractProgram = new Program(baseVertexShader, gradientSubtractSha
 
 const displayMaterial = new Material(baseVertexShader, displayShaderSource);
 
+// ---------------------------------------------------------------------------
+// Painter balls.
+//
+// The fluid renders into an offscreen buffer, then this pass composites glass
+// spheres over it: refraction of what lies beneath (with a little chromatic
+// spread, which is most of what sells "glass"), a specular highlight, a rim in
+// the painter's own colour so the ball reads against a black wall, and a
+// meniscus glow where it meets the surface.
+
+const MAX_BALLS = 8;
+
+const ballShader = compileShader(gl.FRAGMENT_SHADER, `
+    precision highp float;
+    precision highp sampler2D;
+
+    varying vec2 vUv;
+    uniform sampler2D uScene;
+    uniform vec2 texelSize;
+    uniform float aspectRatio;
+    uniform int uCount;
+    uniform vec4 uBalls[${MAX_BALLS}];    // xy = centre, z = radius, w = alpha
+    uniform vec3 uColors[${MAX_BALLS}];
+
+    void main () {
+        vec3 col = texture2D(uScene, vUv).rgb;
+
+        for (int i = 0; i < ${MAX_BALLS}; i++) {
+            if (i >= uCount) break;
+
+            vec4 ball = uBalls[i];
+            float r = ball.z;
+            float alpha = ball.w;
+            vec3 tint = uColors[i];
+
+            // Work in a space where the ball is round, not stretched by a
+            // very wide wall.
+            vec2 p = (vUv - ball.xy) * vec2(aspectRatio, 1.0);
+            float d = length(p);
+            if (d > r * 1.8) continue;
+
+            // Where the ball meets the surface: a tight darkening, as light is
+            // bent away from the contact line, then a broader glow in the
+            // painter's colour. The first makes the ball read against bright
+            // dye, the second against black.
+            float outside = smoothstep(r - texelSize.y * 2.0, r, d);
+            float contact = (1.0 - smoothstep(r, r * 1.35, d)) * outside * alpha;
+            float halo = (1.0 - smoothstep(r, r * 1.9, d)) * outside * alpha;
+            col *= mix(1.0, 0.55, contact);
+            col += tint * halo * 0.35;
+
+            if (d < r) {
+                // Height of the sphere surface above the wall plane: 1 at the
+                // top of the ball, 0 at the rim.
+                float z = sqrt(max(0.0, r * r - d * d)) / r;
+                vec3 n = normalize(vec3(p / r, z));
+
+                // Refraction: bend harder near the rim, where the surface is
+                // steepest, and split the channels slightly. The x offset goes
+                // back through the aspect ratio, since it is applied in uv.
+                vec2 off = vec2(n.x / aspectRatio, n.y) * r * 1.15 * (1.0 - z * z);
+                vec3 refr;
+                refr.r = texture2D(uScene, vUv - off * 1.06).r;
+                refr.g = texture2D(uScene, vUv - off * 1.00).g;
+                refr.b = texture2D(uScene, vUv - off * 0.94).b;
+
+                // Transmission: glass passes nearly everything, so this must
+                // not dim, or the ball turns into a matte marble.
+                vec3 glass = refr * 1.02;
+
+                // Reflection of a bright studio environment, weighted by
+                // fresnel. Over black fluid the ball refracts black, so this
+                // is what keeps it reading as an object rather than a hole.
+                float fresnel = pow(1.0 - z, 3.0) * 0.90 + 0.06;
+                vec3 env = mix(vec3(0.16, 0.18, 0.24), vec3(0.82, 0.88, 1.00),
+                               clamp(n.y * 0.45 + 0.55, 0.0, 1.0));
+                env += tint * 0.85;
+                glass = mix(glass, env, fresnel);
+
+                // Light gathered in a narrow band inside the rim, the way a
+                // lens concentrates it — most of what separates glass from a
+                // painted sphere.
+                float band = pow(clamp(1.0 - z, 0.0, 1.0), 10.0);
+                glass += (vec3(0.30) + tint * 0.8) * band * 1.5;
+
+                // Key highlight, plus a soft fill from the opposite side.
+                vec3 L = normalize(vec3(-0.45, 0.55, 0.70));
+                vec3 H = normalize(L + vec3(0.0, 0.0, 1.0));
+                glass += vec3(pow(max(dot(n, H), 0.0), 200.0)) * 2.2;
+                glass += vec3(pow(max(dot(n, normalize(vec3(0.50, -0.40, 0.65))), 0.0), 30.0)) * 0.12;
+
+                float edge = 1.0 - outside;
+                col = mix(col, glass, edge * alpha);
+            }
+        }
+
+        gl_FragColor = vec4(col, 1.0);
+    }
+`);
+
+const ballProgram = new Program(baseVertexShader, ballShader);
+
+// Array uniforms come back from getActiveUniform as "uBalls[0]", and setting a
+// uniform through a null location is silently ignored rather than an error —
+// so the plain name looks like it works while drawing nothing at all.
+const uBallsLoc = ballProgram.uniforms['uBalls[0]'] || ballProgram.uniforms.uBalls;
+const uColorsLoc = ballProgram.uniforms['uColors[0]'] || ballProgram.uniforms.uColors;
+
+let scene = null;           // offscreen copy of the rendered fluid
+let balls = [];             // set from app.js each frame
+
+function drawBalls (target) {
+    gl.disable(gl.BLEND);
+    ballProgram.bind();
+
+    const data = new Float32Array(MAX_BALLS * 4);
+    const colors = new Float32Array(MAX_BALLS * 3);
+    const count = Math.min(balls.length, MAX_BALLS);
+    for (let i = 0; i < count; i++) {
+        const b = balls[i];
+        data[i * 4 + 0] = b.x;
+        data[i * 4 + 1] = b.y;
+        data[i * 4 + 2] = b.r;
+        data[i * 4 + 3] = b.alpha;
+        colors[i * 3 + 0] = b.color.r;
+        colors[i * 3 + 1] = b.color.g;
+        colors[i * 3 + 2] = b.color.b;
+    }
+
+    gl.uniform1i(ballProgram.uniforms.uScene, scene.attach(0));
+    gl.uniform2f(ballProgram.uniforms.texelSize, 1.0 / scene.width, 1.0 / scene.height);
+    gl.uniform1f(ballProgram.uniforms.aspectRatio, canvas.width / canvas.height);
+    gl.uniform1i(ballProgram.uniforms.uCount, count);
+    gl.uniform4fv(uBallsLoc, data);
+    gl.uniform3fv(uColorsLoc, colors);
+    blit(target);
+}
+
+function initSceneBuffer () {
+    const w = gl.drawingBufferWidth, h = gl.drawingBufferHeight;
+    if (scene != null && scene.width === w && scene.height === h) return;
+    const internal = gl.RGBA8 !== undefined ? gl.RGBA8 : gl.RGBA;
+    scene = createFBO(w, h, internal, gl.RGBA, gl.UNSIGNED_BYTE, gl.LINEAR);
+}
+
 function initFramebuffers () {
     let simRes = getResolution(config.SIM_RESOLUTION);
     let dyeRes = getResolution(config.DYE_RESOLUTION);
@@ -1165,7 +1310,14 @@ function update () {
     applyInputs();
     if (!config.PAUSED)
         step(dt);
-    render(null);
+    if (config.BALLS && balls.length > 0) {
+        // Render the fluid offscreen so the balls have something to refract.
+        initSceneBuffer();
+        render(scene);
+        drawBalls(null);
+    } else {
+        render(null);
+    }
     requestAnimationFrame(update);
 }
 
@@ -1646,4 +1798,9 @@ window.Fluid = {
     multipleSplats,
     generateColor,
     HSVtoRGB,
+    // Painter balls to composite over the fluid this frame:
+    // [{x, y, r, alpha, color:{r,g,b}}], positions in splat coordinates and
+    // radius in wall-heights. Up to MAX_BALLS are drawn.
+    setBalls (list) { balls = list || []; },
+    MAX_BALLS,
 };

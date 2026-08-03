@@ -3,6 +3,7 @@
 
 import { Detector, startCamera, listCameras } from './detector.js';
 import { Tracker, FINGERTIPS } from './tracking.js';
+import { PainterField } from './painters.js';
 
 const CFG = window.APP_CONFIG || {};
 const T = Object.assign({
@@ -16,11 +17,21 @@ const T = Object.assign({
     trackTimeout: 0.4,
     splatForce: 6000,
     maxSpeed: 2.5,
-    deadZone: 0.0015,
-    maxSubSteps: 4,
+    minSpeed: 0.05,
     holdInterval: 0,
     colorCycle: 2.5,
 }, CFG.tracking || {});
+const MOTION = Object.assign({
+    responseTime: 0.09,
+    prediction: 0.85,
+    maxLead: 0.25,
+    velocitySmoothing: 0.5,
+    coastTime: 0.35,
+    fadeTime: 0.4,
+}, CFG.motion || {});
+const BALLS = Object.assign({
+    visible: true, radius: 0.055,
+}, CFG.balls || {});
 const DET = Object.assign({
     backend: 'pose', mode: 'auto', frames: 'auto', model: 'lite', fps: 24,
     numPoses: 4, numHands: 4,
@@ -40,6 +51,7 @@ const previewStatus = document.getElementById('preview-status');
 const hud = document.getElementById('hud');
 
 const tracker = new Tracker(Object.assign({ backend: DET.backend }, T));
+const field = new PainterField(Object.assign({ maxSpeed: T.maxSpeed }, MOTION));
 let detector = null;
 let lastHandTime = -Infinity;
 let lastAttract = 0;
@@ -61,6 +73,13 @@ function mapToWall (x, y) {
     return { x: sx, y: sy };
 }
 
+// The inverse, for drawing balls back onto the camera preview.
+function wallToImage (x, y) {
+    const sx = 0.5 + (x - 0.5 - T.mapOffsetX) / T.mapScaleX;
+    const sy = 0.5 + (y - 0.5 - T.mapOffsetY) / T.mapScaleY;
+    return { x: T.mirror ? 1 - sx : sx, y: 1 - sy };
+}
+
 // Same aspect-ratio correction the simulation applies to mouse deltas, so a
 // diagonal gesture stays diagonal on a very wide wall.
 function correctDelta (dx, dy) {
@@ -72,81 +91,63 @@ function correctDelta (dx, dy) {
 
 // ---------------------------------------------------------------------------
 // Painting
-
-// One painter's motion between two detections becomes a short stroke.
 //
-// dt is the time since the last detection, which is well below the render rate
-// — the detector might be running at 20Hz against a 60Hz wall. Velocity is
-// normalised to "movement per 60Hz frame" and the gap is filled with that many
-// splats along the path, so the stroke looks the same as painting at 60Hz and
-// stops depending on how fast inference happens to be.
-function paintPoint (x, y, prevX, prevY, color, dt, force) {
-    const p = mapToWall(x, y);
-    const q = mapToWall(prevX, prevY);
+// Every ball splats once per render frame, using its own velocity. Because a
+// frame's movement is exactly velocity * dt, this is the same quantity the
+// simulation's own mouse handler feeds in per frame — so the stroke is
+// continuous, and both the force and the amount of dye stay the same whether
+// the wall is running at 30fps or 144fps.
 
-    const norm = Math.min(4, (1 / 60) / dt);
-    let dx = (p.x - q.x) * norm;
-    let dy = (p.y - q.y) * norm;
-
-    const speed = Math.hypot(dx, dy);
-    const maxPerFrame = T.maxSpeed / 60;
-    if (speed > maxPerFrame) {
-        dx *= maxPerFrame / speed;
-        dy *= maxPerFrame / speed;
-    }
-    if (speed <= T.deadZone) return false;
-
-    const [cdx, cdy] = correctDelta(dx, dy);
-    const steps = Math.max(1, Math.min(T.maxSubSteps, Math.round(dt * 60)));
-    for (let i = 1; i <= steps; i++) {
-        const t = i / steps;
-        Fluid.splat(q.x + (p.x - q.x) * t, q.y + (p.y - q.y) * t,
-                    cdx * force, cdy * force, color);
-    }
-    return true;
-}
-
-// A painter held still leaves a glow, so people get feedback before they work
-// out that motion is what paints. Off by default for the pose backend, where
-// everyone in frame carries two painters around with them.
-function paintHold (x, y, color, force) {
-    const p = mapToWall(x, y);
-    const a = Math.random() * Math.PI * 2;
-    const m = 0.0025;
-    const [cdx, cdy] = correctDelta(Math.cos(a) * m, Math.sin(a) * m);
-    Fluid.splat(p.x, p.y, cdx * force, cdy * force, color);
-}
-
-function paintTrack (track, now, dt) {
-    if (!track.color || now - track.colorSetAt > T.colorCycle) {
-        track.color = Fluid.generateColor();
-        track.colorSetAt = now;
+function paintBall (ball, now, dt) {
+    if (!ball.color || now - ball.colorSetAt > T.colorCycle) {
+        ball.color = Fluid.generateColor();
+        ball.colorSetAt = now;
     }
 
-    let painted = false;
-    if (T.paintPoint === 'fingertips' && track.tips) {
-        // Five thinner strokes instead of one, so an open hand smears.
-        for (const tip of track.tips)
-            painted = paintPoint(tip.x, tip.y, tip.prevX, tip.prevY,
-                                 track.color, dt, T.splatForce * 0.6) || painted;
-    } else {
-        painted = paintPoint(track.x, track.y, track.prevX, track.prevY,
-                             track.color, dt, T.splatForce);
+    const speed = Math.hypot(ball.vx, ball.vy);
+    const rate = Math.min(3, dt * 60);          // dye per frame -> dye per second
+    const fade = Math.max(0, Math.min(1, ball.fade));
+
+    if (speed > T.minSpeed) {
+        const [cdx, cdy] = correctDelta(ball.vx * dt, ball.vy * dt);
+        Fluid.splat(ball.x, ball.y, cdx * T.splatForce, cdy * T.splatForce,
+                    scaleColor(ball.color, rate * fade));
+        ball.lastSplat = now;
+        return;
     }
 
-    if (painted) track.lastSplat = now;
-    else if (T.holdInterval > 0 && now - track.lastSplat > T.holdInterval) {
-        paintHold(track.x, track.y, track.color, T.splatForce);
-        track.lastSplat = now;
+    // A painter held still leaves a glow, so people get feedback before they
+    // work out that motion is what paints. Off by default for the pose
+    // backend, where everyone in frame carries two painters around with them.
+    if (T.holdInterval > 0 && now - (ball.lastSplat || 0) > T.holdInterval) {
+        const a = Math.random() * Math.PI * 2;
+        const [cdx, cdy] = correctDelta(Math.cos(a) * 0.0025, Math.sin(a) * 0.0025);
+        Fluid.splat(ball.x, ball.y, cdx * T.splatForce, cdy * T.splatForce,
+                    scaleColor(ball.color, fade));
+        ball.lastSplat = now;
     }
 }
 
-// Results arrive from the detector thread whenever inference finishes.
+function scaleColor (c, k) {
+    return { r: c.r * k, g: c.g * k, b: c.b * k };
+}
+
+// Detections do not paint. They only tell the balls where to go.
 function onDetections (detections) {
     const now = performance.now() / 1000;
     const tracks = tracker.update(detections, now);
-    for (const track of tracks) paintTrack(track, now, tracker.frameDt);
+    field.setTargets(tracks.map(t => {
+        const p = mapToWall(t.x, t.y);
+        return { id: t.id, x: p.x, y: p.y };
+    }), now);
     if (tracks.length > 0) lastHandTime = now;
+}
+
+// Brightened painter colour for the ball's rim and meniscus, so it reads
+// against a black wall.
+function ballTint (c) {
+    const max = Math.max(c.r, c.g, c.b, 1e-6);
+    return { r: c.r / max, g: c.g / max, b: c.b / max };
 }
 
 // ---------------------------------------------------------------------------
@@ -215,10 +216,21 @@ function drawPreview () {
         overlayCtx.stroke();
     }
 
-    // Then the painters, in the colour each one is currently painting with.
+    // Detection targets: small hollow marks, so it is obvious at a glance how
+    // far the balls are trailing what the camera actually sees.
+    overlayCtx.strokeStyle = 'rgba(255,255,255,0.6)';
+    overlayCtx.lineWidth = 1.5 * s;
     for (const track of tracks) {
-        const css = track.color ? colorToCss(track.color) : '#ffffff';
-        const px = track.x * W, py = track.y * H;
+        overlayCtx.beginPath();
+        overlayCtx.arc(track.x * W, track.y * H, 5 * s, 0, Math.PI * 2);
+        overlayCtx.stroke();
+    }
+
+    // Then the balls themselves — what is actually painting.
+    for (const ball of field.balls) {
+        const css = ball.color ? colorToCss(ball.color, Math.max(0, Math.min(1, ball.fade))) : '#ffffff';
+        const p = wallToImage(ball.x, ball.y);
+        const px = p.x * W, py = p.y * H;
         overlayCtx.beginPath();
         overlayCtx.arc(px, py, 13 * s, 0, Math.PI * 2);
         overlayCtx.strokeStyle = css;
@@ -228,7 +240,9 @@ function drawPreview () {
         overlayCtx.arc(px, py, 6 * s, 0, Math.PI * 2);
         overlayCtx.fillStyle = css;
         overlayCtx.fill();
+    }
 
+    for (const track of tracks) {
         if (PREVIEW.skeleton && track.tips) {
             overlayCtx.fillStyle = 'rgba(255,255,255,0.85)';
             for (const i of FINGERTIPS) {
@@ -262,6 +276,23 @@ function frame () {
     lastRaf = nowMs;
     fpsSmoothed += ((rafDt > 0 ? 1 / rafDt : 0) - fpsSmoothed) * 0.05;
 
+    // The balls move and paint every frame, whatever the detector is doing.
+    // A long frame (tab restored, GC pause) must not teleport them.
+    const dt = Math.min(0.05, Math.max(1 / 1000, rafDt));
+    field.step(dt, now);
+    for (const ball of field.balls) paintBall(ball, now, dt);
+
+    if (Fluid.config.BALLS && BALLS.visible) {
+        Fluid.setBalls(field.balls.map(b => ({
+            x: b.x, y: b.y,
+            r: BALLS.radius,
+            alpha: Math.max(0, Math.min(1, b.fade)),
+            color: ballTint(b.color || { r: 1, g: 1, b: 1 }),
+        })));
+    } else {
+        Fluid.setBalls(null);
+    }
+
     if (detector) {
         detector.tick(nowMs);       // no-op unless we fell back to main-thread
         drawPreview();
@@ -277,6 +308,11 @@ function frame () {
     if (hud.dataset.on === 'true') {
         const idle = now - lastHandTime > ATTRACT.idleAfterSeconds;
         const painters = tracker.visibleTracks.length;
+        // How far the balls are behind the detections right now: the honest
+        // measure of whether responseTime/prediction are tuned.
+        let lag = 0;
+        for (const b of field.balls)
+            lag = Math.max(lag, Math.hypot(b.x - b.tx, b.y - b.ty));
         hud.textContent =
             `render ${fpsSmoothed.toFixed(0)}fps ${Fluid.canvas.width}x${Fluid.canvas.height} ` +
             `(scale ${Fluid.config.RENDER_SCALE}, dye ${Fluid.config.DYE_RESOLUTION}` +
@@ -285,7 +321,9 @@ function frame () {
             `${detector ? detector.detectMs.toFixed(1) : '--'}ms ` +
             `${DET.backend}/${DET.model} ${detector ? detector.mode + '/' + detector.delegate : '--'} ` +
             `cap ${DET.fps}fps ${video.videoWidth || 0}x${video.videoHeight || 0}\n` +
-            `painters ${painters} · bodies ${tracker.detections.length} · ` +
+            `painters ${painters} · balls ${field.balls.length} · ` +
+            `bodies ${tracker.detections.length} · ` +
+            `lag ${(lag * 100).toFixed(1)}% · ` +
             (idle ? 'attract' : 'interactive');
     }
 }
@@ -344,12 +382,16 @@ async function main () {
 // the tracker, and the camera->wall mapping.
 window.FluidWall = {
     config: T,
+    motion: MOTION,
+    balls: BALLS,
     detectorConfig: DET,
     preview: PREVIEW,
     attract: ATTRACT,
     tracker,
+    field,
     mapToWall,
-    paintTrack,
+    wallToImage,
+    paintBall,
     attractSplat,
     get detector () { return detector; },
     get tracks () { return tracker.visibleTracks; },
@@ -366,6 +408,9 @@ window.addEventListener('keydown', e => {
             break;
         case 'c':
             document.getElementById('captions').classList.toggle('hidden');
+            break;
+        case 'b':
+            BALLS.visible = !BALLS.visible;
             break;
         case 'd':
             hud.dataset.on = hud.dataset.on === 'true' ? 'false' : 'true';
