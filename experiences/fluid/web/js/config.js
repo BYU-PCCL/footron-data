@@ -19,13 +19,13 @@
 //   detector.fps          inference cost per second
 //   detector.model        'full' is ~2x 'lite' for a small accuracy gain
 //   detector.numPoses     each extra person is another landmark pass
-const PRESET = 'balanced';
+const PRESET = 'quality';
 
 const PRESETS = {
     quality: {
         fluid: { RENDER_SCALE: 1.0, DYE_RESOLUTION: 1024, SIM_RESOLUTION: 128,
-                 BLOOM: true, SUNRAYS: true, SHADING: true, PRESSURE_ITERATIONS: 20 },
-        detector: { fps: 30, model: 'full' },
+                 BLOOM: false, SUNRAYS: true, SHADING: true, PRESSURE_ITERATIONS: 20 },
+        detector: { fps: 30, model: 'lite' },
     },
     balanced: {
         fluid: { RENDER_SCALE: 0.75, DYE_RESOLUTION: 512, SIM_RESOLUTION: 128,
@@ -104,19 +104,50 @@ window.APP_CONFIG = {
         mapOffsetX: 0.0,
         mapOffsetY: 0.0,
 
-        smoothing: 0.5,            // 0 = raw and jittery, 0.9 = very sluggish
+        // Leave at 0: the ball physics below does the smoothing now, and
+        // averaging detections on top of it only adds lag.
+        smoothing: 0,
         matchRadius: 0.22,         // frame-widths a painter may jump per frame
-        trackTimeout: 0.4,         // seconds a lost painter keeps its colour
+        trackTimeout: 0.8,         // seconds a lost painter keeps its colour
 
-        splatForce: 6000,
+        splatForce: 1000,
         maxSpeed: 2.5,             // clamp, wall-widths per second
-        deadZone: 0.0015,          // movement below this counts as "still"
-        maxSubSteps: 4,            // splats interpolated along fast strokes, so
-                                   // a 20fps detector still draws a smooth line
+        minSpeed: 0.05,            // slower than this counts as "still"
         holdInterval: 0,           // seconds between soft splats from a still
                                    // painter; 0 disables (sensible for pose,
                                    // where everyone in frame has two of them)
         colorCycle: 2.5,           // seconds before a painter picks a new colour
+    },
+
+    // ---- Painter motion ---------------------------------------------------
+    // Detections arrive at ~10-25Hz; the wall renders at 60. Each painter is a
+    // ball that is integrated every render frame and chases its detection with
+    // a critically damped spring, and the ball is what paints — so strokes are
+    // continuous instead of arriving in bursts. See js/painters.js.
+    motion: {
+        // Seconds for a ball to converge on its target. Lower is snappier and
+        // more faithful to the camera; higher is smoother and more floaty.
+        // Below ~0.05 the detection staircase starts to show through again.
+        responseTime: 0.09,
+
+        // How much to trust the target's velocity between detections. 0 means
+        // the ball only ever heads for the last detected position, which lags
+        // by about one detection interval. 1 extrapolates a full interval
+        // ahead: no lag on steady sweeps, but overshoot on sudden stops.
+        prediction: 0.85,
+        maxLead: 0.25,             // never extrapolate further ahead (s)
+        velocitySmoothing: 0.5,    // averaging on the target velocity estimate
+
+        coastTime: 0.35,           // a lost painter glides this long
+        fadeTime: 0.4,             // and fades out over this long
+    },
+
+    // ---- Painter balls ----------------------------------------------------
+    // Glass spheres drawn where the painters are, refracting the fluid under
+    // them. Purely cosmetic; toggle live with "b".
+    balls: {
+        visible: true,
+        radius: 0.055,             // fraction of the wall height
     },
 
     // ---- Webcam preview (lower-right corner) ------------------------------
@@ -152,6 +183,8 @@ window.APP_CONFIG = {
 //   ?renderScale=0.5&dye=384     simulation
 //   ?mode=main                   run inference on the main thread (debugging)
 //   ?paintPoint=wrist&mapScaleX=1.3
+//   ?responseTime=0.05&prediction=1   painter feel
+//   ?balls=false                      no glass spheres
 (function () {
     const q = new URLSearchParams(location.search);
     if (!q.toString()) return;
@@ -184,6 +217,11 @@ window.APP_CONFIG = {
     num('mapScaleY', v => C.tracking.mapScaleY = v);
     num('smoothing', v => C.tracking.smoothing = v);
     num('holdInterval', v => C.tracking.holdInterval = v);
+    num('minSpeed', v => C.tracking.minSpeed = v);
+    num('responseTime', v => C.motion.responseTime = v);
+    num('prediction', v => C.motion.prediction = v);
+    num('ballRadius', v => C.balls.radius = v);
+    bool('balls', v => { C.balls.visible = v; C.fluid.BALLS = v; });
     bool('raisedArms', v => C.tracking.requireRaisedArms = v);
     bool('mirror', v => C.tracking.mirror = v);
     bool('preview', v => C.preview.visible = v);
