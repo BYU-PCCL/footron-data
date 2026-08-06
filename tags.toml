@@ -22,7 +22,8 @@ experiences = [
   "butterfly",
   "maze-generation",
   "bus-bunching",
-  "opinion-dynamics"
+  "opinion-dynamics",
+  "planes"
 ]
 
 [game]

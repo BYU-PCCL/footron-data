@@ -1,0 +1,388 @@
+/* Chrome for the exhibit. Dark by construction — the piece is a night map, so
+   there is no light mode to switch to; every surface here is chosen against the
+   near-black ocean. Controls are hidden until someone touches the screen. */
+
+:root {
+  --ink: #eaf2ff;
+  --ink-2: #a9bcd6;
+  --ink-3: #6d809b;
+  --accent: rgb(120, 200, 255);
+  --surface: rgba(5, 9, 20, 0.66);
+  --hairline: rgba(140, 175, 220, 0.18);
+  --pad: clamp(12px, 1.4vw, 22px);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  /* Space: a touch of blue at the top so the planet does not sit on pure black. */
+  background: radial-gradient(120% 90% at 50% 8%, #060d1c 0%, #01030a 62%, #000104 100%);
+  color: var(--ink);
+  font: 400 15px/1.45 ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+#stars, #deck, #halo { position: fixed; inset: 0; width: 100%; height: 100%; }
+#stars { z-index: 0; }
+#deck { z-index: 1; }
+
+/* The atmosphere only ever adds light, so it composites over the render. */
+#halo { z-index: 2; pointer-events: none; mix-blend-mode: screen; }
+
+.hud {
+  position: fixed;
+  z-index: 5;
+  background: var(--surface);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  padding: var(--pad);
+}
+
+/* ---------- title ---------- */
+
+.hud-top-left { top: var(--pad); left: var(--pad); max-width: min(30ch, 34vw); }
+
+h1 {
+  margin: 0;
+  font-size: clamp(19px, 1.7vw, 27px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.subtitle { margin: 4px 0 0; color: var(--ink-2); font-size: 13px; }
+
+.caveat {
+  margin: 10px 0 0;
+  color: var(--ink-3);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+/* ---------- clock ---------- */
+
+.hud-top-right { top: var(--pad); right: var(--pad); text-align: right; }
+
+.clock {
+  font: 500 clamp(30px, 3.4vw, 52px)/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.clock-label { color: var(--ink-3); font-size: 11px; letter-spacing: 0.18em; margin-top: 4px; }
+
+.airborne {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hairline);
+  font: 500 17px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.airborne-label {
+  display: block;
+  margin-top: 4px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+
+/* ---------- bottom panel ---------- */
+
+.hud-bottom {
+  left: var(--pad);
+  right: var(--pad);
+  bottom: var(--pad);
+  display: grid;
+  gap: 10px;
+  padding: calc(var(--pad) * 0.8) var(--pad);
+}
+
+.legend { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--ink-3); }
+.legend-label { letter-spacing: 0.12em; text-transform: uppercase; }
+.legend-scale { display: grid; gap: 3px; width: clamp(150px, 17vw, 260px); }
+.legend-bar { height: 6px; border-radius: 3px; }
+.legend-ticks { display: flex; justify-content: space-between; font-size: 10px; }
+.legend-note { color: var(--ink-3); font-size: 10px; }
+
+.spark { width: 100%; height: clamp(56px, 8vh, 96px); display: block; }
+
+.controls { display: flex; align-items: center; gap: 12px; }
+
+.btn {
+  appearance: none;
+  border: 1px solid var(--hairline);
+  background: rgba(233, 238, 246, 0.04);
+  color: var(--ink-2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font: 500 12px/1 inherit;
+  min-height: 38px;
+  min-width: 44px;
+  cursor: pointer;
+}
+
+.btn:hover { color: var(--ink); border-color: rgba(167, 179, 196, 0.34); }
+.btn.on { color: #04121e; background: var(--accent); border-color: var(--accent); }
+.btn-play { font-size: 13px; }
+
+.scrub { flex: 1; appearance: none; height: 26px; background: transparent; cursor: pointer; }
+
+.scrub::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(167, 179, 196, 0.22);
+}
+
+.scrub::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 2px solid #0a0d12;
+}
+
+.scrub::-moz-range-track { height: 4px; border-radius: 2px; background: rgba(167, 179, 196, 0.22); }
+.scrub::-moz-range-thumb { width: 16px; height: 16px; border: 2px solid #0a0d12; border-radius: 50%; background: var(--ink); }
+
+.speeds { display: flex; gap: 6px; }
+
+.hint { margin: 0; font-size: 11px; color: var(--ink-3); text-align: center; }
+
+/* Controls only exist while someone is using them: the panel collapses to just
+   the day's curve when the exhibit is running unattended. */
+.legend, .controls, .hint {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition: opacity 240ms ease, max-height 240ms ease;
+}
+
+/* Collapsed rows still occupy grid gaps, which would leave dead space under the
+   curve while the exhibit runs itself. */
+body:not(.awake) .hud-bottom { gap: 0; }
+
+body.awake .legend { opacity: 1; max-height: 34px; pointer-events: auto; }
+body.awake .controls { opacity: 1; max-height: 46px; pointer-events: auto; }
+body.awake .hint { opacity: 1; max-height: 20px; }
+
+/* ---------- aircraft card ---------- */
+
+.card {
+  right: var(--pad);
+  top: calc(var(--pad) + 190px);
+  width: min(300px, 32vw);
+  /* The airport panel is a good deal taller than the aircraft one — busiest-out
+     and busiest-in lists — so on a short screen it scrolls inside itself rather
+     than running off the bottom. */
+  max-height: calc(100vh - var(--pad) * 2 - 190px - 180px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 200ms ease, transform 200ms ease;
+  pointer-events: none;
+}
+
+.card.on { opacity: 1; transform: none; pointer-events: auto; }
+
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+.card-callsign {
+  font: 600 20px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.02em;
+}
+
+#card-close {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 15px;
+  cursor: pointer;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.card-airline { margin-top: 3px; color: var(--accent); font-size: 12.5px; }
+/* The airframe, under the operator: what the aeroplane is, not what it is doing. */
+.card-craft { margin-top: 2px; color: var(--ink-2); font-size: 11.5px; line-height: 1.35; }
+.card-reg { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.02em; }
+
+.card-follow {
+  margin-left: auto;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: rgba(255, 190, 120, 0.16);
+  border: 1px solid rgba(255, 190, 120, 0.4);
+  color: rgb(255, 206, 150);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.card-rows { margin: 12px 0 0; display: grid; gap: 7px; font-size: 12.5px; }
+.card-rows > div { display: flex; justify-content: space-between; gap: 10px; }
+.card-rows dt { color: var(--ink-3); }
+.card-rows dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.card-note { margin: 12px 0 0; font-size: 11px; color: var(--ink-3); line-height: 1.4; }
+
+/* ---------- airport panel ---------- */
+
+.card-sub {
+  margin: 12px 0 5px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.card-routes { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 12.5px; }
+.card-routes li { display: flex; justify-content: space-between; gap: 10px; }
+.card-routes li > span:first-child { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.card-routes-n { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+/* ---------- loading ---------- */
+
+.loading {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: #01030a;
+  transition: opacity 500ms ease;
+}
+
+.loading.gone { opacity: 0; pointer-events: none; }
+.loading-inner { width: min(340px, 70vw); text-align: center; }
+.loading-title { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
+
+.loading-track {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(167, 179, 196, 0.18);
+  overflow: hidden;
+}
+
+.loading-bar { height: 100%; width: 0%; background: var(--accent); transition: width 200ms ease; }
+.loading-text { margin-top: 10px; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 1ms !important; }
+}
+
+/* ---------- hand control ---------- */
+
+/* Hand control is the exhibit's primary interface, so this panel is always
+   present and always clickable: on a hands-only wall there is nothing else to
+   touch in order to turn the camera on. It simply sits back when idle. */
+.cam-panel {
+  left: var(--pad);
+  bottom: calc(var(--pad) + 190px);
+  width: min(268px, 28vw);
+  display: grid;
+  gap: 10px;
+  opacity: 0.82;
+  transition: opacity 240ms ease;
+}
+
+body.awake .cam-panel,
+.cam-panel[data-state="live"] { opacity: 1; }
+
+.cam-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.cam-title { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
+.btn-cam { padding: 6px 10px; min-height: 30px; font-size: 11px; white-space: nowrap; }
+
+.cam-stage {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(140, 175, 220, 0.07);
+  border: 1px solid var(--hairline);
+}
+
+#cam {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Mirrored, so raising your right hand moves the globe the way you expect. */
+  transform: scaleX(-1);
+  opacity: 0.85;
+  display: none;
+}
+
+.cam-panel[data-state="live"] #cam { display: block; }
+
+.cam-status {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: rgba(2, 6, 14, 0.72);
+  font: 500 10.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--ink-2);
+}
+
+.cam-panel[data-state="live"] .cam-status { color: var(--accent); }
+.cam-panel[data-state="denied"] .cam-status,
+.cam-panel[data-state="no-model"] .cam-status { color: #ffb4a2; }
+
+/* The gesture being read pulses the frame, so the viewer sees it land. */
+.cam-panel[data-gesture="turn"] .cam-stage { border-color: rgba(120, 200, 255, 0.55); }
+.cam-panel[data-gesture="zoom"] .cam-stage { border-color: rgba(186, 228, 255, 0.75); }
+.cam-panel[data-gesture="hold"] .cam-stage { border-color: rgba(255, 200, 140, 0.7); }
+
+.cam-legend {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.cam-legend b { color: var(--ink-2); font-weight: 600; }
+.cam-legend li { line-height: 1.45; }
+.cam-note { margin: 0; font-size: 10px; color: var(--ink-3); line-height: 1.35; }
+
+/* ---------- phone-control note ---------- */
+/* Centred at the top, because a phone-driven change happens with nobody touching
+   the wall — without saying so, the picture appears to move by itself. */
+
+.note {
+  top: var(--pad);
+  left: 50%;
+  transform: translate(-50%, -8px);
+  max-width: min(46ch, 60vw);
+  text-align: center;
+  font-size: 13px;
+  color: var(--ink-2);
+  opacity: 0;
+  transition: opacity 220ms ease, transform 220ms ease;
+  pointer-events: none;
+}
+
+.note.on { opacity: 1; transform: translate(-50%, 0); }
+.note b { color: var(--ink); font-weight: 600; }
+.note .note-phone { color: var(--accent); font-weight: 600; }
