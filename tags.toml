@@ -23,7 +23,8 @@ experiences = [
   "maze-generation",
   "bus-bunching",
   "opinion-dynamics",
-  "planes"
+  "planes",
+  "huffman"
 ]
 
 [game]
