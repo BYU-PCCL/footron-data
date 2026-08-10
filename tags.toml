@@ -24,7 +24,8 @@ experiences = [
   "bus-bunching",
   "opinion-dynamics",
   "planes",
-  "huffman"
+  "huffman",
+  "gradient-descent"
 ]
 
 [game]
