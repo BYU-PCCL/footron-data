@@ -24,9 +24,12 @@
     </p>
   </header>
 
+  <!-- The clock reads local to whatever the camera is over, not UTC: a wall
+       showing 03:00 above a sunlit Pacific is a puzzle, and the terminator drawn
+       across the picture is already telling everyone what time it is there. -->
   <div class="hud hud-top-right">
     <div id="clock" class="clock">00:00</div>
-    <div class="clock-label">UTC</div>
+    <div id="clock-label" class="clock-label">local</div>
     <div class="airborne"><span id="airborne">0</span> <span class="airborne-label">aircraft airborne</span></div>
   </div>
 
@@ -38,16 +41,19 @@
 
   <!-- gesture control: the camera preview doubles as the feedback that it is working -->
   <div class="hud cam-panel" id="cam-panel">
+    <!-- No enable/disable button: there is no mouse on the wall to press it with,
+         and the camera is the exhibit's primary input rather than an option. It
+         starts itself, and says so below if it cannot. -->
     <div class="cam-head">
       <span class="cam-title">Hand control</span>
-      <button id="cam-toggle" class="btn btn-cam">enable camera</button>
     </div>
     <div class="cam-stage">
       <video id="cam" playsinline muted autoplay></video>
       <div id="cam-status" class="cam-status">off</div>
     </div>
     <ul class="cam-legend">
-      <li><b>move</b> an open hand — turn the globe</li>
+      <li><b>raise an open hand</b> — take control</li>
+      <li><b>sweep</b> it left or right — turn the globe</li>
       <li><b>two hands apart</b> — zoom in, together — out</li>
       <li><b>pinch and lift</b> — zoom with one hand</li>
       <li><b>fist</b> — hold the clock still</li>
@@ -55,20 +61,13 @@
     <p class="cam-note">Video is processed on this machine and never recorded or sent anywhere.</p>
   </div>
 
+  <!-- The day's shape, and nothing to press. Running the clock, scrubbing through
+       the day and changing speed all live on the phone, which is the only thing
+       anybody here has that takes a press. -->
   <footer class="hud hud-bottom">
     <div id="legend" class="legend"></div>
     <canvas id="spark" class="spark" aria-label="Aircraft airborne through the day"></canvas>
-    <div class="controls">
-      <button id="play" class="btn btn-play" aria-label="Pause">❚❚</button>
-      <input id="scrub" class="scrub" type="range" min="0" max="86399" step="60" value="0"
-             aria-label="Time of day" />
-      <div class="speeds" role="group" aria-label="Playback speed">
-        <button class="btn" data-speed="300">300×</button>
-        <button class="btn on" data-speed="600">600×</button>
-        <button class="btn" data-speed="1200">1200×</button>
-      </div>
-    </div>
-    <p class="hint">Raise a hand to take control · zoom in and tap an aircraft to follow it · lets go after 20 s</p>
+    <p class="hint">Raise an open hand and hold it to take control · run the clock and fly to a city from your phone · lets go after 20 s</p>
   </footer>
 
   <div id="loading" class="loading">
