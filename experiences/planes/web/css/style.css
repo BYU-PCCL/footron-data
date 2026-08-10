@@ -1,6 +1,8 @@
 /* Chrome for the exhibit. Dark by construction — the piece is a night map, so
    there is no light mode to switch to; every surface here is chosen against the
-   near-black ocean. Controls are hidden until someone touches the screen. */
+   near-black ocean. Nothing here is a control: the wall has no mouse, keyboard
+   or touchscreen, so every panel is a readout and the only instruction is the
+   hint along the bottom. */
 
 :root {
   --ink: #eaf2ff;
@@ -115,104 +117,39 @@ h1 {
 
 .spark { width: 100%; height: clamp(56px, 8vh, 96px); display: block; }
 
-.controls { display: flex; align-items: center; gap: 12px; }
-
-.btn {
-  appearance: none;
-  border: 1px solid var(--hairline);
-  background: rgba(233, 238, 246, 0.04);
-  color: var(--ink-2);
-  border-radius: 8px;
-  padding: 8px 12px;
-  font: 500 12px/1 inherit;
-  min-height: 38px;
-  min-width: 44px;
-  cursor: pointer;
-}
-
-.btn:hover { color: var(--ink); border-color: rgba(167, 179, 196, 0.34); }
-.btn.on { color: #04121e; background: var(--accent); border-color: var(--accent); }
-.btn-play { font-size: 13px; }
-
-.scrub { flex: 1; appearance: none; height: 26px; background: transparent; cursor: pointer; }
-
-.scrub::-webkit-slider-runnable-track {
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(167, 179, 196, 0.22);
-}
-
-.scrub::-webkit-slider-thumb {
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  margin-top: -7px;
-  border-radius: 50%;
-  background: var(--ink);
-  border: 2px solid #0a0d12;
-}
-
-.scrub::-moz-range-track { height: 4px; border-radius: 2px; background: rgba(167, 179, 196, 0.22); }
-.scrub::-moz-range-thumb { width: 16px; height: 16px; border: 2px solid #0a0d12; border-radius: 50%; background: var(--ink); }
-
-.speeds { display: flex; gap: 6px; }
-
+/* The hint is the wall's only instruction and the only thing here anybody can
+   act on, so unlike the controls it used to sit beside, it is always visible:
+   the person who needs it is by definition the one who has not worked out how to
+   make anything happen yet. */
 .hint { margin: 0; font-size: 11px; color: var(--ink-3); text-align: center; }
-
-/* Controls only exist while someone is using them: the panel collapses to just
-   the day's curve when the exhibit is running unattended. */
-.legend, .controls, .hint {
-  opacity: 0;
-  max-height: 0;
-  overflow: hidden;
-  pointer-events: none;
-  transition: opacity 240ms ease, max-height 240ms ease;
-}
-
-/* Collapsed rows still occupy grid gaps, which would leave dead space under the
-   curve while the exhibit runs itself. */
-body:not(.awake) .hud-bottom { gap: 0; }
-
-body.awake .legend { opacity: 1; max-height: 34px; pointer-events: auto; }
-body.awake .controls { opacity: 1; max-height: 46px; pointer-events: auto; }
-body.awake .hint { opacity: 1; max-height: 20px; }
 
 /* ---------- aircraft card ---------- */
 
+/* Left, on the same shelf as the hand-control panel opposite. The right-hand
+   column now belongs to the camera preview, and two panels fighting for one
+   corner is how a screen stops being readable. */
 .card {
-  right: var(--pad);
-  top: calc(var(--pad) + 190px);
+  left: var(--pad);
+  bottom: calc(var(--pad) + 190px);
   width: min(300px, 32vw);
   /* The airport panel is a good deal taller than the aircraft one — busiest-out
-     and busiest-in lists — so on a short screen it scrolls inside itself rather
-     than running off the bottom. */
-  max-height: calc(100vh - var(--pad) * 2 - 190px - 180px);
+     and busiest-in lists — so it grows upwards from the shelf until it reaches
+     the standfirst, then scrolls inside itself rather than running through it. */
+  max-height: calc(100vh - var(--pad) - 190px - 330px);
   overflow-y: auto;
-  overscroll-behavior: contain;
   opacity: 0;
   transform: translateY(6px);
   transition: opacity 200ms ease, transform 200ms ease;
   pointer-events: none;
 }
 
-.card.on { opacity: 1; transform: none; pointer-events: auto; }
+.card.on { opacity: 1; transform: none; }
 
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
 .card-callsign {
   font: 600 20px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
   letter-spacing: 0.02em;
-}
-
-#card-close {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: var(--ink-3);
-  font-size: 15px;
-  cursor: pointer;
-  min-width: 32px;
-  min-height: 32px;
 }
 
 .card-airline { margin-top: 3px; color: var(--accent); font-size: 12.5px; }
@@ -294,8 +231,11 @@ body.awake .hint { opacity: 1; max-height: 20px; }
 /* Hand control is the exhibit's primary interface, so this panel is always
    present and always clickable: on a hands-only wall there is nothing else to
    touch in order to turn the camera on. It simply sits back when idle. */
+/* On the right, opposite the card, because the camera is mounted on that side of
+   the wall: a viewer looking at their own hand in the preview should not have to
+   look across the whole picture to find it. */
 .cam-panel {
-  left: var(--pad);
+  right: var(--pad);
   bottom: calc(var(--pad) + 190px);
   width: min(268px, 28vw);
   display: grid;
@@ -309,7 +249,6 @@ body.awake .cam-panel,
 
 .cam-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .cam-title { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
-.btn-cam { padding: 6px 10px; min-height: 30px; font-size: 11px; white-space: nowrap; }
 
 .cam-stage {
   position: relative;
@@ -351,6 +290,30 @@ body.awake .cam-panel,
 .cam-panel[data-gesture="turn"] .cam-stage { border-color: rgba(120, 200, 255, 0.55); }
 .cam-panel[data-gesture="zoom"] .cam-stage { border-color: rgba(186, 228, 255, 0.75); }
 .cam-panel[data-gesture="hold"] .cam-stage { border-color: rgba(255, 200, 140, 0.7); }
+
+/* Waiting to be asked. Deliberately quiet: the exhibit is running perfectly well
+   without this person, and the panel is an offer rather than a demand. */
+.cam-panel[data-gesture="waiting"] .cam-stage { border-color: var(--hairline); }
+
+/* Being asked. The bar across the stage fills as the raised hand is held, which
+   is the only thing that tells someone their hand is being counted rather than
+   ignored — a status line alone reads as the same "nothing is happening". */
+.cam-panel[data-gesture="arming"] .cam-stage { border-color: rgba(120, 200, 255, 0.45); }
+
+.cam-stage::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: calc(var(--arm, 0) * 100%);
+  background: var(--accent);
+  box-shadow: 0 0 10px rgba(120, 200, 255, 0.8);
+  transition: width 90ms linear, opacity 200ms ease;
+  opacity: 0;
+}
+
+.cam-panel[data-gesture="arming"] .cam-stage::after { opacity: 1; }
 
 .cam-legend {
   margin: 0;

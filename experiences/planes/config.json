@@ -4,11 +4,12 @@
   "title": "A Day in the Sky",
   "description": "Every aircraft over the world across one real day, from volunteer ADS-B receivers. Turn the globe with your hands, or send a city from your phone and fly there.",
   "action_hints": [
-    "move an open hand to turn the globe",
+    "raise an open hand and hold it to take control",
+    "then sweep it left or right to turn the globe",
     "spread two hands to zoom in, bring them together to zoom out",
     "pinch and lift to zoom with one hand",
     "close a fist to hold the clock still",
-    "type a city on your phone to fly there"
+    "run the clock, or type a city to fly there, from your phone"
   ],
   "layout": "full",
   "lifetime": 240,
