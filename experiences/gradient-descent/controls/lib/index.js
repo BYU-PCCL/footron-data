@@ -1,4 +1,18 @@
 /** @jsxImportSource @emotion/react */
+/* eslint-disable react/prop-types */
+/*
+ * The panel is built inside footron-web, whose eslint config extends
+ * `plugin:react/recommended` — so `react/prop-types` is an error, not a warning.
+ * Every other experience's panel is a single component that takes no props at
+ * all and never trips it; this one is the first with helpers underneath, and
+ * SurfaceMap holds hooks so it cannot be flattened into a plain call.
+ *
+ * Satisfying the rule properly would mean `import PropTypes from "prop-types"`,
+ * and footron-web does not depend on prop-types — it would resolve today only
+ * as a transitive dependency of react-scripts, and break on the day that stops
+ * being true. Runtime prop checking earns little here regardless: both helpers
+ * are private to this file and have exactly one caller each.
+ */
 /**
  * Gradient Descent — phone controls.
  *
@@ -509,7 +523,7 @@ const GradientDescentControls = () => {
       <Typography variant="h6">Gradient Descent</Typography>
       <Typography variant="body2" css={hintStyle}>
         The wall is a landscape and every ball is a guess. Drop one and it walks
-        downhill, one step at a time, until it can't do better — which is not
+        downhill, one step at a time, until it cannot do better — which is not
         always the best place there is.
       </Typography>
 
