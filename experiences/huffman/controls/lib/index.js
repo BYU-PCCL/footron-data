@@ -8,11 +8,17 @@
  * It is a menu, not a text field. A free field mostly drew names and hellos:
  * short, all-distinct messages that compress badly and make the exhibit look
  * broken. Every item below is picked to land somewhere worth watching, grouped
- * by the four shapes worth seeing — a word leaning on a few letters, a real
- * sentence where the space wins, a synthetic string at the edge of what Huffman
- * can do, and a page of real prose, which is the case the algorithm was built
- * for. Keep in sync with PICK_GROUPS in src/lib/text.ts; scripts/test-text.ts
- * fails if the page pick drifts between the two.
+ * by the three shapes worth seeing — a word leaning on a few letters, a real
+ * sentence where the space wins, and a synthetic string at the edge of what
+ * Huffman can do.
+ *
+ * There was a fourth group, "The long ones" — a page of Moby-Dick and 780 bases
+ * of human mitochondrial DNA. They made the algorithm's best argument and the
+ * wall's worst picture: too many bits to walk the decode one at a time, so the
+ * payoff turned into a summarized sweep. Gone from both copies of the menu.
+ *
+ * Keep in sync with PICK_GROUPS in src/lib/text.ts; scripts/test-text.ts reads
+ * this file as text and fails if the two menus drift apart.
  *
  * Message formats — keep in sync with src/lib/footron.ts in the Huffman repo:
  *
@@ -35,44 +41,6 @@ import PauseIcon from "@material-ui/icons/Pause";
 import PlayArrowIcon from "@material-ui/icons/PlayArrow";
 import ReplayIcon from "@material-ui/icons/Replay";
 import { useMessaging } from "@footron/controls-client";
-
-// Moby-Dick, chapter 1, first paragraph — public domain, and long enough that
-// the wall's histogram becomes a real letter-frequency chart. Stored flattened
-// the way the wall will normalize it, so what is sent is what is drawn.
-const PAGE_ONE = [
-  "CALL ME ISHMAEL SOME YEARS AGO NEVER MIND HOW LONG PRECISELY HAVING",
-  "LITTLE OR NO MONEY IN MY PURSE AND NOTHING PARTICULAR TO INTEREST ME ON",
-  "SHORE I THOUGHT I WOULD SAIL ABOUT A LITTLE AND SEE THE WATERY PART OF THE",
-  "WORLD IT IS A WAY I HAVE OF DRIVING OFF THE SPLEEN AND REGULATING THE",
-  "CIRCULATION WHENEVER I FIND MYSELF GROWING GRIM ABOUT THE MOUTH WHENEVER",
-  "IT IS A DAMP DRIZZLY NOVEMBER IN MY SOUL WHENEVER I FIND MYSELF",
-  "INVOLUNTARILY PAUSING BEFORE COFFIN WAREHOUSES AND BRINGING UP THE REAR OF",
-  "EVERY FUNERAL I MEET AND ESPECIALLY WHENEVER MY HYPOS GET SUCH AN UPPER",
-  "HAND OF ME THAT IT REQUIRES A STRONG MORAL PRINCIPLE TO PREVENT ME FROM",
-  "DELIBERATELY STEPPING INTO THE STREET AND METHODICALLY KNOCKING PEOPLES",
-  "HATS OFF THEN I ACCOUNT IT HIGH TIME TO GET TO SEA AS SOON AS I CAN",
-].join(" ");
-
-// Human mitochondrial DNA — the revised Cambridge Reference Sequence
-// (NC_012920.1), bases 1-780, from NCBI. Real data: the button says "human
-// DNA", which is a claim, and a plausible-looking invented string of ACGT would
-// make it a false one. Same length as PAGE_ONE, so the pair is a controlled
-// experiment — identical input size, four symbols instead of twenty-five.
-const MITOCHONDRIAL_DNA = [
-  "GATCACAGGTCTATCACCCTATTAACCACTCACGGGAGCTCTCCATGCATTTGGTATTTT",
-  "CGTCTGGGGGGTATGCACGCGATAGCATTGCGAGACGCTGGAGCCGGAGCACCCTATGTC",
-  "GCAGTATCTGTCTTTGATTCCTGCCTCATCCTATTATTTATCGCACCTACGTTCAATATT",
-  "ACAGGCGAACATACTTACTAAAGTGTGTTAATTAATTAATGCTTGTAGGACATAATAATA",
-  "ACAATTGAATGTCTGCACAGCCACTTTCCACACAGACATCATAACAAAAAATTTCCACCA",
-  "AACCCCCCCTCCCCCGCTTCTGGCCACAGCACTTAAACACATCTCTGCCAAACCCCAAAA",
-  "ACAAAGAACCCTAACACCAGCCTAACCAGATTTCAAATTTTATCTTTTGGCGGTATGCAC",
-  "TTTTAACAGTCACCCCCCAACTAACACATTATTTTCCCCTCCCACTCCCATACTACTAAT",
-  "CTCATCAATACAACCCCCGCCCATCCTACCCAGCACACACACACCGCTGCTAACCCCATA",
-  "CCCCGAACCAACCAAACCCCAAAGACACCCCCCACAGTTTATGTAGCTTACCTCCTCAAA",
-  "GCAATACACTGAAAATGTTTAGACGGGCTCACATCACCCCATAAACAAATAGGTTTGGTC",
-  "CTAGCCTTTCTATTAGCTCTTAGTAAGATTACACATGCAAGCATCCCCGTTCCAGTGAGT",
-  "TCACCCTCTAAATCACCACGATCAAAAGGAACAAGCATCAAGCACGCAGCAATGCAGCTC",
-].join("");
 
 /** A pick whose button says its own text, which is most of them. */
 const plain = (text) => ({ label: text, text });
@@ -106,15 +74,6 @@ const PICK_GROUPS = [
     items: ["AAAAAAAAAB", "ABCDEFGH", "GATTACAGATTACA", "0101010101010101"].map(
       plain
     ),
-  },
-  {
-    // The wall normalizes anyway, but sending these pre-flattened keeps this
-    // panel honest about what will actually appear up there.
-    label: "The long ones",
-    items: [
-      { label: "\uD83D\uDCD6 Moby-Dick, page one", text: PAGE_ONE },
-      { label: "\uD83E\uDDEC Human mitochondrial DNA", text: MITOCHONDRIAL_DNA },
-    ],
   },
 ];
 
