@@ -2,10 +2,11 @@
   "id": "gradient-descent",
   "type": "web",
   "title": "Downhill From Here",
-  "description": "The wall is a landscape and every ball is a guess. Tap the map on your phone to drop one, then watch it feel its way downhill one step at a time — and find out that the valley it settles in is not always the deepest one there is. This is how neural networks learn, and getting stuck is the whole problem.",
+  "description": "The wall is a landscape and every ball is a guess. Tap the map on your phone to drop one, then watch it feel its way downhill one step at a time \u2014 and find out that the valley it settles in is not always the deepest one there is. This is how neural networks learn, and getting stuck is the whole problem.",
   "action_hints": [
     "tap the map on your phone to drop a ball anywhere you like",
     "drop two a finger-width apart and watch them end up in different valleys",
+    "hide the landscape and let the balls draw the map as they roll",
     "turn the step size up until the balls overshoot and fly off the surface",
     "switch the balls to marbles and see momentum carry them over a ridge"
   ],

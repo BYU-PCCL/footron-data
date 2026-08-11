@@ -35,6 +35,7 @@
  *   Tunable:  { type: "param",   name: "lr" | "momentum" | "gravity" | "friction" | "speed", value: <n> }
  *   Drop:     { type: "drop",    x: <-1…1>, z: <-1…1> }
  *   Scatter:  { type: "scatter", count: <1…24> }
+ *   Discover: { type: "discover", action: "hide" | "show" }
  *   Clear:    { type: "clear" }
  *   Pause:    { type: "pause",   action: "play" | "pause" }
  *   Step:     { type: "step" }
@@ -56,6 +57,8 @@ import Slider from "@material-ui/core/Slider";
 import Typography from "@material-ui/core/Typography";
 import ClearIcon from "@material-ui/icons/Clear";
 import GrainIcon from "@material-ui/icons/Grain";
+import VisibilityIcon from "@material-ui/icons/Visibility";
+import VisibilityOffIcon from "@material-ui/icons/VisibilityOff";
 import PauseIcon from "@material-ui/icons/Pause";
 import PlayArrowIcon from "@material-ui/icons/PlayArrow";
 import SkipNextIcon from "@material-ui/icons/SkipNext";
@@ -420,6 +423,7 @@ const GradientDescentControls = () => {
   const [friction, setFriction] = useState(0.8);
   const [speed, setSpeed] = useState(1);
   const [paused, setPaused] = useState(false);
+  const [discover, setDiscover] = useState(false);
   const [dragging, setDragging] = useState(false);
 
   /**
@@ -443,6 +447,7 @@ const GradientDescentControls = () => {
     setFriction(message.friction);
     setSpeed(message.speed);
     setPaused(message.paused);
+    setDiscover(message.discover);
   });
 
   /** Say something, and stop listening to our own echo for a moment. */
@@ -492,6 +497,14 @@ const GradientDescentControls = () => {
     setPaused((prev) => {
       const next = !prev;
       sendMessage({ type: "pause", action: next ? "pause" : "play" });
+      return next;
+    });
+  }, [sendMessage]);
+
+  const toggleDiscover = useCallback(() => {
+    setDiscover((prev) => {
+      const next = !prev;
+      sendMessage({ type: "discover", action: next ? "hide" : "show" });
       return next;
     });
   }, [sendMessage]);
@@ -623,6 +636,26 @@ const GradientDescentControls = () => {
           Clear
         </Button>
       </div>
+
+      {/* The wall's own caption explains what this does once it is on. Here the
+          label only has to say which way the switch is about to go, and the
+          line underneath is the reason to try it — without that it reads as a
+          way to make the exhibit worse. */}
+      <div css={rowStyle}>
+        <Button
+          variant={discover ? "contained" : "outlined"}
+          color={discover ? "primary" : "default"}
+          startIcon={discover ? <VisibilityIcon /> : <VisibilityOffIcon />}
+          onClick={toggleDiscover}
+          fullWidth
+        >
+          {discover ? "Show the landscape" : "Hide the landscape"}
+        </Button>
+      </div>
+      <Typography variant="caption" css={hintStyle}>
+        A ball cannot see the hills either — it only feels the slope under it.
+        Hide them and the balls draw the map as they go.
+      </Typography>
 
       <div css={groupStyle}>
         <Typography variant="caption" css={groupLabelStyle}>
