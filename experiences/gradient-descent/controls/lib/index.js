@@ -203,7 +203,7 @@ function rampColor(t) {
  * the mesh, so Bowl and Himmelblau both use the full ramp instead of one of
  * them coming out uniformly blue.
  */
-function SurfaceMap({ surface, onDrop }) {
+function SurfaceMap({ surface, onDrop, hidden }) {
   const canvasRef = useRef(null);
   const [marks, setMarks] = useState([]);
 
@@ -215,6 +215,18 @@ function SurfaceMap({ surface, onDrop }) {
     canvas.height = n;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
+    // With the landscape hidden on the wall, showing it here would hand the
+    // answer to the one person holding the map — and they are the one choosing
+    // where to drop. The pad stays exactly where it was and stays tappable; it
+    // just stops saying what is under the finger, which is the position a ball
+    // is in every time it takes a step.
+    if (hidden) {
+      ctx.fillStyle = "#0d111c";
+      ctx.fillRect(0, 0, n, n);
+      setMarks([]);
+      return;
+    }
 
     const d = surface.domain;
     const heights = new Float32Array(n * n);
@@ -249,7 +261,7 @@ function SurfaceMap({ surface, onDrop }) {
     }
     ctx.putImageData(img, 0, 0);
     setMarks([]);
-  }, [surface]);
+  }, [surface, hidden]);
 
   const tap = useCallback(
     (e) => {
@@ -609,12 +621,17 @@ const GradientDescentControls = () => {
 
       <div css={groupStyle}>
         <Typography variant="caption" css={groupLabelStyle}>
-          Tap the map to drop a ball
+          {discover ? "Tap anywhere to drop a ball" : "Tap the map to drop a ball"}
         </Typography>
-        <SurfaceMap surface={surface} onDrop={drop} />
+        <SurfaceMap surface={surface} onDrop={drop} hidden={discover} />
+        {/* The pad is blank while the landscape is hidden, so the caption that
+            explains its colours would be describing something that is not
+            there. It is replaced rather than dropped, because a blank square
+            with no explanation reads as a panel that failed to load. */}
         <Typography variant="body2" css={hintStyle}>
-          Blue is low ground, red is high. Try dropping two balls a finger-width
-          apart and watch where they each end up.
+          {discover
+            ? "You cannot see where the hills are either — that is the point. Drop a few and read the shape off the paths on the wall."
+            : "Blue is low ground, red is high. Try dropping two balls a finger-width apart and watch where they each end up."}
         </Typography>
       </div>
 
@@ -654,7 +671,8 @@ const GradientDescentControls = () => {
       </div>
       <Typography variant="caption" css={hintStyle}>
         A ball cannot see the hills either — it only feels the slope under it.
-        Hide them and the balls draw the map as they go.
+        Hide them and nothing is drawn but the paths, and the shape has to be
+        read out of those.
       </Typography>
 
       <div css={groupStyle}>
