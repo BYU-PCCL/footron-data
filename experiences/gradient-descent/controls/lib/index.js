@@ -35,6 +35,7 @@
  *   Tunable:  { type: "param",   name: "lr" | "momentum" | "gravity" | "friction" | "speed", value: <n> }
  *   Drop:     { type: "drop",    x: <-1…1>, z: <-1…1> }
  *   Scatter:  { type: "scatter", count: <1…24> }
+ *   Discover: { type: "discover", action: "hide" | "show" }
  *   Clear:    { type: "clear" }
  *   Pause:    { type: "pause",   action: "play" | "pause" }
  *   Step:     { type: "step" }
@@ -56,6 +57,8 @@ import Slider from "@material-ui/core/Slider";
 import Typography from "@material-ui/core/Typography";
 import ClearIcon from "@material-ui/icons/Clear";
 import GrainIcon from "@material-ui/icons/Grain";
+import VisibilityIcon from "@material-ui/icons/Visibility";
+import VisibilityOffIcon from "@material-ui/icons/VisibilityOff";
 import PauseIcon from "@material-ui/icons/Pause";
 import PlayArrowIcon from "@material-ui/icons/PlayArrow";
 import SkipNextIcon from "@material-ui/icons/SkipNext";
@@ -396,8 +399,22 @@ function Tunable({ label, value, display, min, max, step, onPreview, onCommit })
   );
 }
 
+/**
+ * How long the panel ignores the wall after the panel itself said something.
+ *
+ * Every control here sends and then hears its own change back, and the round
+ * trip is not instant. Without this, dragging a slider means a stream of state
+ * messages arriving mid-gesture carrying the value from two hundred
+ * milliseconds ago, each one yanking the handle backwards under the finger. A
+ * second is longer than the round trip and shorter than a visitor's pause
+ * between two deliberate actions.
+ */
+const ECHO_QUIET_MS = 1000;
+
 const GradientDescentControls = () => {
-  const { sendMessage } = useMessaging();
+  // These are opening guesses, not the truth. The wall may have been running for
+  // five minutes on Ripple, driven by the attract loop or by whoever had a phone
+  // before this one — see the state message below, which is what corrects them.
   const [surfaceId, setSurfaceId] = useState("doubleWell");
   const [mode, setMode] = useState("gd");
   const [lrLog, setLrLog] = useState(Math.log10(0.3));
@@ -406,7 +423,41 @@ const GradientDescentControls = () => {
   const [friction, setFriction] = useState(0.8);
   const [speed, setSpeed] = useState(1);
   const [paused, setPaused] = useState(false);
+  const [discover, setDiscover] = useState(false);
   const [dragging, setDragging] = useState(false);
+
+  /**
+   * Follow the wall.
+   *
+   * The wall is the authority: it is the thing a room full of people can see,
+   * the attract loop changes surfaces on its own, and another visitor's phone
+   * can change them too. It sends this on connection and on every change, so a
+   * panel that opened on Double Well while the wall showed Ripple corrects
+   * itself rather than sitting there describing a different exhibit.
+   */
+  const adopt = useRef(0);
+  const { sendMessage: send } = useMessaging((message) => {
+    if (!message || message.type !== "state") return;
+    if (Date.now() < adopt.current) return;
+    setSurfaceId(message.surface);
+    setMode(message.mode);
+    setLrLog(Math.log10(message.lr));
+    setMomentum(message.momentum);
+    setGravity(message.gravity);
+    setFriction(message.friction);
+    setSpeed(message.speed);
+    setPaused(message.paused);
+    setDiscover(message.discover);
+  });
+
+  /** Say something, and stop listening to our own echo for a moment. */
+  const sendMessage = useCallback(
+    (body) => {
+      adopt.current = Date.now() + ECHO_QUIET_MS;
+      return send(body);
+    },
+    [send]
+  );
 
   const surface = SURFACES.find((s) => s.id === surfaceId) ?? SURFACES[0];
 
@@ -446,6 +497,14 @@ const GradientDescentControls = () => {
     setPaused((prev) => {
       const next = !prev;
       sendMessage({ type: "pause", action: next ? "pause" : "play" });
+      return next;
+    });
+  }, [sendMessage]);
+
+  const toggleDiscover = useCallback(() => {
+    setDiscover((prev) => {
+      const next = !prev;
+      sendMessage({ type: "discover", action: next ? "hide" : "show" });
       return next;
     });
   }, [sendMessage]);
@@ -577,6 +636,26 @@ const GradientDescentControls = () => {
           Clear
         </Button>
       </div>
+
+      {/* The wall's own caption explains what this does once it is on. Here the
+          label only has to say which way the switch is about to go, and the
+          line underneath is the reason to try it — without that it reads as a
+          way to make the exhibit worse. */}
+      <div css={rowStyle}>
+        <Button
+          variant={discover ? "contained" : "outlined"}
+          color={discover ? "primary" : "default"}
+          startIcon={discover ? <VisibilityIcon /> : <VisibilityOffIcon />}
+          onClick={toggleDiscover}
+          fullWidth
+        >
+          {discover ? "Show the landscape" : "Hide the landscape"}
+        </Button>
+      </div>
+      <Typography variant="caption" css={hintStyle}>
+        A ball cannot see the hills either — it only feels the slope under it.
+        Hide them and the balls draw the map as they go.
+      </Typography>
 
       <div css={groupStyle}>
         <Typography variant="caption" css={groupLabelStyle}>
