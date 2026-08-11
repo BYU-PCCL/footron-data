@@ -396,8 +396,22 @@ function Tunable({ label, value, display, min, max, step, onPreview, onCommit })
   );
 }
 
+/**
+ * How long the panel ignores the wall after the panel itself said something.
+ *
+ * Every control here sends and then hears its own change back, and the round
+ * trip is not instant. Without this, dragging a slider means a stream of state
+ * messages arriving mid-gesture carrying the value from two hundred
+ * milliseconds ago, each one yanking the handle backwards under the finger. A
+ * second is longer than the round trip and shorter than a visitor's pause
+ * between two deliberate actions.
+ */
+const ECHO_QUIET_MS = 1000;
+
 const GradientDescentControls = () => {
-  const { sendMessage } = useMessaging();
+  // These are opening guesses, not the truth. The wall may have been running for
+  // five minutes on Ripple, driven by the attract loop or by whoever had a phone
+  // before this one — see the state message below, which is what corrects them.
   const [surfaceId, setSurfaceId] = useState("doubleWell");
   const [mode, setMode] = useState("gd");
   const [lrLog, setLrLog] = useState(Math.log10(0.3));
@@ -407,6 +421,38 @@ const GradientDescentControls = () => {
   const [speed, setSpeed] = useState(1);
   const [paused, setPaused] = useState(false);
   const [dragging, setDragging] = useState(false);
+
+  /**
+   * Follow the wall.
+   *
+   * The wall is the authority: it is the thing a room full of people can see,
+   * the attract loop changes surfaces on its own, and another visitor's phone
+   * can change them too. It sends this on connection and on every change, so a
+   * panel that opened on Double Well while the wall showed Ripple corrects
+   * itself rather than sitting there describing a different exhibit.
+   */
+  const adopt = useRef(0);
+  const { sendMessage: send } = useMessaging((message) => {
+    if (!message || message.type !== "state") return;
+    if (Date.now() < adopt.current) return;
+    setSurfaceId(message.surface);
+    setMode(message.mode);
+    setLrLog(Math.log10(message.lr));
+    setMomentum(message.momentum);
+    setGravity(message.gravity);
+    setFriction(message.friction);
+    setSpeed(message.speed);
+    setPaused(message.paused);
+  });
+
+  /** Say something, and stop listening to our own echo for a moment. */
+  const sendMessage = useCallback(
+    (body) => {
+      adopt.current = Date.now() + ECHO_QUIET_MS;
+      return send(body);
+    },
+    [send]
+  );
 
   const surface = SURFACES.find((s) => s.id === surfaceId) ?? SURFACES[0];
 
