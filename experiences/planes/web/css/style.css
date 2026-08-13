@@ -12,7 +12,20 @@
   --surface: rgba(5, 9, 20, 0.66);
   --hairline: rgba(140, 175, 220, 0.18);
   --pad: clamp(12px, 1.4vw, 22px);
+
+  /* The bottom-left corner is not ours on the wall. Footron's launcher paints its
+     "Scan to" QR card there, over the top of whatever the experience is drawing,
+     and it landed squarely on the left end of the bottom bar: the altitude legend
+     and the first hours of the day's curve were behind it. Measured off a photo of
+     the wall the card is a little over 250 px wide and taller than the bar, so
+     everything anchored bottom-left is pushed clear by this much.
+
+     Zero off the wall, where there is no QR code and an off-centre bar would just
+     look like a mistake — see the `footron` class in src/main.js. */
+  --left-reserve: 0px;
 }
+
+body.footron { --left-reserve: clamp(200px, 12vw, 340px); }
 
 * { box-sizing: border-box; }
 
@@ -100,7 +113,7 @@ h1 {
 /* ---------- bottom panel ---------- */
 
 .hud-bottom {
-  left: var(--pad);
+  left: calc(var(--pad) + var(--left-reserve));
   right: var(--pad);
   bottom: var(--pad);
   display: grid;
@@ -113,23 +126,23 @@ h1 {
 .legend-scale { display: grid; gap: 3px; width: clamp(150px, 17vw, 260px); }
 .legend-bar { height: 6px; border-radius: 3px; }
 .legend-ticks { display: flex; justify-content: space-between; font-size: 10px; }
-.legend-note { color: var(--ink-3); font-size: 10px; }
 
 .spark { width: 100%; height: clamp(56px, 8vh, 96px); display: block; }
 
 /* The hint is the wall's only instruction and the only thing here anybody can
-   act on, so unlike the controls it used to sit beside, it is always visible:
+   act on, so it is always visible:
    the person who needs it is by definition the one who has not worked out how to
    make anything happen yet. */
 .hint { margin: 0; font-size: 11px; color: var(--ink-3); text-align: center; }
 
 /* ---------- aircraft card ---------- */
 
-/* Left, on the same shelf as the hand-control panel opposite. The right-hand
-   column now belongs to the camera preview, and two panels fighting for one
-   corner is how a screen stops being readable. */
+/* Left, on a shelf above the day's curve: clear of the standfirst at the top and
+   of the legend at the bottom, and out of the middle where the globe is. */
 .card {
-  left: var(--pad);
+  /* Above the bar, and out of the QR card's column with it: the launcher's card is
+     taller than the bar, so the corner it covers reaches into this one's foot. */
+  left: calc(var(--pad) + var(--left-reserve));
   bottom: calc(var(--pad) + 190px);
   width: min(300px, 32vw);
   /* The airport panel is a good deal taller than the aircraft one — busiest-out
@@ -225,109 +238,6 @@ h1 {
 @media (prefers-reduced-motion: reduce) {
   * { transition-duration: 1ms !important; }
 }
-
-/* ---------- hand control ---------- */
-
-/* Hand control is the exhibit's primary interface, so this panel is always
-   present and always clickable: on a hands-only wall there is nothing else to
-   touch in order to turn the camera on. It simply sits back when idle. */
-/* On the right, opposite the card, because the camera is mounted on that side of
-   the wall: a viewer looking at their own hand in the preview should not have to
-   look across the whole picture to find it. */
-.cam-panel {
-  right: var(--pad);
-  bottom: calc(var(--pad) + 190px);
-  width: min(268px, 28vw);
-  display: grid;
-  gap: 10px;
-  opacity: 0.82;
-  transition: opacity 240ms ease;
-}
-
-body.awake .cam-panel,
-.cam-panel[data-state="live"] { opacity: 1; }
-
-.cam-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.cam-title { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
-
-.cam-stage {
-  position: relative;
-  aspect-ratio: 4 / 3;
-  border-radius: 8px;
-  overflow: hidden;
-  background: rgba(140, 175, 220, 0.07);
-  border: 1px solid var(--hairline);
-}
-
-#cam {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  /* Mirrored, so raising your right hand moves the globe the way you expect. */
-  transform: scaleX(-1);
-  opacity: 0.85;
-  display: none;
-}
-
-.cam-panel[data-state="live"] #cam { display: block; }
-
-.cam-status {
-  position: absolute;
-  left: 6px;
-  bottom: 6px;
-  padding: 3px 7px;
-  border-radius: 5px;
-  background: rgba(2, 6, 14, 0.72);
-  font: 500 10.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-  color: var(--ink-2);
-}
-
-.cam-panel[data-state="live"] .cam-status { color: var(--accent); }
-.cam-panel[data-state="denied"] .cam-status,
-.cam-panel[data-state="no-model"] .cam-status { color: #ffb4a2; }
-
-/* The gesture being read pulses the frame, so the viewer sees it land. */
-.cam-panel[data-gesture="turn"] .cam-stage { border-color: rgba(120, 200, 255, 0.55); }
-.cam-panel[data-gesture="zoom"] .cam-stage { border-color: rgba(186, 228, 255, 0.75); }
-.cam-panel[data-gesture="hold"] .cam-stage { border-color: rgba(255, 200, 140, 0.7); }
-
-/* Waiting to be asked. Deliberately quiet: the exhibit is running perfectly well
-   without this person, and the panel is an offer rather than a demand. */
-.cam-panel[data-gesture="waiting"] .cam-stage { border-color: var(--hairline); }
-
-/* Being asked. The bar across the stage fills as the raised hand is held, which
-   is the only thing that tells someone their hand is being counted rather than
-   ignored — a status line alone reads as the same "nothing is happening". */
-.cam-panel[data-gesture="arming"] .cam-stage { border-color: rgba(120, 200, 255, 0.45); }
-
-.cam-stage::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  height: 3px;
-  width: calc(var(--arm, 0) * 100%);
-  background: var(--accent);
-  box-shadow: 0 0 10px rgba(120, 200, 255, 0.8);
-  transition: width 90ms linear, opacity 200ms ease;
-  opacity: 0;
-}
-
-.cam-panel[data-gesture="arming"] .cam-stage::after { opacity: 1; }
-
-.cam-legend {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--ink-3);
-}
-
-.cam-legend b { color: var(--ink-2); font-weight: 600; }
-.cam-legend li { line-height: 1.45; }
-.cam-note { margin: 0; font-size: 10px; color: var(--ink-3); line-height: 1.35; }
 
 /* ---------- phone-control note ---------- */
 /* Centred at the top, because a phone-driven change happens with nobody touching

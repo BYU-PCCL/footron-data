@@ -2,11 +2,11 @@
 /**
  * A Day in the Sky — phone controls.
  *
- * The wall reads hands, so turning the globe and holding the clock already work
- * without this. What hands cannot do is *name* a place: there is no keyboard on
- * the wall, and "fly to Tokyo" is the thing every visitor actually wants. So the
- * box at the top is the point of this panel, and everything below it is a
- * convenience for someone who would rather not wave.
+ * This is the whole interface: the wall has no keyboard, no mouse and no
+ * touchscreen, so every adjustment a visitor can make happens here. The box at
+ * the top is the point of it — "fly to Tokyo" is the thing every visitor
+ * actually wants, and it is the one thing no other input could ever offer — and
+ * the pad, the zoom and the clock below it steer what the box lands on.
  *
  * Message formats (keep in sync with src/footron.js in the Planes repo):
  *   Go to a place: { type: "goto", value: "LHR" | "tokyo" | "heathrow" }
@@ -238,8 +238,8 @@ const PlanesControls = () => {
   return (
     <div css={containerStyle}>
       <Typography variant="body2" css={hintStyle}>
-        Every aircraft over the world across one real day. Type a city or an airport
-        code to fly there — the wall knows every airport that saw a flight that day.
+        Every plane in the sky over one real day. Type a city or an airport code and
+        the wall flies there. It knows every airport that saw a flight that day.
       </Typography>
 
       <form
@@ -343,8 +343,8 @@ const PlanesControls = () => {
       </Button>
 
       <Typography variant="body2" css={hintStyle}>
-        You can also fly with your hands: move an open hand to turn the globe, spread
-        two hands to zoom, and close a fist to hold the clock still.
+        If you stop for 20 seconds the wall goes back to turning by itself, so there
+        is nothing here you can leave it stuck in.
       </Typography>
     </div>
   );
