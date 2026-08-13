@@ -25,7 +25,8 @@ experiences = [
   "opinion-dynamics",
   "planes",
   "huffman",
-  "gradient-descent"
+  "gradient-descent",
+  "twindragon"
 ]
 
 [game]
