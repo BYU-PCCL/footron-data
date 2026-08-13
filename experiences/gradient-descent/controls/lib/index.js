@@ -78,7 +78,7 @@ const SURFACES = [
   {
     id: "bowl",
     name: "Bowl",
-    blurb: "One valley. Every ball finds it.",
+    blurb: "One valley, and every ball finds it.",
     f: (x, z) => 0.15 * (x * x + z * z),
     domain: 5,
     suggestedLr: 0.5,
@@ -86,7 +86,7 @@ const SURFACES = [
   {
     id: "doubleWell",
     name: "Double Well",
-    blurb: "Two valleys, one deeper. Land in the shallow one and you stay.",
+    blurb: "Two valleys. Land in the shallow one and you stay there.",
     f: (x, z) => {
       const q = x * x - 9;
       return 0.02 * q * q + 0.1 * x + 0.2 * z * z;
@@ -97,7 +97,7 @@ const SURFACES = [
   {
     id: "eggCrate",
     name: "Egg Crate",
-    blurb: "Dimples everywhere. Almost nowhere is the best place.",
+    blurb: "Dimples everywhere, and almost none of them are the bottom.",
     f: (x, z) => 0.08 * (x * x + z * z) + 1.2 * Math.sin(x) * Math.cos(z),
     domain: 5,
     suggestedLr: 0.25,
@@ -105,7 +105,7 @@ const SURFACES = [
   {
     id: "himmelblau",
     name: "Himmelblau",
-    blurb: "Four minima, all equally good. Where you start decides.",
+    blurb: "Four valleys, all exactly as deep. Where you drop decides.",
     f: (x, z) => {
       const a = x * x + z - 11;
       const b = x + z * z - 7;
@@ -117,7 +117,7 @@ const SURFACES = [
   {
     id: "saddle",
     name: "Saddle",
-    blurb: "A ridge between two valleys. Drop on the crest and stall.",
+    blurb: "A ridge with a valley either side. Drop on the crest and nothing moves.",
     f: (x, z) => 0.15 * x * x - 0.15 * z * z + 0.004 * z * z * z * z,
     domain: 5,
     suggestedLr: 0.4,
@@ -125,7 +125,7 @@ const SURFACES = [
   {
     id: "ripple",
     name: "Ripple",
-    blurb: "A bowl full of bumps. Very easy to get trapped.",
+    blurb: "A bowl full of bumps. Getting trapped is the normal outcome.",
     f: (x, z) =>
       0.08 * (x * x + z * z) -
       0.35 * (Math.cos(2.5 * x) + Math.cos(2.5 * z)) +
@@ -593,9 +593,9 @@ const GradientDescentControls = () => {
     <div css={containerStyle}>
       <Typography variant="h6">Gradient Descent</Typography>
       <Typography variant="body2" css={hintStyle}>
-        The wall is a landscape and every ball is a guess. Drop one and it walks
-        downhill, one step at a time, until it cannot do better — which is not
-        always the best place there is.
+        The wall is a landscape and every ball is a guess. Drop one and it
+        walks downhill a step at a time until it cannot do better. That spot is
+        usually not the lowest one out there.
       </Typography>
 
       <div css={groupStyle}>
@@ -630,8 +630,8 @@ const GradientDescentControls = () => {
             with no explanation reads as a panel that failed to load. */}
         <Typography variant="body2" css={hintStyle}>
           {discover
-            ? "You cannot see where the hills are either — that is the point. Drop a few and read the shape off the paths on the wall."
-            : "Blue is low ground, red is high. Try dropping two balls a finger-width apart and watch where they each end up."}
+            ? "Now you cannot see where the hills are either. Drop a few and read the shape off the paths on the wall."
+            : "Blue is low ground, red is high. Drop two balls a finger apart and see where each one ends up."}
         </Typography>
       </div>
 
@@ -670,9 +670,9 @@ const GradientDescentControls = () => {
         </Button>
       </div>
       <Typography variant="caption" css={hintStyle}>
-        A ball cannot see the hills either — it only feels the slope under it.
-        Hide them and nothing is drawn but the paths, and the shape has to be
-        read out of those.
+        A ball only ever feels the slope directly under it. Hide the hills and
+        the paths on the wall are all you get too, which is the position the
+        ball has been in the whole time.
       </Typography>
 
       <div css={groupStyle}>
@@ -721,8 +721,8 @@ const GradientDescentControls = () => {
           />
           <Typography variant="body2" css={hintStyle}>
             Turn the step size all the way up and the balls overshoot every
-            valley they aim at, then fly off the surface. That is a real failure
-            mode, not a bug — it is why picking η is hard.
+            valley they aim at, then fly off the wall. Real training does this
+            too. Picking η is the hard part.
           </Typography>
         </>
       ) : (
@@ -748,9 +748,9 @@ const GradientDescentControls = () => {
             onCommit={(v) => param("friction", v)}
           />
           <Typography variant="body2" css={hintStyle}>
-            Drop the friction and the marbles keep their speed — enough of it to
+            Drop the friction and the marbles keep their speed. Enough of it to
             roll straight through a shallow valley and out the other side, which
-            is the trick momentum plays in the step-taking mode.
+            is what momentum does over in the step-taking mode.
           </Typography>
         </>
       )}
