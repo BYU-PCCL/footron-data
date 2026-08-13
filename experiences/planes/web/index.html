@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Planes — a day of world air traffic</title>
+  <title>Planes: a day of world air traffic</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>✈️</text></svg>" />
 </head>
@@ -17,10 +17,7 @@
     <h1>A day in the sky</h1>
     <p id="subtitle" class="subtitle">loading…</p>
     <p class="caveat">
-      Real ADS-B tracks from the OpenSky Network's volunteer receivers. Nobody has a receiver
-      mid-ocean, so when an aircraft at cruise vanishes and reappears hours later it is joined
-      up and flown along the great circle between — those stretches are drawn dimmer, because
-      the shape is inferred rather than observed.
+      Real ADS-B tracks from the OpenSky Network's volunteer receivers.
     </p>
   </header>
 
@@ -39,35 +36,13 @@
        phone is looking up here, and so is everybody else. -->
   <div id="note" class="hud note" role="status" aria-live="polite"></div>
 
-  <!-- gesture control: the camera preview doubles as the feedback that it is working -->
-  <div class="hud cam-panel" id="cam-panel">
-    <!-- No enable/disable button: there is no mouse on the wall to press it with,
-         and the camera is the exhibit's primary input rather than an option. It
-         starts itself, and says so below if it cannot. -->
-    <div class="cam-head">
-      <span class="cam-title">Hand control</span>
-    </div>
-    <div class="cam-stage">
-      <video id="cam" playsinline muted autoplay></video>
-      <div id="cam-status" class="cam-status">off</div>
-    </div>
-    <ul class="cam-legend">
-      <li><b>raise an open hand</b> — take control</li>
-      <li><b>sweep</b> it left or right — turn the globe</li>
-      <li><b>two hands apart</b> — zoom in, together — out</li>
-      <li><b>pinch and lift</b> — zoom with one hand</li>
-      <li><b>fist</b> — hold the clock still</li>
-    </ul>
-    <p class="cam-note">Video is processed on this machine and never recorded or sent anywhere.</p>
-  </div>
-
-  <!-- The day's shape, and nothing to press. Running the clock, scrubbing through
-       the day and changing speed all live on the phone, which is the only thing
-       anybody here has that takes a press. -->
+  <!-- The day's shape, and nothing to press. Turning the globe, zooming, running
+       the clock, scrubbing through the day and changing speed all live on the
+       phone, which is the only thing anybody here has that takes a press. -->
   <footer class="hud hud-bottom">
     <div id="legend" class="legend"></div>
     <canvas id="spark" class="spark" aria-label="Aircraft airborne through the day"></canvas>
-    <p class="hint">Raise an open hand and hold it to take control · run the clock and fly to a city from your phone · lets go after 20 s</p>
+    <p class="hint">Use your phone to turn the globe, run the clock, or fly to a city. It goes back to turning by itself after 20 seconds.</p>
   </footer>
 
   <div id="loading" class="loading">
