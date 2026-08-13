@@ -2,12 +2,11 @@
   "id": "huffman",
   "type": "web",
   "title": "The Shortest Code",
-  "description": "Pick a message on your phone and watch the wall build the shortest possible code for it. Common letters get short codes, rare letters pay for it — that one idea is how every zip file works.",
+  "description": "Pick a message on your phone and watch the wall build the shortest possible code for it. Common letters get short codes, rare letters pay for it. That is also how every zip file works.",
   "action_hints": [
     "pick a word or sentence on your phone",
     "watch the two lightest blocks fuse into a tree",
-    "see your message shrink against plain ASCII",
-    "send a whole page and watch the space win the shortest code"
+    "see your message compared to ASCII"
   ],
   "layout": "full",
   "lifetime": 240,

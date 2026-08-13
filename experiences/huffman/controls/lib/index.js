@@ -24,9 +24,6 @@
  *
  *   Submit:  { type: "submit", value: "<text>" }
  *   Random:  { type: "random" }
- *   Demo:    { type: "demo", action: "play" | "stop" }
- *   Speed:   { type: "speed", value: <multiplier, 0.25…2> }
- *   Replay:  { type: "replay" }
  *
  * The wall ignores anything it doesn't recognize, so a panel newer than the
  * deployed build degrades instead of throwing.
@@ -34,12 +31,8 @@
 import React, { useCallback, useState } from "react";
 import { css } from "@emotion/react";
 import Button from "@material-ui/core/Button";
-import Chip from "@material-ui/core/Chip";
 import Typography from "@material-ui/core/Typography";
 import CasinoIcon from "@material-ui/icons/Casino";
-import PauseIcon from "@material-ui/icons/Pause";
-import PlayArrowIcon from "@material-ui/icons/PlayArrow";
-import ReplayIcon from "@material-ui/icons/Replay";
 import { useMessaging } from "@footron/controls-client";
 
 /** A pick whose button says its own text, which is most of them. */
@@ -81,12 +74,6 @@ const PICK_GROUPS = [
 // set by how long the sequence takes to play rather than by what fits. Stop it
 // here too so a pick can't quietly send more than will be drawn.
 const MAX_LENGTH = 1024;
-
-const SPEEDS = [
-  { label: "slow", value: 0.5 },
-  { label: "normal", value: 1 },
-  { label: "fast", value: 2 },
-];
 
 const containerStyle = css`
   display: flex;
@@ -143,44 +130,24 @@ const hintStyle = css`
 const HuffmanControls = () => {
   const { sendMessage } = useMessaging();
   const [sent, setSent] = useState(null);
-  const [playing, setPlaying] = useState(true);
-  const [speed, setSpeed] = useState(1);
 
-  // A submit is a takeover: the wall drops out of its demo reel, so keep the
-  // button in step rather than leaving it showing "pause" over a stopped reel.
+  // A submit is a takeover: the wall drops out of its attract reel until it has
+  // been left alone long enough to take itself back.
   const submit = useCallback(
     (value) => {
       const trimmed = (value || "").trim().slice(0, MAX_LENGTH);
       if (!trimmed) return;
       sendMessage({ type: "submit", value: trimmed });
-      setPlaying(false);
       setSent(trimmed);
     },
     [sendMessage]
   );
-
-  const setSpeedTo = useCallback(
-    (value) => {
-      setSpeed(value);
-      sendMessage({ type: "speed", value });
-    },
-    [sendMessage]
-  );
-
-  const toggleDemo = useCallback(() => {
-    const next = !playing;
-    setPlaying(next);
-    // The reel takes the wall back, so no pick is on it any more.
-    if (next) setSent(null);
-    sendMessage({ type: "demo", action: next ? "play" : "stop" });
-  }, [playing, sendMessage]);
 
   return (
     <div css={containerStyle}>
       <Typography variant="h6">Huffman</Typography>
       <Typography variant="body2" css={hintStyle}>
         Pick a message and the wall builds the shortest possible code for it.
-        The ones that lean on a few repeated characters squeeze the hardest.
       </Typography>
 
       {PICK_GROUPS.map((group) => (
@@ -210,40 +177,12 @@ const HuffmanControls = () => {
           startIcon={<CasinoIcon />}
           onClick={() => {
             sendMessage({ type: "random" });
-            setPlaying(false);
             setSent(null);
           }}
         >
           Random
         </Button>
-        <Button
-          variant="outlined"
-          startIcon={<ReplayIcon />}
-          onClick={() => sendMessage({ type: "replay" })}
-        >
-          Replay
-        </Button>
       </div>
-
-      <div css={chipsStyle}>
-        {SPEEDS.map((s) => (
-          <Chip
-            key={s.label}
-            label={s.label}
-            clickable
-            color={speed === s.value ? "primary" : "default"}
-            onClick={() => setSpeedTo(s.value)}
-          />
-        ))}
-      </div>
-
-      <Button
-        variant="outlined"
-        startIcon={playing ? <PauseIcon /> : <PlayArrowIcon />}
-        onClick={toggleDemo}
-      >
-        {playing ? "Stop the demo reel" : "Play the demo reel"}
-      </Button>
     </div>
   );
 };
