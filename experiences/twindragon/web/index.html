@@ -33,6 +33,22 @@
   #info-overlay.visible {
     opacity: 1;
   }
+
+  /* Surfaces JS errors directly on the wall screen -- there's no devtools
+     access to the kiosk, so this is the only way to see why the display
+     might be black. */
+  #error-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    padding: 24px;
+    background: rgba(80,0,0,0.92);
+    color: #fff;
+    font: 16px/1.5 ui-monospace, monospace;
+    white-space: pre-wrap;
+    overflow: auto;
+  }
 </style>
 </head>
 <body>
@@ -42,7 +58,26 @@
     <div id="info-text"></div>
 </div>
 
+<div id="error-overlay"></div>
+
 <script>
+// Surfaces any JS error directly on screen -- registered first, before
+// anything that could throw, so a failure anywhere below (missing global,
+// WebGL setup, shader compile, messaging) is visible on the wall itself
+// instead of leaving a silent black screen with no way to diagnose it.
+const errorOverlay = document.getElementById('error-overlay');
+function showError(message) {
+    console.error(message);
+    errorOverlay.textContent = String(message);
+    errorOverlay.style.display = 'block';
+}
+window.addEventListener('error', (e) => {
+    showError((e.error && e.error.stack) || e.message || String(e));
+});
+window.addEventListener('unhandledrejection', (e) => {
+    showError('Unhandled promise rejection: ' + ((e.reason && e.reason.stack) || e.reason));
+});
+
 /*
   PERTURBATION-BASED DEEP ZOOM -- summary for future reference:
 
@@ -71,7 +106,7 @@
 
 const canvas = document.getElementById('glcanvas');
 const gl = canvas.getContext('webgl2');
-if (!gl) alert('WebGL2 not supported in this browser.');
+if (!gl) showError('WebGL2 not supported in this browser.');
 
 function resize() {
     canvas.width = window.innerWidth;
