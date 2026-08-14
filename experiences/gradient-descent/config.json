@@ -1,0 +1,16 @@
+{
+  "id": "gradient-descent",
+  "type": "web",
+  "title": "Downhill From Here",
+  "description": "The wall is a landscape and every ball dropped on it is a guess. A ball cannot see the landscape. It feels the slope directly under itself, takes a step downhill, and repeats that until it cannot do better. The catch is that where it stops is usually not the lowest ground on the wall, only the lowest ground nearby. Neural networks learn this way, and getting stuck is the hard part.",
+  "action_hints": [
+    "tap the map on your phone to drop a ball wherever you want",
+    "drop two balls a finger apart and see whether they end up together",
+    "hide the landscape and let the trails draw it back in",
+    "turn the step size up until the balls overshoot and fly off the wall",
+    "switch to marbles and watch one carry over a ridge it should have stopped at"
+  ],
+  "layout": "full",
+  "lifetime": 300,
+  "queueable": true
+}

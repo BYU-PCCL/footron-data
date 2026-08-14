@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Planes: a day of world air traffic</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>✈️</text></svg>" />
+</head>
+<body>
+  <!-- stars behind the planet, deck.gl in the middle, atmosphere composited on top -->
+  <canvas id="stars"></canvas>
+  <canvas id="deck"></canvas>
+  <canvas id="halo"></canvas>
+
+  <header class="hud hud-top-left">
+    <h1>A day in the sky</h1>
+    <p id="subtitle" class="subtitle">loading…</p>
+    <p class="caveat">
+      Real ADS-B tracks from the OpenSky Network's volunteer receivers.
+    </p>
+  </header>
+
+  <!-- The clock reads local to whatever the camera is over, not UTC: a wall
+       showing 03:00 above a sunlit Pacific is a puzzle, and the terminator drawn
+       across the picture is already telling everyone what time it is there. -->
+  <div class="hud hud-top-right">
+    <div id="clock" class="clock">00:00</div>
+    <div id="clock-label" class="clock-label">local</div>
+    <div class="airborne"><span id="airborne">0</span> <span class="airborne-label">aircraft airborne</span></div>
+  </div>
+
+  <div id="card" class="hud card" role="dialog" aria-label="Aircraft details"></div>
+
+  <!-- What a phone just asked for, said out loud on the wall: the person holding the
+       phone is looking up here, and so is everybody else. -->
+  <div id="note" class="hud note" role="status" aria-live="polite"></div>
+
+  <!-- The day's shape, and nothing to press. Turning the globe, zooming, running
+       the clock, scrubbing through the day and changing speed all live on the
+       phone, which is the only thing anybody here has that takes a press. -->
+  <footer class="hud hud-bottom">
+    <div id="legend" class="legend"></div>
+    <canvas id="spark" class="spark" aria-label="Aircraft airborne through the day"></canvas>
+    <p class="hint">Use your phone to turn the globe, run the clock, or fly to a city. It goes back to turning by itself after 20 seconds.</p>
+  </footer>
+
+  <div id="loading" class="loading">
+    <div class="loading-inner">
+      <div class="loading-title">A day in the sky</div>
+      <div class="loading-track"><div id="loading-bar" class="loading-bar"></div></div>
+      <div id="loading-text" class="loading-text">starting…</div>
+    </div>
+  </div>
+
+  <script src="js/bundle.js"></script>
+</body>
+</html>

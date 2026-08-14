@@ -1,0 +1,261 @@
+/* Chrome for the exhibit. Dark by construction — the piece is a night map, so
+   there is no light mode to switch to; every surface here is chosen against the
+   near-black ocean. Nothing here is a control: the wall has no mouse, keyboard
+   or touchscreen, so every panel is a readout and the only instruction is the
+   hint along the bottom. */
+
+:root {
+  --ink: #eaf2ff;
+  --ink-2: #a9bcd6;
+  --ink-3: #6d809b;
+  --accent: rgb(120, 200, 255);
+  --surface: rgba(5, 9, 20, 0.66);
+  --hairline: rgba(140, 175, 220, 0.18);
+  --pad: clamp(12px, 1.4vw, 22px);
+
+  /* The bottom-left corner is not ours on the wall. Footron's launcher paints its
+     "Scan to" QR card there, over the top of whatever the experience is drawing,
+     and it landed squarely on the left end of the bottom bar: the altitude legend
+     and the first hours of the day's curve were behind it. Measured off a photo of
+     the wall the card is a little over 250 px wide and taller than the bar, so
+     everything anchored bottom-left is pushed clear by this much.
+
+     Zero off the wall, where there is no QR code and an off-centre bar would just
+     look like a mistake — see the `footron` class in src/main.js. */
+  --left-reserve: 0px;
+}
+
+body.footron { --left-reserve: clamp(200px, 12vw, 340px); }
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  /* Space: a touch of blue at the top so the planet does not sit on pure black. */
+  background: radial-gradient(120% 90% at 50% 8%, #060d1c 0%, #01030a 62%, #000104 100%);
+  color: var(--ink);
+  font: 400 15px/1.45 ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+#stars, #deck, #halo { position: fixed; inset: 0; width: 100%; height: 100%; }
+#stars { z-index: 0; }
+#deck { z-index: 1; }
+
+/* The atmosphere only ever adds light, so it composites over the render. */
+#halo { z-index: 2; pointer-events: none; mix-blend-mode: screen; }
+
+.hud {
+  position: fixed;
+  z-index: 5;
+  background: var(--surface);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  padding: var(--pad);
+}
+
+/* ---------- title ---------- */
+
+.hud-top-left { top: var(--pad); left: var(--pad); max-width: min(30ch, 34vw); }
+
+h1 {
+  margin: 0;
+  font-size: clamp(19px, 1.7vw, 27px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.subtitle { margin: 4px 0 0; color: var(--ink-2); font-size: 13px; }
+
+.caveat {
+  margin: 10px 0 0;
+  color: var(--ink-3);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+/* ---------- clock ---------- */
+
+.hud-top-right { top: var(--pad); right: var(--pad); text-align: right; }
+
+.clock {
+  font: 500 clamp(30px, 3.4vw, 52px)/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.clock-label { color: var(--ink-3); font-size: 11px; letter-spacing: 0.18em; margin-top: 4px; }
+
+.airborne {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hairline);
+  font: 500 17px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.airborne-label {
+  display: block;
+  margin-top: 4px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+
+/* ---------- bottom panel ---------- */
+
+.hud-bottom {
+  left: calc(var(--pad) + var(--left-reserve));
+  right: var(--pad);
+  bottom: var(--pad);
+  display: grid;
+  gap: 10px;
+  padding: calc(var(--pad) * 0.8) var(--pad);
+}
+
+.legend { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--ink-3); }
+.legend-label { letter-spacing: 0.12em; text-transform: uppercase; }
+.legend-scale { display: grid; gap: 3px; width: clamp(150px, 17vw, 260px); }
+.legend-bar { height: 6px; border-radius: 3px; }
+.legend-ticks { display: flex; justify-content: space-between; font-size: 10px; }
+
+.spark { width: 100%; height: clamp(56px, 8vh, 96px); display: block; }
+
+/* The hint is the wall's only instruction and the only thing here anybody can
+   act on, so it is always visible:
+   the person who needs it is by definition the one who has not worked out how to
+   make anything happen yet. */
+.hint { margin: 0; font-size: 11px; color: var(--ink-3); text-align: center; }
+
+/* ---------- aircraft card ---------- */
+
+/* Left, on a shelf above the day's curve: clear of the standfirst at the top and
+   of the legend at the bottom, and out of the middle where the globe is. */
+.card {
+  /* Above the bar, and out of the QR card's column with it: the launcher's card is
+     taller than the bar, so the corner it covers reaches into this one's foot. */
+  left: calc(var(--pad) + var(--left-reserve));
+  bottom: calc(var(--pad) + 190px);
+  width: min(300px, 32vw);
+  /* The airport panel is a good deal taller than the aircraft one — busiest-out
+     and busiest-in lists — so it grows upwards from the shelf until it reaches
+     the standfirst, then scrolls inside itself rather than running through it. */
+  max-height: calc(100vh - var(--pad) - 190px - 330px);
+  overflow-y: auto;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 200ms ease, transform 200ms ease;
+  pointer-events: none;
+}
+
+.card.on { opacity: 1; transform: none; }
+
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+.card-callsign {
+  font: 600 20px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.02em;
+}
+
+.card-airline { margin-top: 3px; color: var(--accent); font-size: 12.5px; }
+/* The airframe, under the operator: what the aeroplane is, not what it is doing. */
+.card-craft { margin-top: 2px; color: var(--ink-2); font-size: 11.5px; line-height: 1.35; }
+.card-reg { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.02em; }
+
+.card-follow {
+  margin-left: auto;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: rgba(255, 190, 120, 0.16);
+  border: 1px solid rgba(255, 190, 120, 0.4);
+  color: rgb(255, 206, 150);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.card-rows { margin: 12px 0 0; display: grid; gap: 7px; font-size: 12.5px; }
+.card-rows > div { display: flex; justify-content: space-between; gap: 10px; }
+.card-rows dt { color: var(--ink-3); }
+.card-rows dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.card-note { margin: 12px 0 0; font-size: 11px; color: var(--ink-3); line-height: 1.4; }
+
+/* ---------- airport panel ---------- */
+
+.card-sub {
+  margin: 12px 0 5px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.card-routes { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 12.5px; }
+.card-routes li { display: flex; justify-content: space-between; gap: 10px; }
+.card-routes li > span:first-child { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.card-routes-n { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+/* ---------- loading ---------- */
+
+.loading {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: #01030a;
+  transition: opacity 500ms ease;
+}
+
+.loading.gone { opacity: 0; pointer-events: none; }
+.loading-inner { width: min(340px, 70vw); text-align: center; }
+.loading-title { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
+
+.loading-track {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(167, 179, 196, 0.18);
+  overflow: hidden;
+}
+
+.loading-bar { height: 100%; width: 0%; background: var(--accent); transition: width 200ms ease; }
+.loading-text { margin-top: 10px; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 1ms !important; }
+}
+
+/* ---------- phone-control note ---------- */
+/* Centred at the top, because a phone-driven change happens with nobody touching
+   the wall — without saying so, the picture appears to move by itself. */
+
+.note {
+  top: var(--pad);
+  left: 50%;
+  transform: translate(-50%, -8px);
+  max-width: min(46ch, 60vw);
+  text-align: center;
+  font-size: 13px;
+  color: var(--ink-2);
+  opacity: 0;
+  transition: opacity 220ms ease, transform 220ms ease;
+  pointer-events: none;
+}
+
+.note.on { opacity: 1; transform: translate(-50%, 0); }
+.note b { color: var(--ink); font-weight: 600; }
+.note .note-phone { color: var(--accent); font-weight: 600; }

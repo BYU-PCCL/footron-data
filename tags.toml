@@ -23,7 +23,11 @@ experiences = [
   "butterfly",
   "maze-generation",
   "bus-bunching",
-  "opinion-dynamics"
+  "opinion-dynamics",
+  "planes",
+  "huffman",
+  "gradient-descent",
+  "twindragon"
 ]
 
 [game]

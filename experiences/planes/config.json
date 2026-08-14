@@ -1,0 +1,17 @@
+{
+  "id": "planes",
+  "type": "web",
+  "title": "A Day in the Sky",
+  "description": "Every plane in the sky over one real day, recorded by volunteer ADS-B receivers. Use your phone to turn the globe, or send it a city and fly there.",
+  "action_hints": [
+    "drag on your phone to turn the globe",
+    "tap the magnifiers to zoom in and out",
+    "type a city or an airport code to fly there",
+    "follow a random plane that is in the air right now",
+    "stop the clock, or jump to any hour of the day",
+    "hand the wall back when you are done"
+  ],
+  "layout": "full",
+  "lifetime": 240,
+  "queueable": true
+}
