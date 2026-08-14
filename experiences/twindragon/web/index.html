@@ -102,14 +102,25 @@ window.addEventListener('unhandledrejection', (e) => {
 // rendering failure (bad shader compile, no WebGL2, etc.) can't also take
 // the phone connection down with it -- otherwise a display-only bug shows
 // up as "disconnected" on the phone with no indication the problem is on
-// the wall's side. handleMessage is a function declaration (hoisted), and
-// on-screen state it touches (mode, baseZoom, PRESETS, etc.) is only ever
-// read once a real message arrives, which can't happen before the rest of
-// this script finishes running (network round-trips are far slower than
-// the remaining synchronous setup below).
+// the wall's side. handleMessage is a function declaration (hoisted), but
+// the on-screen state it touches (mode, baseZoom, PRESETS, ...) is declared
+// with let/const further down and is therefore in the temporal dead zone
+// until this script finishes running. A message that arrives before then
+// (mount() can deliver one as soon as it connects) used to throw
+// "Cannot access 'mode' before initialization", so messages are queued here
+// and flushed at the bottom of the script once that state exists.
+let messagingReady = false;
+const pendingMessages = [];
+
 const client = new FootronMessaging.Messaging();
 client.mount();
-client.addMessageListener(handleMessage);
+client.addMessageListener((message) => {
+    if (!messagingReady) {
+        pendingMessages.push(message);
+        return;
+    }
+    handleMessage(message);
+});
 
 /*
   PERTURBATION-BASED DEEP ZOOM -- summary for future reference:
@@ -562,6 +573,14 @@ function render() {
 }
 
 requestAnimationFrame(render);
+
+// All the state handleMessage touches now exists, so it's safe to run
+// anything that arrived while the script was still initializing.
+messagingReady = true;
+for (const message of pendingMessages) {
+    handleMessage(message);
+}
+pendingMessages.length = 0;
 </script>
 </body>
 </html>
