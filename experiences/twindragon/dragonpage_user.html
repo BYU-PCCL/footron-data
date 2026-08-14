@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Twindragon Fractal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/10.4.3/decimal.min.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; overflow: hidden; background: #000; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+
+  #coord-hud {
+    position: fixed;
+    left: 10px;
+    bottom: 10px;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.55);
+    color: #9f9;
+    font: 12px/1.5 ui-monospace, monospace;
+    white-space: pre;
+    border-radius: 6px;
+    pointer-events: none;
+  }
+
+  #copy-toast {
+    position: fixed;
+    left: 10px;
+    bottom: 100px;
+    padding: 8px 12px;
+    background: rgba(0,120,0,0.8);
+    color: #fff;
+    font: 13px/1.4 ui-monospace, monospace;
+    border-radius: 6px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  #copy-toast.visible { opacity: 1; }
+
+  /* Crosshair marking screen-center -- the point that gets copied by "c".
+     mix-blend-mode keeps it visible regardless of what color is under it. */
+  #center-mark {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 24px;
+    height: 24px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    mix-blend-mode: difference;
+  }
+  #center-mark::before, #center-mark::after {
+    content: '';
+    position: absolute;
+    background: #fff;
+  }
+  #center-mark::before {
+    left: 50%;
+    top: 0;
+    width: 1px;
+    height: 100%;
+    transform: translateX(-50%);
+  }
+  #center-mark::after {
+    top: 50%;
+    left: 0;
+    height: 1px;
+    width: 100%;
+    transform: translateY(-50%);
+  }
+</style>
+</head>
+<body>
+<canvas id="glcanvas"></canvas>
+
+<!--
+  Preset-hunting HUD: drag/scroll to explore like normal, then press "c" to
+  copy a ready-to-paste PRESETS entry (pan center + zoom) for whatever spot
+  is currently centered on screen. Paste it into the PRESETS array near the
+  top of web/index.html's script.
+-->
+<div id="center-mark"></div>
+<div id="coord-hud"></div>
+<div id="copy-toast">Copied preset to clipboard!</div>
+
+<script>
+/*
+  PERTURBATION-BASED DEEP ZOOM -- summary for future reference:
+
+  Problem this solves: earlier versions stored the view's pan center as a
+  float (or double-single float pair) and accumulated changes to it every
+  time you clicked/scrolled. Floats only carry ~7-15 significant digits, so
+  once you'd panned away from (0,0), that fixed digit budget got "spent" on
+  the pan position itself, leaving fewer digits for actual zoom depth. Right
+  at the origin there was nothing to spend, which is why zooming there always
+  looked perfect.
+
+  Fix: keep the pan center as an ARBITRARY-PRECISION decimal (via decimal.js)
+  on the CPU, recomputed fresh every frame -- never accumulated as lossy
+  float additions. Each frame, compute one high-precision "reference orbit"
+  (the exact iteration path of the pan-center point) in JS, then send only
+  that reference + a small "eps" (this pixel's tiny offset from the
+  reference) to the GPU. The GPU does cheap float32 math on eps, which
+  stays small (and thus precise) regardless of how far from (0,0) you've
+  panned -- because it's relative to your current view, not the universe's
+  origin.
+*/
+
+const canvas = document.getElementById('glcanvas');
+const gl = canvas.getContext('webgl2');
+if (!gl) alert('WebGL2 not supported in this browser.');
+
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+}
+window.addEventListener('resize', resize);
+resize();
+
+const ITER = 120;
+
+// ---------- Shader source ----------
+
+const vertexShaderSrc = `#version 300 es
+in vec2 aPosition;
+void main() {
+    gl_Position = vec4(aPosition, 0.0, 1.0);
+}
+`;
+
+const imageFragSrc = `#version 300 es
+precision highp float;
+out vec4 fragColor;
+
+#define ITER ${ITER}
+
+uniform vec3 iResolution;
+uniform float uZoom;
+uniform vec2 uPanX;          // pan center x, as double-single (hi, lo)
+uniform vec2 uPanY;          // pan center y, as double-single (hi, lo)
+uniform vec2 uRPreX[ITER];   // reference orbit, x, post-rotation/pre-branch (double-single)
+uniform vec2 uRPreY[ITER];   // reference orbit, y, post-rotation (double-single)
+uniform float uDRef[ITER];   // reference orbit's own branch choice (0 or 1) each iteration
+
+vec2 twoSum(float a, float b) {
+    float s = a + b;
+    float bb = s - a;
+    float err = (a - (s - bb)) + (b - bb);
+    return vec2(s, err);
+}
+
+vec2 dsAddFloat(vec2 a, float b) {
+    vec2 s = twoSum(a.x, b);
+    float lo = s.y + a.y;
+    return twoSum(s.x, lo);
+}
+
+float dsToFloat(vec2 a) { return a.x + a.y; }
+
+// ---- color strategy, ported from the time-based zoom version ----
+// 1. Phase = mod(smoothEscape, PERIOD)/PERIOD: a fixed-period cycle so color
+//    bands repeat forever as escape counts grow with zoom depth, instead of
+//    washing out as smoothEscape/ITER would.
+// 2. Hue stays in a NARROW analogous arc (violet->magenta->rose) via HSV
+//    rather than independent R/G/B frequencies, so nothing clashes.
+// 3. Brightness ramps off the RAW escape count (not a fraction of ITER) and
+//    is capped well under 1.0 to stay muted for a large-screen render.
+const float PERIOD = 14.0;
+
+vec3 hsv2rgb(vec3 c) {
+    vec3 p = abs(fract(c.xxx + vec3(1.0, 2.0/3.0, 1.0/3.0)) * 6.0 - 3.0);
+    return c.z * mix(vec3(1.0), clamp(p - 1.0, 0.0, 1.0), c.y);
+}
+
+vec3 dragonColor(vec2 offset) {
+    float epsx = offset.x;
+    float epsy = offset.y;
+
+    float prevLen = length(vec2(dsToFloat(uPanX) + epsx, dsToFloat(uPanY) + epsy));
+    float smoothEscape = -1.0;
+    vec2 Z = vec2(0.0);
+
+    for (int i = 0; i < ITER; i++) {
+        if (smoothEscape >= 0.0) break;
+
+        float epx_pre = epsx - epsy;
+        float epy_pre = epsx + epsy;
+
+        vec2 diff = dsAddFloat(dsAddFloat(uRPreX[i], -0.5), epx_pre);
+        bool dActual = (diff.x > 0.0) || (diff.x == 0.0 && diff.y > 0.0);
+        float dActualF = dActual ? 1.0 : 0.0;
+
+        epsx = epx_pre - (dActualF - uDRef[i]);
+        epsy = epy_pre;
+
+        float rPostX = dsToFloat(uRPreX[i]) - uDRef[i];
+        float rPostY = dsToFloat(uRPreY[i]);
+        Z = vec2(rPostX + epsx, rPostY + epsy);
+
+        float newLen = length(Z);
+        if (newLen > 2.0) {
+            float frac = (2.0 - prevLen) / max(newLen - prevLen, 1e-5);
+            smoothEscape = float(i) + clamp(frac, 0.0, 1.0);
+        }
+        prevLen = newLen;
+    }
+
+    if (smoothEscape < 0.0) {
+        float n = 0.5 + 0.5 * sin(dot(Z, Z) * 6.0);
+        return vec3(0.07, 0.05, 0.06) + 0.035 * vec3(n, n * 0.8, n * 0.9);
+    }
+
+    float tCycle = mod(smoothEscape, PERIOD) / PERIOD;
+
+    float hue = 0.80 + 0.09 * sin(6.28318 * tCycle);
+    float sat = clamp(0.45 + 0.15 * sin(6.28318 * tCycle * 1.5 + 1.0), 0.0, 1.0);
+    float val = clamp(0.16 + 0.10 * sin(6.28318 * tCycle + 0.6), 0.0, 1.0);
+    vec3 base = hsv2rgb(vec3(hue, sat, val));
+
+    float veinFreq = 1.0;
+    float veinSharp = 4.0;
+    float vein = pow(max(cos(6.28318 * veinFreq * tCycle + 1.2), 0.0), veinSharp);
+    vec3 sparkle = hsv2rgb(vec3(hue + 0.02, sat * 0.7, 0.5));
+    vec3 col = base + sparkle * vein * 0.35;
+
+    float glow = 0.8 * smoothstep(1.0, 5.0, smoothEscape)
+               * (1.0 - 0.35 * smoothstep(float(ITER) * 0.9, float(ITER), smoothEscape));
+    col *= glow;
+
+    return col;
+}
+
+void main() {
+    vec2 fragCoord = gl_FragCoord.xy;
+    vec2 offset = (fragCoord - 0.5 * iResolution.xy) / iResolution.y * uZoom;
+    fragColor = vec4(dragonColor(offset), 1.0);
+}
+`;
+// ---------- Boilerplate: compile/link helpers ----------
+
+function compileShader(source, type) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error(gl.getShaderInfoLog(shader));
+        throw new Error('Shader compile error, see console.');
+    }
+    return shader;
+}
+
+function createProgram(vsSrc, fsSrc) {
+    const vs = compileShader(vsSrc, gl.VERTEX_SHADER);
+    const fs = compileShader(fsSrc, gl.FRAGMENT_SHADER);
+    const program = gl.createProgram();
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.error(gl.getProgramInfoLog(program));
+        throw new Error('Program link error, see console.');
+    }
+    return program;
+}
+
+const quadBuffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    -1, -1,  1, -1,  -1, 1,
+    -1, 1,   1, -1,   1, 1
+]), gl.STATIC_DRAW);
+
+const imageProgram = createProgram(vertexShaderSrc, imageFragSrc);
+const posLoc = gl.getAttribLocation(imageProgram, 'aPosition');
+gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
+gl.enableVertexAttribArray(posLoc);
+gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+const uResLoc = gl.getUniformLocation(imageProgram, 'iResolution');
+const uZoomLoc = gl.getUniformLocation(imageProgram, 'uZoom');
+const uPanXLoc = gl.getUniformLocation(imageProgram, 'uPanX');
+const uPanYLoc = gl.getUniformLocation(imageProgram, 'uPanY');
+const uRPreXLoc = gl.getUniformLocation(imageProgram, 'uRPreX[0]');
+const uRPreYLoc = gl.getUniformLocation(imageProgram, 'uRPreY[0]');
+const uDRefLoc = gl.getUniformLocation(imageProgram, 'uDRef[0]');
+
+// ---------- Pan/zoom state ----------
+// panX/panY are ARBITRARY-PRECISION Decimals, recomputed via the reference
+// orbit every frame -- never accumulated as lossy float additions. This is
+// the actual fix: precision no longer degrades no matter how much you
+// click/pan/zoom around, or how far from (0,0) you've gone.
+
+Decimal.set({ precision: 60 });
+
+let panX = new Decimal(0), panY = new Decimal(0);
+let targetPanX = new Decimal(0), targetPanY = new Decimal(0);
+let zoom = 10.0, targetZoom = 10.0;
+
+function decimalToDoubleSingle(dec) {
+    const hi = Math.fround(dec.toNumber());
+    const lo = Math.fround(dec.minus(hi).toNumber());
+    return [hi, lo];
+}
+
+// Compute the reference orbit: the exact iteration path of the point at
+// the current pan center, done in arbitrary precision. This is cheap --
+// only 80 additions/subtractions of big decimals, no multiplication.
+function computeReferenceOrbit(cx, cy) {
+    let rx = cx, ry = cy;
+    const preX = new Array(ITER), preY = new Array(ITER), dRef = new Array(ITER);
+    for (let i = 0; i < ITER; i++) {
+        const nrx = rx.minus(ry);
+        const nry = rx.plus(ry);
+        preX[i] = nrx;
+        preY[i] = nry;
+        const d = nrx.greaterThan(0.5) ? 1 : 0;
+        dRef[i] = d;
+        rx = d ? nrx.minus(1) : nrx;
+        ry = nry;
+    }
+    return { preX, preY, dRef };
+}
+
+// ---------- Trackpad / wheel zoom (also covers pinch: fires as wheel w/ ctrlKey) ----------
+// Zoom is anchored at the crosshair (screen center) rather than the cursor,
+// on purpose: this is a preset-hunting tool, and zoom-to-cursor means any
+// sub-pixel cursor drift gets locked in and can walk you off the feature you
+// were aiming for after many zoom steps. Since this never touches
+// targetPanX/targetPanY, panning and zooming are fully decoupled -- drag to
+// center a feature on the crosshair, then zoom in or back out as much as you
+// want and that pan coordinate never changes. That also means you can zoom
+// in deep to verify a spot, then zoom back out to whatever depth you want
+// the preset to *start* at, and press "c" there: same point, shallower zoom.
+canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const zoomFactor = Math.exp(e.deltaY * 0.01);
+    targetZoom = zoom * zoomFactor;
+}, { passive: false });
+
+// ---------- Click-drag panning ----------
+
+let dragging = false, lastX = 0, lastY = 0;
+canvas.addEventListener('mousedown', (e) => {
+    dragging = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+});
+window.addEventListener('mouseup', () => { dragging = false; });
+canvas.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - lastX;
+    const dy = e.clientY - lastY;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    targetPanX = targetPanX.minus(new Decimal(dx / canvas.height * zoom));
+    targetPanY = targetPanY.plus(new Decimal(dy / canvas.height * zoom));
+});
+
+// ---------- Preset hunting: HUD + copy-to-clipboard hotkey ----------
+// Explore normally (drag to pan, scroll/pinch to zoom), then press "c" to
+// grab the current pan/zoom as a ready-to-paste PRESETS entry.
+
+const coordHud = document.getElementById('coord-hud');
+const copyToast = document.getElementById('copy-toast');
+let presetCounter = 1;
+
+function updateCoordHud() {
+    coordHud.textContent =
+        `x: ${panX.toString()}\n` +
+        `y: ${panY.toString()}\n` +
+        `zoom: ${zoom}\n` +
+        `(press "c" to copy a PRESETS entry)`;
+}
+
+window.addEventListener('keydown', (e) => {
+    if (e.key !== 'c' && e.key !== 'C') return;
+
+    const entry = `{ name: 'Spot ${presetCounter}', x: '${panX.toString()}', y: '${panY.toString()}', zoom: ${zoom} },`;
+    presetCounter++;
+
+    console.log(entry);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(entry).catch(() => {});
+    }
+
+    copyToast.textContent = 'Copied: ' + entry;
+    copyToast.classList.add('visible');
+    clearTimeout(copyToast._hideTimeout);
+    copyToast._hideTimeout = setTimeout(() => copyToast.classList.remove('visible'), 3000);
+});
+
+// ---------- Render loop ----------
+
+function render() {
+    // Smooth toward target pan/zoom (done in Decimal for pan, to avoid
+    // undoing all the precision work with a lossy float lerp).
+    const smooth = 0.25;
+    panX = panX.plus(targetPanX.minus(panX).times(smooth));
+    panY = panY.plus(targetPanY.minus(panY).times(smooth));
+    zoom = Math.exp(Math.log(zoom) + (Math.log(targetZoom) - Math.log(zoom)) * smooth);
+
+    updateCoordHud();
+
+    // Recompute the reference orbit fresh, every frame, from the current
+    // (arbitrary-precision) pan center.
+    const orbit = computeReferenceOrbit(panX, panY);
+
+    const rPreXFlat = new Float32Array(ITER * 2);
+    const rPreYFlat = new Float32Array(ITER * 2);
+    const dRefFlat = new Float32Array(ITER);
+    for (let i = 0; i < ITER; i++) {
+        const [hx, lx] = decimalToDoubleSingle(orbit.preX[i]);
+        rPreXFlat[i * 2] = hx; rPreXFlat[i * 2 + 1] = lx;
+        const [hy, ly] = decimalToDoubleSingle(orbit.preY[i]);
+        rPreYFlat[i * 2] = hy; rPreYFlat[i * 2 + 1] = ly;
+        dRefFlat[i] = orbit.dRef[i];
+    }
+
+    const [panXhi, panXlo] = decimalToDoubleSingle(panX);
+    const [panYhi, panYlo] = decimalToDoubleSingle(panY);
+
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.useProgram(imageProgram);
+
+    gl.uniform3f(uResLoc, canvas.width, canvas.height, 1.0);
+    gl.uniform1f(uZoomLoc, zoom);
+    gl.uniform2f(uPanXLoc, panXhi, panXlo);
+    gl.uniform2f(uPanYLoc, panYhi, panYlo);
+    gl.uniform2fv(uRPreXLoc, rPreXFlat);
+    gl.uniform2fv(uRPreYLoc, rPreYFlat);
+    gl.uniform1fv(uDRefLoc, dRefFlat);
+
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    requestAnimationFrame(render);
+}
+
+requestAnimationFrame(render);
+</script>
+</body>
+</html>
