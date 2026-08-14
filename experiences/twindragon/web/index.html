@@ -54,6 +54,19 @@
     white-space: pre-wrap;
     overflow: auto;
   }
+
+  /* Always-visible build marker so we can tell, just by looking at the
+     screen, whether it's actually running the latest deployed code -- bump
+     the string any time this file changes meaningfully. */
+  #build-marker {
+    position: fixed;
+    right: 6px;
+    bottom: 6px;
+    z-index: 9998;
+    color: rgba(255,255,255,0.35);
+    font: 11px ui-monospace, monospace;
+    pointer-events: none;
+  }
 </style>
 </head>
 <body>
@@ -62,6 +75,8 @@
 <div id="info-overlay">
     <div id="info-text"></div>
 </div>
+
+<div id="build-marker">build: inline-decimal-2</div>
 
 <div id="error-overlay"></div>
 
@@ -82,6 +97,19 @@ window.addEventListener('error', (e) => {
 window.addEventListener('unhandledrejection', (e) => {
     showError('Unhandled promise rejection: ' + ((e.reason && e.reason.stack) || e.reason));
 });
+
+// Connect to the phone/router BEFORE any WebGL/shader setup below, so a
+// rendering failure (bad shader compile, no WebGL2, etc.) can't also take
+// the phone connection down with it -- otherwise a display-only bug shows
+// up as "disconnected" on the phone with no indication the problem is on
+// the wall's side. handleMessage is a function declaration (hoisted), and
+// on-screen state it touches (mode, baseZoom, PRESETS, etc.) is only ever
+// read once a real message arrives, which can't happen before the rest of
+// this script finishes running (network round-trips are far slower than
+// the remaining synchronous setup below).
+const client = new FootronMessaging.Messaging();
+client.mount();
+client.addMessageListener(handleMessage);
 
 /*
   PERTURBATION-BASED DEEP ZOOM -- summary for future reference:
@@ -111,7 +139,7 @@ window.addEventListener('unhandledrejection', (e) => {
 
 const canvas = document.getElementById('glcanvas');
 const gl = canvas.getContext('webgl2');
-if (!gl) showError('WebGL2 not supported in this browser.');
+if (!gl) throw new Error('WebGL2 not supported in this browser.');
 
 function resize() {
     canvas.width = window.innerWidth;
@@ -121,7 +149,12 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-const ITER = 120;
+// 120 only resolved boundary detail up to about t=267s of continuous
+// ambient auto-zoom (config.json's lifetime is 240s, so there was only
+// ~27s of margin before the whole frame flattened to the interior color).
+// Raised for headroom; GPU cost scales with this per pixel, but there's
+// plenty of room (headless testing showed ~700fps at 120).
+const ITER = 170;
 
 // ---------- Shader source ----------
 
@@ -214,16 +247,22 @@ vec3 dragonColor(vec2 offset) {
     if (smoothEscape < 0.0) {
         // Follows the same base hue as the boundary coloring below (shifted
         // by uHueShift) so the color slider still has a visible effect at
-        // wide zooms, where interior pixels dominate the screen.
+        // wide zooms, where interior pixels dominate the screen. Brightened
+        // (was 0.055 + 0.02*n) -- at wide ambient zooms this fill covers
+        // most of the screen, and the old value read as solid black on a
+        // lit-room projector.
         float n = 0.5 + 0.5 * sin(dot(Z, Z) * 6.0);
-        return hsv2rgb(vec3(0.80 + uHueShift, 0.35, 0.055 + 0.02 * n));
+        return hsv2rgb(vec3(0.80 + uHueShift, 0.35, 0.14 + 0.05 * n));
     }
 
     float tCycle = mod(smoothEscape, PERIOD) / PERIOD;
 
     float hue = 0.80 + uHueShift + 0.09 * sin(6.28318 * tCycle);
     float sat = clamp(0.45 + 0.15 * sin(6.28318 * tCycle * 1.5 + 1.0), 0.0, 1.0);
-    float val = clamp(0.16 + 0.10 * sin(6.28318 * tCycle + 0.6), 0.0, 1.0);
+    // Brightened from 0.16 + 0.10*sin (max ~0.26) -- measured against other
+    // working experiences on real hardware, this never got close to a real
+    // highlight (255) and read as black on a bright/lit-room display.
+    float val = clamp(0.45 + 0.30 * sin(6.28318 * tCycle + 0.6), 0.0, 1.0);
     vec3 base = hsv2rgb(vec3(hue, sat, val));
 
     float veinFreq = 1.0;
@@ -232,7 +271,9 @@ vec3 dragonColor(vec2 offset) {
     vec3 sparkle = hsv2rgb(vec3(hue + 0.02, sat * 0.7, 0.5));
     vec3 col = base + sparkle * vein * 0.35;
 
-    float glow = 0.8 * smoothstep(1.0, 5.0, smoothEscape)
+    // Glow ceiling raised from 0.8 to 1.0 -- same brightness fix as above;
+    // the falloff taper near the ITER cap is intentional and kept as-is.
+    float glow = 1.0 * smoothstep(1.0, 5.0, smoothEscape)
                * (1.0 - 0.35 * smoothstep(float(ITER) * 0.9, float(ITER), smoothEscape));
     col *= glow;
 
@@ -415,6 +456,13 @@ function enterInteractive() {
     if (mode !== 'interactive') {
         infoOverlay.classList.remove('visible');
         currentCaptionIndex = -1;
+        // Snapshot wherever the ambient auto-zoom currently was as the new
+        // relative baseline -- without this, the zoom slider's mapping
+        // stays anchored to whatever baseZoom was last set to (usually
+        // AMBIENT_START_ZOOM), so touching it mid-ambient-zoom snapped the
+        // view back out to roughly the start depth instead of adjusting
+        // from where it actually was.
+        baseZoom = zoom;
     }
     mode = 'interactive';
 }
@@ -457,10 +505,6 @@ function handleMessage(message) {
 }
 
 window.messageHandler = handleMessage; // purely for local testing
-
-const client = new FootronMessaging.Messaging();
-client.mount();
-client.addMessageListener(handleMessage);
 
 // ---------- Render loop ----------
 
