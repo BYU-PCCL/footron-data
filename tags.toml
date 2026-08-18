@@ -5,20 +5,12 @@ experiences = [ "pi", "pi-circle", "pi-walk", "pi-triangle" ]
 [interactive]
 title = "Interactive Experiences"
 experiences = [
-  "mirror-of-whimsy",
-  "ai-artist",
   "asteroids",
-  "ifs",
-  "hilbert",
   "wind",
-  "life",
-  "stylegan",
   "style-transfer",
   "fluid",
-  "pong4",
   "your-campus",
   "sorting",
-  "fractals",
   "butterfly",
   "maze-generation",
   "bus-bunching",
@@ -75,4 +67,17 @@ experiences = [ "cpms50" ]
 title = "LDS-themed experiences"
 experiences = [
   "temple-photo-op"
+]
+
+[archive]
+title = "Archived Experiences"
+experiences = [
+  "mirror-of-whimsy",
+  "ai-artist",
+  "hilbert",
+  "life",
+  "stylegan",
+  "pong4",
+  "fractals",
+  "ifs"
 ]
