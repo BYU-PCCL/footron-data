@@ -2,7 +2,7 @@
 title = "Interactive Experiences"
 description = "Explore Computer Science with these real-time interactive visualizations."
 tags = [ "interactive" ]
-featured = "ifs"
+featured = "gradient-descent"
 
 [animation]
 title = "BYU Animation"
@@ -48,4 +48,11 @@ title = "Temple Photo Op"
 description = "LDS-themed experiences"
 tags = [ "lds" ]
 featured = "temple-photo-op"
+visible = true
+
+[archive]
+title = "Archive"
+description = "Archived experiences"
+tags = [ "archive" ]
+featured = "ifs"
 visible = true
