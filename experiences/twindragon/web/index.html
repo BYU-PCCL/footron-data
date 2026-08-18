@@ -102,6 +102,18 @@ window.addEventListener('unhandledrejection', (e) => {
     font: 11px ui-monospace, monospace;
     pointer-events: none;
   }
+
+  /* Covers the canvas during a preset jump -- see PRESET_TRANSITION_MS
+     below for why this exists. Duration must match that constant. */
+  #transition-veil {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.26s ease;
+  }
 </style>
 </head>
 <body>
@@ -111,7 +123,9 @@ window.addEventListener('unhandledrejection', (e) => {
     <div id="info-text"></div>
 </div>
 
-<div id="build-marker">build: inline-decimal-2</div>
+<div id="transition-veil"></div>
+
+<div id="build-marker">build: preset-veil-1</div>
 
 <div id="error-overlay"></div>
 
@@ -501,12 +515,34 @@ function enterInteractive() {
     mode = 'interactive';
 }
 
+const transitionVeil = document.getElementById('transition-veil');
+
+// Jumping straight to a preset's targetPanX/Y/Zoom and letting the render
+// loop's per-frame easing (see the "smooth" lerp below) carry the view
+// there continuously used to sweep the deep-zoomed view across huge
+// stretches of the fractal at speed -- a disorienting flash of colors,
+// especially uncomfortable on a large screen. Instead, fade to black,
+// snap the pan/zoom state instantly while hidden, then fade back in --
+// no continuous motion between two arbitrarily distant points ever
+// happens on screen.
+const PRESET_TRANSITION_MS = 260;
+let presetTransitionTimer = null;
+
 function applyPreset(index) {
     const preset = PRESETS[((index % PRESETS.length) + PRESETS.length) % PRESETS.length];
-    targetPanX = new Decimal(preset.x);
-    targetPanY = new Decimal(preset.y);
-    baseZoom = preset.zoom;
-    targetZoom = baseZoom;
+
+    if (presetTransitionTimer !== null) clearTimeout(presetTransitionTimer);
+
+    transitionVeil.style.opacity = '1';
+
+    presetTransitionTimer = setTimeout(() => {
+        panX = targetPanX = new Decimal(preset.x);
+        panY = targetPanY = new Decimal(preset.y);
+        baseZoom = preset.zoom;
+        zoom = targetZoom = baseZoom;
+        transitionVeil.style.opacity = '0';
+        presetTransitionTimer = null;
+    }, PRESET_TRANSITION_MS);
 }
 
 // ---------- Control messages from the phone ----------
