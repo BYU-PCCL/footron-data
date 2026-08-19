@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Twindragon Fractal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/10.4.3/decimal.min.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; overflow: hidden; background: #000; }
+  canvas { display: block; width: 100vw; height: 100vh; }
+</style>
+</head>
+<body>
+<canvas id="glcanvas"></canvas>
+
+<script>
+/*
+  PERTURBATION-BASED DEEP ZOOM -- summary for future reference:
+
+  Problem this solves: earlier versions stored the view's pan center as a
+  float (or double-single float pair) and accumulated changes to it every
+  time you clicked/scrolled. Floats only carry ~7-15 significant digits, so
+  once you'd panned away from (0,0), that fixed digit budget got "spent" on
+  the pan position itself, leaving fewer digits for actual zoom depth. Right
+  at the origin there was nothing to spend, which is why zooming there always
+  looked perfect.
+
+  Fix: keep the pan center as an ARBITRARY-PRECISION decimal (via decimal.js)
+  on the CPU, recomputed fresh every frame -- never accumulated as lossy
+  float additions. Each frame, compute one high-precision "reference orbit"
+  (the exact iteration path of the pan-center point) in JS, then send only
+  that reference + a small "eps" (this pixel's tiny offset from the
+  reference) to the GPU. The GPU does cheap float32 math on eps, which
+  stays small (and thus precise) regardless of how far from (0,0) you've
+  panned -- because it's relative to your current view, not the universe's
+  origin.
+*/
+
+const canvas = document.getElementById('glcanvas');
+const gl = canvas.getContext('webgl2');
+if (!gl) alert('WebGL2 not supported in this browser.');
+
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+}
+window.addEventListener('resize', resize);
+resize();
+
+const ITER = 120;
+
+// ---------- Shader source ----------
+
+const vertexShaderSrc = `#version 300 es
+in vec2 aPosition;
+void main() {
+    gl_Position = vec4(aPosition, 0.0, 1.0);
+}
+`;
+
+const imageFragSrc = `#version 300 es
+precision highp float;
+out vec4 fragColor;
+
+#define ITER ${ITER}
+
+uniform vec3 iResolution;
+uniform float uZoom;
+uniform vec2 uPanX;          // pan center x, as double-single (hi, lo)
+uniform vec2 uPanY;          // pan center y, as double-single (hi, lo)
+uniform vec2 uRPreX[ITER];   // reference orbit, x, post-rotation/pre-branch (double-single)
+uniform vec2 uRPreY[ITER];   // reference orbit, y, post-rotation (double-single)
+uniform float uDRef[ITER];   // reference orbit's own branch choice (0 or 1) each iteration
+
+vec2 twoSum(float a, float b) {
+    float s = a + b;
+    float bb = s - a;
+    float err = (a - (s - bb)) + (b - bb);
+    return vec2(s, err);
+}
+
+vec2 dsAddFloat(vec2 a, float b) {
+    vec2 s = twoSum(a.x, b);
+    float lo = s.y + a.y;
+    return twoSum(s.x, lo);
+}
+
+float dsToFloat(vec2 a) { return a.x + a.y; }
+
+// ---- color strategy: "sapphire" ----
+// 1. BANDS. Phase = fract(smoothEscape / BAND_PERIOD): a fixed-period sawtooth
+//    so bands keep repeating forever as escape counts grow with zoom depth,
+//    instead of washing out as smoothEscape/ITER would. Each band STARTS LIGHT
+//    at phase 0 and FADES TO DARK by phase 1, then snaps back -- that hard
+//    reset next to a bright crest is what gives the ribbed, sculpted look.
+// 2. TONE. A much slower cosine over the same escape count carries the palette
+//    from neutral silver-gray to saturated sapphire and back. Because escape
+//    counts climb steadily as you zoom in, this reads as the whole field
+//    morphing gray -> blue -> gray over time, while still showing gray regions
+//    and blue regions side by side in a single frame.
+// 3. Gray and blue are never blended as hues (that would swing through green).
+//    Each is a 3-stop dark/mid/light ramp, and TONE cross-fades the two ramps
+//    stop-for-stop in RGB.
+// Tuned for THIS fractal, not a Mandelbrot: the twindragon's orbit expands
+// geometrically, so nearly everything escapes by iteration ~25 no matter how
+// deep you zoom. The periods below are therefore small -- a Mandelbrot-scale
+// period of 50+ would put the whole screen inside a single band.
+const float BAND_PERIOD = 1.5;    // escape counts per light->dark band
+const float TONE_PERIOD = 13.5;   // escape counts per gray->blue->gray morph
+const float TONE_PHASE  = 0.15;   // start just off pure gray, so shallow
+                                  // (low-escape) areas read as pale blue-gray
+const float TAU = 6.28318;
+
+// The far exterior escapes almost immediately, so without this it would all sit
+// on one band's light edge and bleach the screen white. Fade the first few
+// escape counts into deep water instead, which also keeps the dark surround the
+// page had before.
+const vec3 DEEP = vec3(0.030, 0.045, 0.110);
+
+// What one band averages out to, integrated over the whole light->dark ramp
+// (crest included). The banded colour is linear in tone, so its average is too
+// -- these two constants reproduce the average at any tone exactly, not
+// approximately. Used to antialias the bands; see the note in dragonColor.
+const vec3 AVG_GRAY = vec3(0.5290, 0.5155, 0.4987);
+const vec3 AVG_BLUE = vec3(0.1403, 0.4515, 0.8046);
+
+// Dark / mid / light stops for each end of the tone morph. Values sampled off
+// the reference render: sapphire sits near hue 218 at high saturation and
+// lightens toward sky blue; the "gray" is neutral with a faint warm tilt.
+vec3 sapphirePalette(float ramp, float tone) {
+    vec3 lo = mix(vec3(0.100, 0.095, 0.090), vec3(0.045, 0.075, 0.235), tone);
+    vec3 md = mix(vec3(0.440, 0.425, 0.410), vec3(0.070, 0.380, 0.850), tone);
+    vec3 hi = mix(vec3(0.870, 0.855, 0.830), vec3(0.280, 0.740, 1.000), tone);
+    float k = ramp * 2.0;
+    vec3 c = mix(lo, md, clamp(k, 0.0, 1.0));
+    return mix(c, hi, clamp(k - 1.0, 0.0, 1.0));
+}
+
+vec3 dragonColor(vec2 offset) {
+    float epsx = offset.x;
+    float epsy = offset.y;
+
+    float prevLen = length(vec2(dsToFloat(uPanX) + epsx, dsToFloat(uPanY) + epsy));
+    float smoothEscape = -1.0;
+    vec2 Z = vec2(0.0);
+
+    for (int i = 0; i < ITER; i++) {
+        if (smoothEscape >= 0.0) break;
+
+        float epx_pre = epsx - epsy;
+        float epy_pre = epsx + epsy;
+
+        vec2 diff = dsAddFloat(dsAddFloat(uRPreX[i], -0.5), epx_pre);
+        bool dActual = (diff.x > 0.0) || (diff.x == 0.0 && diff.y > 0.0);
+        float dActualF = dActual ? 1.0 : 0.0;
+
+        epsx = epx_pre - (dActualF - uDRef[i]);
+        epsy = epy_pre;
+
+        float rPostX = dsToFloat(uRPreX[i]) - uDRef[i];
+        float rPostY = dsToFloat(uRPreY[i]);
+        Z = vec2(rPostX + epsx, rPostY + epsy);
+
+        float newLen = length(Z);
+        if (newLen > 2.0) {
+            float frac = (2.0 - prevLen) / max(newLen - prevLen, 1e-5);
+            smoothEscape = float(i) + clamp(frac, 0.0, 1.0);
+        }
+        prevLen = newLen;
+    }
+
+    // Interior of the set: near-black, with just enough structure to keep it
+    // from reading as a flat hole.
+    if (smoothEscape < 0.0) {
+        float n = 0.5 + 0.5 * sin(dot(Z, Z) * 6.0);
+        return vec3(0.018, 0.024, 0.052) + 0.020 * vec3(n * 0.5, n * 0.7, n);
+    }
+
+    // --- how fine are the bands here, relative to one pixel? -----------------
+    // The bands are contours of log(distance to the twindragon). The map's
+    // linear part is multiplication by (1+i), so |z| grows by exactly sqrt(2)
+    // per step and |z_n| ~ dist * 2^(n/2); inverting at the escape radius gives
+    // dist = 2 * 2^(-smoothEscape/2). Because that is a LOG of distance, the
+    // contours pack together without limit as you approach the boundary: past
+    // ~18 escape counts more than one whole band lands inside a single pixel,
+    // the pixel centre samples an essentially arbitrary phase, and the result
+    // is TV static. It never resolves by zooming -- the boundary is
+    // self-similar, so there is always more of it inside the pixel.
+    float pixelSize = uZoom / iResolution.y;
+    float bandsPerPixel = pixelSize * exp2(min(0.5 * smoothEscape, 100.0))
+                        / (0.6931472 * BAND_PERIOD);
+    float tonesPerPixel = bandsPerPixel * BAND_PERIOD / TONE_PERIOD;
+
+    // Where we are in the slow gray <-> sapphire morph: 0 = silver, 1 = blue.
+    // The tone cycle is 9x longer than the band cycle, but it has to fade out
+    // almost as early: near the boundary the escape count jumps by TENS between
+    // neighbouring pixels, so even a small fraction of a tone cycle per pixel
+    // still shows up as speckle. Measured against the smooth-band noise floor,
+    // it has to be gone by ~0.12 cycles per pixel.
+    float tone = 0.5 - 0.5 * cos(TAU * (smoothEscape / TONE_PERIOD + TONE_PHASE));
+    tone = mix(tone, 0.5, smoothstep(0.02, 0.12, tonesPerPixel));
+
+    // Where we are inside the current band: 0 = its light leading edge,
+    // 1 = the dark trailing edge just before the snap back.
+    float t = fract(smoothEscape / BAND_PERIOD);
+
+    // pow(..., 0.75) holds the band bright for a beat before falling away and
+    // then accelerating into the dark -- matches the falloff in the reference.
+    float ramp = pow(1.0 - t, 0.75);
+    vec3 col = sapphirePalette(ramp, tone);
+
+    // Specular crest on the first sixth of the band, so the light edge really
+    // catches instead of just being "the top of the ramp".
+    float crest = pow(max(1.0 - t * 6.0, 0.0), 2.0);
+    col += crest * 0.22 * mix(vec3(1.00, 0.99, 0.96), vec3(0.72, 0.88, 1.00), tone);
+
+    // Once the bands are finer than the screen can show, fade to what an
+    // infinitely supersampled pixel would converge to: the band average. This
+    // is below Nyquist and does nothing at all to the wide outer bands.
+    col = mix(col, mix(AVG_GRAY, AVG_BLUE, tone),
+              smoothstep(0.15, 0.45, bandsPerPixel));
+
+    // Sink the shallowest pixels into DEEP (see above).
+    col = mix(DEEP, col, smoothstep(0.0, 4.0, smoothEscape));
+
+    return clamp(col, 0.0, 1.0);
+}
+
+void main() {
+    vec2 fragCoord = gl_FragCoord.xy;
+    vec2 offset = (fragCoord - 0.5 * iResolution.xy) / iResolution.y * uZoom;
+    fragColor = vec4(dragonColor(offset), 1.0);
+}
+`;
+// ---------- Boilerplate: compile/link helpers ----------
+
+function compileShader(source, type) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error(gl.getShaderInfoLog(shader));
+        throw new Error('Shader compile error, see console.');
+    }
+    return shader;
+}
+
+function createProgram(vsSrc, fsSrc) {
+    const vs = compileShader(vsSrc, gl.VERTEX_SHADER);
+    const fs = compileShader(fsSrc, gl.FRAGMENT_SHADER);
+    const program = gl.createProgram();
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.error(gl.getProgramInfoLog(program));
+        throw new Error('Program link error, see console.');
+    }
+    return program;
+}
+
+const quadBuffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    -1, -1,  1, -1,  -1, 1,
+    -1, 1,   1, -1,   1, 1
+]), gl.STATIC_DRAW);
+
+const imageProgram = createProgram(vertexShaderSrc, imageFragSrc);
+const posLoc = gl.getAttribLocation(imageProgram, 'aPosition');
+gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
+gl.enableVertexAttribArray(posLoc);
+gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+const uResLoc = gl.getUniformLocation(imageProgram, 'iResolution');
+const uZoomLoc = gl.getUniformLocation(imageProgram, 'uZoom');
+const uPanXLoc = gl.getUniformLocation(imageProgram, 'uPanX');
+const uPanYLoc = gl.getUniformLocation(imageProgram, 'uPanY');
+const uRPreXLoc = gl.getUniformLocation(imageProgram, 'uRPreX[0]');
+const uRPreYLoc = gl.getUniformLocation(imageProgram, 'uRPreY[0]');
+const uDRefLoc = gl.getUniformLocation(imageProgram, 'uDRef[0]');
+
+// ---------- Pan/zoom state ----------
+// panX/panY are ARBITRARY-PRECISION Decimals, recomputed via the reference
+// orbit every frame -- never accumulated as lossy float additions. This is
+// the actual fix: precision no longer degrades no matter how much you
+// click/pan/zoom around, or how far from (0,0) you've gone.
+
+Decimal.set({ precision: 60 });
+
+let panX = new Decimal(0), panY = new Decimal(0);
+let targetPanX = new Decimal(0), targetPanY = new Decimal(0);
+let zoom = 10.0, targetZoom = 10.0;
+
+function decimalToDoubleSingle(dec) {
+    const hi = Math.fround(dec.toNumber());
+    const lo = Math.fround(dec.minus(hi).toNumber());
+    return [hi, lo];
+}
+
+// Compute the reference orbit: the exact iteration path of the point at
+// the current pan center, done in arbitrary precision. This is cheap --
+// only 80 additions/subtractions of big decimals, no multiplication.
+function computeReferenceOrbit(cx, cy) {
+    let rx = cx, ry = cy;
+    const preX = new Array(ITER), preY = new Array(ITER), dRef = new Array(ITER);
+    for (let i = 0; i < ITER; i++) {
+        const nrx = rx.minus(ry);
+        const nry = rx.plus(ry);
+        preX[i] = nrx;
+        preY[i] = nry;
+        const d = nrx.greaterThan(0.5) ? 1 : 0;
+        dRef[i] = d;
+        rx = d ? nrx.minus(1) : nrx;
+        ry = nry;
+    }
+    return { preX, preY, dRef };
+}
+
+// ---------- Trackpad / wheel zoom (also covers pinch: fires as wheel w/ ctrlKey) ----------
+
+canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = canvas.height - (e.clientY - rect.top);
+
+    // Fractal-space point under the cursor, computed in Decimal so we
+    // never reintroduce float64 drift here.
+    const offX = new Decimal((mx - 0.5 * canvas.width) / canvas.height * zoom);
+    const offY = new Decimal((my - 0.5 * canvas.height) / canvas.height * zoom);
+    const fx = panX.plus(offX);
+    const fy = panY.plus(offY);
+
+    const zoomFactor = Math.exp(e.deltaY * 0.01);
+    targetZoom = zoom * zoomFactor;
+
+    const noffX = new Decimal((mx - 0.5 * canvas.width) / canvas.height * targetZoom);
+    const noffY = new Decimal((my - 0.5 * canvas.height) / canvas.height * targetZoom);
+    targetPanX = fx.minus(noffX);
+    targetPanY = fy.minus(noffY);
+}, { passive: false });
+
+// ---------- Click-drag panning ----------
+
+let dragging = false, lastX = 0, lastY = 0;
+canvas.addEventListener('mousedown', (e) => {
+    dragging = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+});
+window.addEventListener('mouseup', () => { dragging = false; });
+canvas.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - lastX;
+    const dy = e.clientY - lastY;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    targetPanX = targetPanX.minus(new Decimal(dx / canvas.height * zoom));
+    targetPanY = targetPanY.plus(new Decimal(dy / canvas.height * zoom));
+});
+
+// ---------- Render loop ----------
+
+function render() {
+    // Smooth toward target pan/zoom (done in Decimal for pan, to avoid
+    // undoing all the precision work with a lossy float lerp).
+    const smooth = 0.25;
+    panX = panX.plus(targetPanX.minus(panX).times(smooth));
+    panY = panY.plus(targetPanY.minus(panY).times(smooth));
+    zoom = Math.exp(Math.log(zoom) + (Math.log(targetZoom) - Math.log(zoom)) * smooth);
+
+    // Recompute the reference orbit fresh, every frame, from the current
+    // (arbitrary-precision) pan center.
+    const orbit = computeReferenceOrbit(panX, panY);
+
+    const rPreXFlat = new Float32Array(ITER * 2);
+    const rPreYFlat = new Float32Array(ITER * 2);
+    const dRefFlat = new Float32Array(ITER);
+    for (let i = 0; i < ITER; i++) {
+        const [hx, lx] = decimalToDoubleSingle(orbit.preX[i]);
+        rPreXFlat[i * 2] = hx; rPreXFlat[i * 2 + 1] = lx;
+        const [hy, ly] = decimalToDoubleSingle(orbit.preY[i]);
+        rPreYFlat[i * 2] = hy; rPreYFlat[i * 2 + 1] = ly;
+        dRefFlat[i] = orbit.dRef[i];
+    }
+
+    const [panXhi, panXlo] = decimalToDoubleSingle(panX);
+    const [panYhi, panYlo] = decimalToDoubleSingle(panY);
+
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.useProgram(imageProgram);
+
+    gl.uniform3f(uResLoc, canvas.width, canvas.height, 1.0);
+    gl.uniform1f(uZoomLoc, zoom);
+    gl.uniform2f(uPanXLoc, panXhi, panXlo);
+    gl.uniform2f(uPanYLoc, panYhi, panYlo);
+    gl.uniform2fv(uRPreXLoc, rPreXFlat);
+    gl.uniform2fv(uRPreYLoc, rPreYFlat);
+    gl.uniform1fv(uDRefLoc, dRefFlat);
+
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    requestAnimationFrame(render);
+}
+
+requestAnimationFrame(render);
+</script>
+</body>
+</html>
