@@ -102,6 +102,18 @@ window.addEventListener('unhandledrejection', (e) => {
     font: 11px ui-monospace, monospace;
     pointer-events: none;
   }
+
+  /* Covers the canvas during a preset jump -- see PRESET_TRANSITION_MS
+     below for why this exists. Duration must match that constant. */
+  #transition-veil {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.26s ease;
+  }
 </style>
 </head>
 <body>
@@ -111,7 +123,9 @@ window.addEventListener('unhandledrejection', (e) => {
     <div id="info-text"></div>
 </div>
 
-<div id="build-marker">build: inline-decimal-2</div>
+<div id="transition-veil"></div>
+
+<div id="build-marker">build: preset-veil-1</div>
 
 <div id="error-overlay"></div>
 
@@ -286,24 +300,19 @@ vec3 dragonColor(vec2 offset) {
     }
 
     if (smoothEscape < 0.0) {
-        // Follows the same base hue as the boundary coloring below (shifted
-        // by uHueShift) so the color slider still has a visible effect at
-        // wide zooms, where interior pixels dominate the screen. Brightened
-        // (was 0.055 + 0.02*n) -- at wide ambient zooms this fill covers
-        // most of the screen, and the old value read as solid black on a
-        // lit-room projector.
+        // Restored to the original dragonpage_user.html brightness (the
+        // black-screen issue turned out to be the Decimal/mount ordering
+        // bug, not dimness) -- still hue-shiftable via uHueShift so the
+        // phone color slider keeps affecting the interior too.
         float n = 0.5 + 0.5 * sin(dot(Z, Z) * 6.0);
-        return hsv2rgb(vec3(0.80 + uHueShift, 0.35, 0.14 + 0.05 * n));
+        return hsv2rgb(vec3(0.80 + uHueShift, 0.35, 0.055 + 0.02 * n));
     }
 
     float tCycle = mod(smoothEscape, PERIOD) / PERIOD;
 
     float hue = 0.80 + uHueShift + 0.09 * sin(6.28318 * tCycle);
     float sat = clamp(0.45 + 0.15 * sin(6.28318 * tCycle * 1.5 + 1.0), 0.0, 1.0);
-    // Brightened from 0.16 + 0.10*sin (max ~0.26) -- measured against other
-    // working experiences on real hardware, this never got close to a real
-    // highlight (255) and read as black on a bright/lit-room display.
-    float val = clamp(0.45 + 0.30 * sin(6.28318 * tCycle + 0.6), 0.0, 1.0);
+    float val = clamp(0.16 + 0.10 * sin(6.28318 * tCycle + 0.6), 0.0, 1.0);
     vec3 base = hsv2rgb(vec3(hue, sat, val));
 
     float veinFreq = 1.0;
@@ -312,9 +321,7 @@ vec3 dragonColor(vec2 offset) {
     vec3 sparkle = hsv2rgb(vec3(hue + 0.02, sat * 0.7, 0.5));
     vec3 col = base + sparkle * vein * 0.35;
 
-    // Glow ceiling raised from 0.8 to 1.0 -- same brightness fix as above;
-    // the falloff taper near the ITER cap is intentional and kept as-is.
-    float glow = 1.0 * smoothstep(1.0, 5.0, smoothEscape)
+    float glow = 0.8 * smoothstep(1.0, 5.0, smoothEscape)
                * (1.0 - 0.35 * smoothstep(float(ITER) * 0.9, float(ITER), smoothEscape));
     col *= glow;
 
@@ -508,12 +515,34 @@ function enterInteractive() {
     mode = 'interactive';
 }
 
+const transitionVeil = document.getElementById('transition-veil');
+
+// Jumping straight to a preset's targetPanX/Y/Zoom and letting the render
+// loop's per-frame easing (see the "smooth" lerp below) carry the view
+// there continuously used to sweep the deep-zoomed view across huge
+// stretches of the fractal at speed -- a disorienting flash of colors,
+// especially uncomfortable on a large screen. Instead, fade to black,
+// snap the pan/zoom state instantly while hidden, then fade back in --
+// no continuous motion between two arbitrarily distant points ever
+// happens on screen.
+const PRESET_TRANSITION_MS = 260;
+let presetTransitionTimer = null;
+
 function applyPreset(index) {
     const preset = PRESETS[((index % PRESETS.length) + PRESETS.length) % PRESETS.length];
-    targetPanX = new Decimal(preset.x);
-    targetPanY = new Decimal(preset.y);
-    baseZoom = preset.zoom;
-    targetZoom = baseZoom;
+
+    if (presetTransitionTimer !== null) clearTimeout(presetTransitionTimer);
+
+    transitionVeil.style.opacity = '1';
+
+    presetTransitionTimer = setTimeout(() => {
+        panX = targetPanX = new Decimal(preset.x);
+        panY = targetPanY = new Decimal(preset.y);
+        baseZoom = preset.zoom;
+        zoom = targetZoom = baseZoom;
+        transitionVeil.style.opacity = '0';
+        presetTransitionTimer = null;
+    }, PRESET_TRANSITION_MS);
 }
 
 // ---------- Control messages from the phone ----------
