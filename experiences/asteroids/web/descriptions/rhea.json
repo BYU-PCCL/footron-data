@@ -1,0 +1,8 @@
+{
+	"title": "Rhea",
+	"description": {
+		"blurb": "Rhea is the second largest moon of Saturn",
+		"more": "Rhea is a small, cold, airless body that is very similar to sister moons Dione and Tethys. As with the other two moons, Rhea is tidally locked in phase with its parent — one side always faces toward Saturn — as it completes its 4.5-Earth-day orbit around the planet. Rhea's surface temperatures are also similar to Dione and Tethys, being roughly as warm as -281 degrees Fahrenheit (-174 degrees Celsius) in sunlit areas and ranging down to -364 degrees Fahrenheit (-220 degrees Celsius) in shaded areas. Also like Dione and Tethys, Rhea has a high reflectivity (or geometric albedo) suggesting a surface composition largely of water ice, which behaves like rock in Rhea's temperature range. In 2008, the Cassini spacecraft found evidence of material orbiting Rhea — the first time rings had been found around a moon. A broad debris disk and at least one ring appear to have been detected by a suite of six instruments on Cassini specifically designed to study the atmospheres and particles around Saturn and its moons."
+	},
+	"related": ["sc_cassini", "sc_voyager_1", "sc_voyager_2"]
+}

@@ -1,0 +1,13 @@
+{
+	"title": "Euclid",
+	"description": {
+		"blurb": "Euclid is a European Space Agency mission to map the geometry of the Universe and better understand dark matter and dark energy, which make up most of the energy budget of the cosmos.",
+		"more": "Euclid will probe the history of the expansion of the Universe and the formation of cosmic structures by measuring the redshift of galaxies out to a value of 2, which is equivalent to seeing back 10 billion years into the past. In this way, Euclid will cover the entire period over which dark energy played a significant role in accelerating the expansion of the Universe."
+	},
+	"dates": {
+		"start": "2023-07-01T15:12:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_jwst"]
+}

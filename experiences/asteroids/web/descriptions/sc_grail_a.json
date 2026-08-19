@@ -1,0 +1,13 @@
+{
+	"title": "GRAIL A",
+	"description": {
+		"blurb": "NASA's GRAIL mission flew twin spacecraft—Ebb and Flow—in tandem around the Moon to map variations in the lunar gravitational field",
+		"more": "As the two spacecraft flew over areas of increasing gravity, the probes moved slightly toward and away from each other, while an instrument measured changes in their relative velocity, providing key information on the Moon’s gravitational field. At the end of the mission, the probes were purposely crashed on the Moon."
+	},
+	"dates": {
+		"start": "2011-09-10T13:08:52",
+		"end": "2012-12-17T22:28:51",
+		"landing": ""
+	},
+	"related": ["moon", "sc_grail_b"]
+}

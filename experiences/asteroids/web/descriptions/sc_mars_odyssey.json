@@ -1,0 +1,13 @@
+{
+	"title": "Mars Odyssey",
+	"description": {
+		"blurb": "Still in orbit around Mars, 2001 Mars Odyssey holds the record for the longest continually active spacecraft in orbit around a planet other than Earth.",
+		"more": "Mars Odyssey was designed to investigate the Martian environment, providing key information on its surface and the radiation hazards future explorers might face. The goal was to map the chemical and mineralogical makeup of Mars as a step to detecting evidence of past or present water and volcanic activity on Mars. One of Mars Odyssey’s most exciting findings came early in the mission. In May 2002, NASA announced that the probe had identified large amounts of hydrogen in the soil, implying the presence of ice below the planet’s surface. During its many years in Martian orbit, Mars Odyssey globally mapped the amount and distribution of the numerous chemical elements and minerals in the Martian surface and also tracked the radiation environment in low Mars orbit, both necessary before humans can effectively explore the Martian surface.\n By mid-2016, the THEMIS instrument had returned more than 208,000 images in visible-light wavelengths and more than 188,000 in thermal-infrared wavelengths."
+	},
+	"dates": {
+		"start": "2001-04-07T15:02:22",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["mars"]
+}

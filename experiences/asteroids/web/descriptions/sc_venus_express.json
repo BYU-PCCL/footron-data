@@ -1,0 +1,12 @@
+{
+	"title": "Venus Express",
+	"description": {
+		"blurb": "The European Space Agency's Venus Express is designed to study the atmosphere of Venus, from the surface to the ionosphere. The mission is reusing the same design as ESA's Mars Express and spare parts from other deep space missions.\n\nSince it reached Venus in April 2006, Venus Express has logged many firsts at our solar system's second planet. One of the most significant findings was signs Venus has been volcanically active in the last three million years -- suggesting the planet may still be geologically active.\n\nThe orbiter also made extensive meteorological maps of Venus, providing measurements of wind fields and temperatures and the chemical composition of the atmosphere. The spacecraft found a striking double-eyed atmospheric vortex that dominates the south pole. It detected water molecules escaping into space, found concrete evidence for lightning in the Venusian atmosphere, and provided infrared glimpses of the hot surface."
+	},
+	"dates": {
+		"start": "2005-11-09T03:33:34",
+		"end": "2015-01-18T15:01:55",
+		"landing": ""
+	},
+	"related": ["venus", "sc_magellan"]
+}

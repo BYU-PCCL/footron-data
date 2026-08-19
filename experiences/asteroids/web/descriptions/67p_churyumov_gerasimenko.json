@@ -1,0 +1,11 @@
+{
+	"title": "67P",
+	"description": {
+		"blurb": "Comet 67P/ Churyumov-Gerasimenko made history as the first comet to be orbited and landed upon by robots from Earth.",
+		"more": "Churyumov-Gerasimenko loops around the Sun in an orbit that crosses those of Jupiter and Mars, approaching but not reaching Earth's orbit. Like most Jupiter Family comets, it is thought to have fallen from the Kuiper Belt, a region beyond Neptune's orbit, as a result of one or more collisions or gravitational tugs. The Rosetta spacecraft, carrying the Philae lander, rendezvoused with this comet in August 2014 and to escorted it on its journey to the inner solar system and back out again. Rosetta is a mission of the European Space Agency (ESA) for which NASA is providing key instruments and support."
+	},
+	"cards": [
+		{ "storyId": "asteroids_missions" }
+	],
+	"related": ["sc_rosetta"]
+}

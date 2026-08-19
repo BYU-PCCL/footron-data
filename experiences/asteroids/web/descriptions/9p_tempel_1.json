@@ -1,0 +1,11 @@
+{
+	"title": "Tempel 1",
+	"description": {
+		"blurb": "Comet 9P/Tempel 1 orbits the sun within the asteroid belt, which lies between the orbits of Mars and Jupiter. Tempel 1 last reached perihelion (closest approach to the sun) in 2016.",
+		"more": "Two missions have encountered this comet: Deep Impact in 2005 and Stardust NExT in in 2011. Deep Impact sent an impactor into Tempel 1, becoming the first spacecraft to eject material from the surface of a comet. Changes in the surface of Tempel 1 were obscured by all the material ejected during and after the collision."
+	},
+	"cards": [
+		{ "storyId": "asteroids_missions" }
+	],
+	"related": ["sc_deep_impact", "sc_deep_impact_impactor", "sc_stardust"]
+}

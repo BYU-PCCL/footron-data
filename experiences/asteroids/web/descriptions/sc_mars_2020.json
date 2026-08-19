@@ -1,0 +1,16 @@
+{
+	"title": "Perseverance",
+	"description": {
+		"blurb": "The Perseverance rover is looking for signs of ancient life and is collecting rock and soil samples for a possible return to Earth by a subsequent Mars mission.",
+		"more": "The rover has a drill to collect core samples of Martian rock and soil, then store them in sealed tubes for pickup by a future mission that would ferry them back to Earth for detailed analysis. Perseverance will also test technologies to help pave the way for future human exploration of Mars. The Mars helicopter (Ingenuity) was deployed from the Perseverance rover and has performed dozens of test flights, becoming the first powered flight on the red planet."
+	},
+	"dates": {
+		"start": "2020-07-30T11:50:00",
+		"end": "",
+		"landing": "2021-02-18T20:55:00"
+	},
+	"cards": [
+		{ "storyId": "mars2020" }
+	],
+	"related": ["mars","sc_mars_science_laboratory","sc_ingenuity"]
+}

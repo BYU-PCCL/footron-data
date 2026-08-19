@@ -1,0 +1,20 @@
+{
+	"jupiter_flyby": {
+		"id": "jupiter_flyby",
+		"title": "Jupiter flyby",
+		"start": "1974-12-01T01:00:00",
+		"target": "jupiter",
+		"rate": 10000,
+		"distance": 0.06,
+		"horizontalOffset": -4
+	},
+	"saturn_flyby": {
+		"id": "saturn_flyby",
+		"title": "Saturn flyby",
+		"start": "1979-08-30T11:00:00",
+		"target": "saturn",
+		"rate": 10000,
+		"distance": 0.06,
+		"horizontalOffset": 4
+	}
+}

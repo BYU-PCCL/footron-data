@@ -1,0 +1,13 @@
+{
+	"title": "Geotail",
+	"description": {
+		"blurb": "Geotail provides information about the way the magnetic envelope surrounding Earth, called the magnetosphere, responds to incoming material and energy from the Sun.",
+		"more": "The Geotail mission was a joint project of Japan’s Institute of Space and Astronautical Science (ISAS) and later, from 2003, the Japan Aerospace Exploration Agency (JAXA) and NASA. The mission was part of the International Solar Terrestrial Physics (ISTP) project, which also included the Wind, Polar, SOHO, and Cluster missions. Geotail’s goal was to study the structure and dynamics of the long tail region of Earth’s magnetosphere, which is created on the nightside of Earth by the solar wind. During active periods, the tail couples with the near-Earth magnetosphere, and often releases energy that is stored in the tail, activating auroras in the polar ionosphere."
+	},
+	"dates": {
+		"start": "1992-07-24T14:26:00",
+		"end": "2022-11-28T00:00:00",
+		"landing": ""
+	},
+	"related": ["earth"]
+}

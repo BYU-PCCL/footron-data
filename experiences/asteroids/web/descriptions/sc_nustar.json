@@ -1,0 +1,13 @@
+{
+	"title": "NuSTAR",
+	"description": {
+		"blurb": "The Nuclear Spectroscopic Telescope Array (NuSTAR) mission has deployed the first orbiting telescopes to focus light in the high energy X-ray region of the electromagnetic spectrum. Our view of the universe in this spectral window has been limited because previous orbiting telescopes have not employed true focusing optics, but rather have used coded apertures that have intrinsically high backgrounds and limited sensitivity.\n\nIn addition to its core science program, NuSTAR will offer opportunities for a broad range of science investigations, ranging from probing cosmic ray origins to studying the extreme physics around collapsed stars to mapping microflares on the surface of the Sun. NuSTAR will also respond to targets of opportunity including supernovae and gamma-ray bursts.",
+		"readmore":""
+	},
+	"dates": {
+		"start": "2012-06-13T16:00:37",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["earth","sc_chandra"]
+}

@@ -1,0 +1,13 @@
+{
+	"title": "EO-1",
+	"description": {
+		"blurb": "Earth Observing-1 (EO-1) was a NASA Earth observation satellite created to develop and validate a number of instrument and spacecraft bus breakthrough technologies.",
+		"more": "It was the first satellite to map active lava flows from space; the first to measure a facility's methane leak from space; and the first to track re-growth in a partially logged Amazon forest from space. EO-1 captured scenes such as the ash after the World Trade Center attacks, the flooding in New Orleans after Hurricane Katrina, volcanic eruptions and a large methane leak in southern California."
+	},
+	"dates": {
+		"start": "2000-11-21T18:24:25",
+		"end": "2017-03-30T00:00:00",
+		"landing": ""
+	},
+	"related": ["earth"]
+}

@@ -1,0 +1,13 @@
+{
+	"title": "Lunar IceCube",
+	"description": {
+		"blurb": "Lunar IceCube is a small satellite orbiter mission to prospect, locate, and estimate the amount and composition of water ice deposits on the Moon for future exploitation by robots or humans. It flew as a secondary payload mission on Artemis 1.",
+		"more": ""
+	},
+	"dates": {
+		"start": "2022-11-16T11:45:33",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["moon", "sc_artemis_1", "sc_biosentinel"]
+}

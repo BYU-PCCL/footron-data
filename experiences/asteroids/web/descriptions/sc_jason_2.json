@@ -1,0 +1,13 @@
+{
+	"title": "Jason-2/OSTM",
+	"description": {
+		"blurb": "Jason-2/OSTM used high-precision ocean altimetry to measure the distance between the satellite and the ocean surface to within a few centimeters.",
+		"more": "The third in a series of sea level missions, Jason-2/Ocean Surface Topography Mission follows the TOPEX/Poseiden and Jason-1 missions. These very accurate observations of variations in sea surface height — also known as ocean topography — provide information about global sea level, the speed and direction of ocean currents, and heat stored in the ocean."
+	},
+	"dates": {
+		"start": "2008-06-20T07:46:25",
+		"end": "2019-10-09T00:00:00",
+		"landing": ""
+	},
+	"related": ["sc_topex-poseidon", "sc_jason_1", "sc_jason_3", "sc_sentinel_6"]
+}

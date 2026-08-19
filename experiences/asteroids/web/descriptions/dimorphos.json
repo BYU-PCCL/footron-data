@@ -1,0 +1,8 @@
+{
+	"title": "Dimorphos",
+	"description": {
+		"blurb": "Dimorphos is an asteroid that is part of a binary system with the larger asteroid Didymos, and has an orbital period of 11.9 hours.",
+		"more": "Discovered in 2003, It measures approximately 160 metres (520 ft) in diameter compared to the larger Didymos, at 780 metres (2,560 ft). The DART mission successfully impacted Dimorphos on September 26th, 2022, in order to test the viability of redirecting the orbit of an asteroid.  The orbital period of Dimorphos around Didymos was changed by approximately half an hour."
+	},
+	"related": ["sc_dart"]
+}

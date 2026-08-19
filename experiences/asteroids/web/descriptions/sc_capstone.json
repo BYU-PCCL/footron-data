@@ -1,0 +1,13 @@
+{
+	"title": "CAPSTONE",
+	"description": {
+		"blurb": "Cislunar Autonomous Positioning System Technology Operations and Navigation Experiment (CAPSTONE) is a lunar orbiter that will test and verify a unique, elliptical orbit that is planned for the Gateway space station.",
+		"more": "As a precursor for Gateway, a Moon-orbiting outpost that is part of NASA’s Artemis program, CAPSTONE will help reduce risk for future spacecraft by validating innovative navigation technologies and verifying the dynamics of this halo-shaped orbit."
+	},
+	"dates": {
+		"start": "2022-06-28T09:55:52",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_artemis_1"]
+}

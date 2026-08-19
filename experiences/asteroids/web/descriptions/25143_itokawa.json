@@ -1,0 +1,8 @@
+{
+	"title": "25143 Itokawa",
+	"description": {
+		"blurb": "25143 Itokawa is a sub-kilometer near-Earth object, and is the first asteroid from which samples were retrieved and brought to Earth.",
+		"more": "The asteroid 25143 Itokawa was discovered on Sept. 26, 1998, by the Lincoln Laboratory Near-Earth Asteroid Research Team at Socorro, New Mexico. The Japanese spacecraft Hayabusa (Japanese for falcon) touched down twice on the asteroid and collected a small amount of dust despite the failure of the mechanism designed for the purpose. It delivered the sample to Earth on the 13th of June, 2010. tokawa belongs to the Apollo asteroids, which are Earth-crossing asteroids and the largest dynamical group of near-Earth objects with nearly 10,000 known members. Itokawa orbits the Sun at a distance of 0.95–1.70 AU once every 18 months, and can pass by Earth as close as 5.1 lunar distances (the distance from the Earth to the moon)."
+	},
+	"related": ["sc_hayabusa"]
+}

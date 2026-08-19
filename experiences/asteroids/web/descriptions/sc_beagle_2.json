@@ -1,0 +1,12 @@
+{
+	"title": "Beagle 2",
+	"description": {
+		"blurb": "The Beagle 2 is a Mars lander initially mounted on the top deck of the Mars Express Orbiter. It was released from the Orbiter on 19 December 2003 on a course to land on Mars at 2:54 UT on 25 December. A point at 10.6 N, 270 W in Isidis Planitia, a large flat region that overlies the boundary between the ancient highlands and the northern plains of Mars, was chosen as the landing site. No signals were received following the scheduled landing and after over a month of attempts at contact the mission was declared lost. A board of inquiry has been appointed to look into the reason for the failure. The lander was expected to operate for about 180 days and an extended mission of up to one martian year (687 Earth days) was considered possible. The Beagle 2 lander objectives were to characterize the landing site geology, mineralogy, geochemistry and oxidation state, the physical properties of the atmosphere and surface layers, collect data on martian meteorology and climatology, and search for signatures of life."
+	},
+	"dates": {
+		"start": "",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_mars_express", "mars"]
+}

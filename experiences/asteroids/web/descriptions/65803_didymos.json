@@ -1,0 +1,11 @@
+{
+	"title": "65803 Didymos",
+	"description": {
+		"blurb": "65803 Didymos is a sub-kilometer asteroid classified as both a potentially hazardous asteroid and a near-Earth object of both the Apollo and Amor group.",
+		"more": "The asteroid was discovered in 1996, by the Spacewatch survey at Kitt Peak, and its small 160-metre minor-planet moon was discovered in 2003, named Dimorphos. Due to its binary nature, it was then named \"Didymos\", the Greek word for twin. The Didymos binary system was the target of the DART mission, which was designed to impact with Dimorphos. The collision occurred on September 26th, 2022, and was a resounding success, changing the orbital period of the smaller moon by approximately thirty minutes."
+	},
+	"cards": [
+		{ "storyId": "asteroids_missions" }
+	],
+	"related": ["sc_dart"]
+}

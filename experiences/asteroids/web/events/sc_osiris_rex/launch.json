@@ -1,0 +1,7 @@
+{
+	"description": {
+		"blurb": "OSIRIS-REx launched on September 8th, 2016 on an Atlas V 441 rocket at Cape Canaveral, Florida."
+	},
+	"related": ["101955_bennu", "earth"],
+	"layers": true
+}

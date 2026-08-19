@@ -1,0 +1,13 @@
+{
+	"title": "Rumba",
+	"description": {
+		"blurb": "Rumba is one of four spacecraft of the Cluster II mission of the European Space Agency, which studies the Earth's magnetosphere.",
+		"more": "The mission is composed of four identical spacecraft flying in a tetrahedral formation. Four spacecraft allow scientists make the 3D, time-resolved measurements needed to create a realistic picture of the complex plasma interactions occurring between regions of the magnetosphere and between the magnetosphere and the solar wind."
+	},
+	"dates": {
+		"start": "2000-08-09T11:13:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_cluster_ii_fm6", "sc_cluster_ii_fm7", "sc_cluster_ii_fm8"]
+}

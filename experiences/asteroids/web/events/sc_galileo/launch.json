@@ -1,0 +1,7 @@
+{
+	"description": {
+		"blurb": "The Galileo mission launched on October 18th, 1989, from the Space Shuttle Atlantis, which was already in orbit around the Earth. The mission sought to become the first spacecraft to enter orbit around Jupiter, and also the first to send a probe down into the atmosphere. The journey to Jupiter took six years."
+	},
+	"related": ["earth"],
+	"layers": true
+}

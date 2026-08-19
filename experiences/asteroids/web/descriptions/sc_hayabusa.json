@@ -1,0 +1,12 @@
+{
+	"title": "Hayabusa",
+	"description": {
+		"blurb": "The Japanese Space Agency sent spacecraft Hayabusa to test a new ion engine and bring back samples of asteroid Itokawa. It landed on the asteroid in November 2005. Its return capsule landed in the Australian Outback in June 2010, making it the first craft to make physical contact with an asteroid and return to Earth."
+	},
+	"dates": {
+		"start": "2003-05-09T04:29:25",
+		"end": "2005-11-12T00:00:00",
+		"landing": "2010-06-13"
+	},
+	"related": ["25143_itokawa"]
+}

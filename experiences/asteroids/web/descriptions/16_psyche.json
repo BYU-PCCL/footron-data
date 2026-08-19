@@ -1,0 +1,11 @@
+{
+	"title": "16 Psyche",
+	"description": {
+		"blurb": "Psyche is one of the largest asteroids in the solar system, and is mostly made of metal.",
+		"more": "One of the most intriguing targets in the main asteroid belt, 16 Psyche is a giant metal asteroid, about three times farther away from the sun than is the Earth. Its average diameter is about 140 miles (226 kilometers) — about one-sixteenth the diameter of Earth’s Moon or about the distance between Los Angeles and San Diego. Unlike most other asteroids that are rocky or icy bodies, scientists think the M-type (metallic) asteroid 16 Psyche is comprised mostly of metallic iron and nickel similar to Earth’s core. Scientists wonder whether Psyche could be an exposed core of an early planet, maybe as large as Mars, that lost its rocky outer layers due to a number of violent collisions billions of years ago. This intriguing asteroid is now the primary target of the Psyche mission. The Psyche spacecraft launched on October 13th, 2023, and will arrive at the asteroid in 2029."
+	},
+	"cards": [
+		{ "storyId": "asteroids_missions" }
+	],
+	"related": ["sc_psyche"]
+}

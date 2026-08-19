@@ -1,0 +1,9 @@
+{
+	"description": {
+		"blurb": "When Cassini flew by Tethys, scientists discovered that its surface had strange red streaks, which remain unexplained.",
+		"more": "Tethys is about 660 miles (about 1,500 kilometers) across and it orbits about 183,000 miles (295,000 kilometers) from Saturn, taking 45.3 hours to circle the planet. The moon is tidally locked - the same side always faces toward Saturn. Cassini found mysterious red streaks running across the moon's surface. they were unseen until a Cassini scientist observed the moon in infrared wavelengths of light. The streaks look as if someone dragged a red crayon across a golf ball, and they don't appear to be related to any physical features of the moon's surface, such as valleys or fractures. They go up mountains and down into craters. If the red streaks are coming from fractures, then the fractures are too small to see at the resolution of Cassini's instruments. Further, the streaks seem to be only in the moon's north, not in the south, and scientists don't yet understand why."
+	},
+	"related": ["tethys", "sc_cassini"],
+	"rate": 60,
+	"distance": 0.045
+}

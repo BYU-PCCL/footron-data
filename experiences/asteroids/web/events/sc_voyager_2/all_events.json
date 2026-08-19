@@ -1,0 +1,61 @@
+{
+	"launch": {
+		"id": "launch",
+		"title": "Voyager 2 Launch",
+		"start": "1977-08-20T14:29:00",
+		"end": "1977-08-20T20:00:00",
+		"target": "earth",
+		"rate": 60,
+		"distance": 0.03
+	},
+	"jupiter": {
+		"id": "jupiter",
+		"title": "Voyager 2 at Jupiter",
+		"start": "1979-07-09T01:00:00",
+		"end": "1979-07-10T07:00:00",
+		"target": "jupiter",
+		"rate": 1200,
+		"horizontalOffset": -3,
+		"distance": 0.06
+	},
+	"saturn": {
+		"id": "saturn",
+		"title": "Voyager 2 at Saturn",
+		"start": "1981-08-25T00:00:00",
+		"end": "1981-08-28T00:00:00",
+		"target": "saturn",
+		"rate": 2400,
+		"distance": 0.06,
+		"horizontalOffset": -8
+	},
+	"uranus": {
+		"id": "uranus",
+		"title": "Voyager 2 at Uranus",
+		"start": "1986-01-23T12:00:00",
+		"end": "1986-01-26T15:00:00",
+		"target": "uranus",
+		"rate": 3600,
+		"horizontalOffset": -16,
+		"distance": 0.06
+	},
+	"neptune": {
+		"id": "neptune",
+		"title": "Voyager 2 at Neptune",
+		"start": "1989-08-24T10:00:00",
+		"end": "1989-08-25T14:00:00",
+		"target": "neptune",
+		"rate": 3600,
+		"horizontalOffset": -6,
+		"verticalOffset": 6,
+		"distance": 0.06
+	},
+	"heliosphere": {
+		"id": "heliosphere",
+		"title": "Voyager 2 leaves the Heliosphere",
+		"start": "2018-11-05T23:00:00",
+		"target": "sun",
+		"horizontalOffset": 0,
+		"verticalOffset": 20,
+		"distance": 10000000000
+	}
+}

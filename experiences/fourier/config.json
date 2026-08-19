@@ -1,0 +1,11 @@
+{
+    "id": "fourier",
+    "title": "Drawing with The Fourier Transform",
+    "description": "Explore the Fourier transform by drawing out any path with nothing but circles.",
+    "action_hints": ["Change the image", "Change the circles", "Build intuition"],
+    "artist": "Christian Price",
+    "type": "web",
+    "lifetime": 240,
+    "layout": "full",
+    "queueable": true
+}

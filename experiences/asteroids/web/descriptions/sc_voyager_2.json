@@ -1,0 +1,16 @@
+{
+	"title": "Voyager 2",
+	"description": {
+		"blurb": "NASA's Voyager 2 is the second spacecraft to enter interstellar space. On Dec. 10, 2018, the spacecraft joined its twin—Voyager 1—as the only human-made objects to enter the space between the stars.",
+		"more": "The twin Voyager 1 and 2 spacecraft are exploring where no spacecraft from Earth has flown before. Continuing on their more-than-40-year journey since their 1977 launches, they each are much farther away from Earth and the sun than Pluto. Voyager 2 entered interstellar space on November 5, 2018 and scientists hope to learn more about this region. Both spacecraft are still sending scientific information about their surroundings through the Deep Space Network, or DSN.\n\n The primary mission was the exploration of Jupiter and Saturn. After making a string of discoveries there — such as active volcanoes on Jupiter's moon Io and intricacies of Saturn's rings — the mission was extended. Voyager 2 went on to explore Uranus and Neptune, and is still the only spacecraft to have visited those outer planets. The adventurers' current mission, the Voyager Interstellar Mission (VIM), will explore the outermost edge of the Sun's domain. And beyond."
+	},
+	"dates": {
+		"start": "1977-08-20T14:29:00",
+		"end": "",
+		"landing": ""
+	},
+	"cards": [
+		{ "storyId": "voyager_grand_tour" }
+	],
+	"related": ["sc_voyager_1","jupiter","saturn","uranus","neptune"]
+}

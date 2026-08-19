@@ -1,0 +1,8 @@
+{
+	"title": "5535 Annefrank",
+	"description": {
+		"blurb": "Annefrank is a main belt asteroid that was visited by the Stardust mission in November of 2002.",
+		"more": "On Nov. 2, 2002, at 04:50 UT, Stardust flew by asteroid 5535 Annefrank at a range of about 1,900 miles (3,078 kilometers). This asteroid was used as a practice run by the Stardust mission for its eventual flyby of the comet Wild 2(81P/Wild). During the encounter, the spacecraft’s dust collectors collected samples while its camera returned 72 images."
+	},
+	"related": ["sc_stardust", "81p_wild_2"]
+}

@@ -1,0 +1,8 @@
+{
+	"title": "Metis",
+	"description": {
+		"blurb": "Metis was discovered in March 1979 by the Voyager science team.",
+		"more": "Orbiting within Io's orbit, which is the innermost of the four largest moons of Jupiter (called the Galilean moons), are four smaller moons named Metis, Adrastea, Amalthea, and Thebe. Metis is the third largest within this grouping and it has a mean radius of about 13.3 miles (21.5 kilometers). Metis orbits 128,000 km from its parent planet Jupiter and it takes 0.295 Earth days to complete one orbit. We do not know the rotational period for Metis, but its orbital period is 5 hours, and it is likely to be in synchronous orbit, keeping the same face pointing towards Jupiter. Since Io orbits about 262,000 miles (422,000) kilometers above Jupiter and, at this close distance, is subjected to extreme tidal flexing from Jupiter's gravity, one would imagine that this even closer satellite would be pulled to pieces. However, because it is so small Metis is relatively immune to the effects of tidal forces. Metis is one of the two closest moons (the other is Adrastea) that orbit inside what is called the synchronous orbit radius of Jupiter. That is, Metis orbits Jupiter faster than Jupiter rotates on its axis. At this distance, Metis' orbit will eventually decay and it will fall into the planet. Metis and Adrastea also orbit inside Jupiter's main ring and are undoubtedly the source of the material for this ring. Amalthea and Thebe provide the material for the Gossamer ring. Originally designated S/1979 J 1, Metis is named for the first wife of Zeus who was swallowed by Zeus while pregnant with their first child."
+	},
+	"related": ["sc_voyager_1"]
+}

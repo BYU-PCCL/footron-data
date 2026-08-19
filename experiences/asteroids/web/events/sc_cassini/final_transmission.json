@@ -1,0 +1,7 @@
+{
+	"description": {
+		"blurb": "This view shows a visualization of Cassini's final transmission to Earth as the spacecraft approached its demise.",
+		"more": "In its final orbit Cassini swung over Saturn's northern hemisphere, then down diagonally across the face of Saturn (from Earth's point of view). The signal traveled at light speed, but Saturn is nearly a billion miles from Earth. So while the signal appears slow from this point of view, it is in fact traveling as fast as nature allows. On Cassini's final plunge into the atmosphere, the spacecraft transmitted its observations toward Earth in real time until Saturn's atmosphere overpowered its stabilizing thrusters. Shortly after that, 19 years and 11 months after launching from Earth, Cassini burned up in Saturn's atmosphere becoming part of the planet itself. Light-speed travel time from Saturn to Earth is nearly an hour and a half, so by the time the last wiggle of Cassini's radio signal reached Earth, the spacecraft will have been gone for more than an hour. The final transmission arrived on Earth around 7:55 a.m. Eastern time (4:45 a.m. Pacific) on Sept. 15, 2017. At that point Cassini's signal went silent, ending a 20-year mission and closing a remarkable chapter in the exploration of our solar system."
+	},
+	"related": ["saturn"]
+}

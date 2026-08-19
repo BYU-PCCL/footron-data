@@ -1,0 +1,8 @@
+{
+	"description": {
+		"blurb": "The Earth flyby occurs as the spacecraft is completing one elliptical orbit around the sun.",
+		"more": "It will boost Juno's velocity by 16,330 miles per hour (about 7.3 kilometers per second), placing the spacecraft on its final trajectory for Jupiter. Closest approach to Earth occurs on Oct. 9, 2013, at an altitude of 310 miles (500 kilometers). The exact time of closest approach will vary by about eight hours on this date, depending on launch date. During the flyby, Juno will pass behind Earth as seen from the sun, causing an interval when Earth blocks the sun's rays from reaching the spacecraft's solar panels. The time in eclipse is about 20 minutes, and represents the only time after Launch Phase when Juno will not receive direct sunlight."
+	},
+	"related": ["earth"],
+	"layers": true
+}

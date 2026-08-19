@@ -1,0 +1,13 @@
+{
+	"title": "SMAP",
+	"description": {
+		"blurb": "The Soil Moisture Active Passive (SMAP) mission is an orbiting observatory that measures the amount of water in the surface soil everywhere on Earth.",
+		"more": "The Soil Moisture Active Passive (SMAP) satellite maps global soil moisture and detects whether soils are frozen or thawed. This mission helps scientists understand the links between Earth's water, energy and carbon cycles; reduce uncertainties in predicting weather and climate; and enhance our ability to monitor and predict natural hazards such as floods and droughts. SMAP is designed to measure soil moisture, every 2-3 days. This permits changes, around the world, to be observed over time scales ranging from major storms to repeated measurements of changes over the seasons.\n\n Everywhere on Earth not covered with water or not frozen, SMAP measures how much water is in the top layer of soil. It also distinguishes between ground that is frozen or thawed. Where the ground is not frozen, SMAP measures the amount of water found between the minerals, rocky material, and organic particles found in soil everywhere in the world (SMAP measures liquid water in the top layer of ground but is not able to measure the ice.)"
+	},
+	"dates": {
+		"start": "2015-01-31T14:22:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["earth"]
+}

@@ -1,0 +1,13 @@
+{
+	"title": "MCubed-2",
+	"description": {
+		"blurb": "MCubed-2 is a CubeSat (a miniaturized satellite) built by students at the University of Michigan in collaboration with NASA.",
+		"more": "MCubed-2, short for Michigan Multipurpose Minisat 2, was designed as a technology demonstrator for a new FPGA-based image processing system intended for a future NASA mission."
+	},
+	"dates": {
+		"start": "2013-12-06",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["earth"]
+}

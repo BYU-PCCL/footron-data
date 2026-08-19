@@ -1,0 +1,13 @@
+{
+	"title": "Explorer 1",
+	"description": {
+		"blurb": "On January 31st, 1958, Explorer 1 became the first satellite launched by the United States of America. It followed the launch the previous year of the Russian satellites Sputnik 1 and 2.",
+		"more": "It was the first spacecraft to detect the Van Allen radiation belt, returning data until its batteries were exhausted after nearly four months. It remained in orbit until 1970."
+	},
+	"dates": {
+		"start": "1958-02-01T03:48:00",
+		"end": "1958-05-23T00:00:00",
+		"landing": ""
+	},
+	"related": []
+}

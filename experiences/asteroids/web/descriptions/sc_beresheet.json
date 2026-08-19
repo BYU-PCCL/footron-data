@@ -1,0 +1,12 @@
+{
+	"title": "Beresheet",
+	"description": {
+		"blurb": "Beresheet is the first ever private mission to attempt to land on the Moon. It is the first Israeli Lunar lander, developed by SpaceIL – an Israeli nonprofit organization. During the landing and on the Lunar Surface, Beresheet will capture HD images and videos, measure the remnant magnetic field of the Moon with a designated Magnetometer (\"SILMAG\") and transmit the data to Earth. Beresheet also carries a Laser Retro Reflector Array for accurate geo-location on the Moon by LRO and other spacecrafts to come.\n\nAside from landing on the Moon and perform scientific experiments, SpaceIL’s collective vision is to create a new \"Apollo Effect\": to inspire the next generation around the world to embrace science, engineering, technology and math."
+	},
+	"dates": {
+		"start": "2019-02-02T01:45:00",
+		"end": "2019-04-19T19:23:00",
+		"landing": ""
+	},
+	"related": ["moon"]
+}

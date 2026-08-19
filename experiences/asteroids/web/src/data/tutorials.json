@@ -1,0 +1,100 @@
+[
+    {
+        "id": "intro",
+        "title": "<small>Welcome to</small><br>Eyes on Asteroids!",
+        "description":"You are looking at a real-time visualization of every known <span class='clickable underline' data-def='asteroid'>asteroid</span> or <span class='clickable underline' data-def='comet'>comet</span> that is classified as a <span class='clickable underline' data-def='neo'>Near-Earth Object (NEO)</span>.<br class=big-br>With asteroids represented as blue points, and comets as white points, our database is updated daily to give you approximately {{getNeoTotal}} NEOs (and counting). Additionally, you can explore most of NASA's asteroid and comet missions (past and present), from Galileo, to Lucy and DART.",
+        "extra": "<h5>Extra fact:</h5><p>Farther from Earth, the full asteroid belt contains over a million members, with the majority lying between Mars and Jupiter.</p>"
+    },
+    {
+        "id": "nav3d",
+        "title": "Navigate 3D like an Expert",
+        "description": {
+            "touch": "One finger controls your orbit in all directions. Pinch zoom for close inspection, large-scale overviews, and everything in-between.",
+            "desktop": "Left mouse click-and-drag controls your orbit in all directions. Scroll zoom for close inspection, macro overviews, and everything in-between."
+        },
+        "extra": {
+            "desktop":"<h5>Secret tip:</h5><p>Use the 'A', 'S', 'D', 'W', 'Z', and 'C' keys only if you're a true expert. Hold the 'shift' key to move even faster. </p>"
+        },
+        "targetSelector": "#pioneer",
+        "mask": {
+            "xSizeMult": 0.6,
+            "ySizeMult": 0.25
+        }
+    },
+    {
+        "id": "labels",
+        "title": "Info on the Fly",
+        "description": "Select any label or icon in the 3D screen to fly to it and bring up an information panel.",
+        "extra":"<h5>Don't get lost:</h5><p>The top-left NASA logo or 'See all asteroids' button will always take you back home.</p>",
+        "targetSelector": "#pioneer",
+        "mask": {
+            "xSizeMult": 0.6,
+            "ySizeMult": 0.25
+        }
+    },
+    {
+        "id": "time",
+        "title": "<small>From 1990 to 2033</small><br>You Control Time.",
+        "description": "Drag the time slider left to go backwards, or right to go forwards in time. The LIVE button will always return you to the present time.",
+        "extra": "<h5>A little trick:</h5><p>To go even faster, zoom out and try again.</p>",
+        "targetSelector": "#time-slider-container"
+    },
+    {
+        "id": "learn",
+        "title": "Learn by Scrolling",
+        "description":"Select 'Learn' to access three different scrollable stories about asteroids and comets, including a tour through NASA's historic missions.",
+        "targetSelector": "nav.navigation div:nth-child(1).clickable button",
+        "mask": {
+            "xSizeMult": 0.7,
+            "ySizeMult": 0.7
+        }
+    },
+    {
+        "id": "watch",
+        "title": "Keep an Eye Out!",
+        "description":"Select the 'Asteroid Watch' option to see the next five closest approaches to Earth, complete with a countdown.",
+        "extra":"<h5>Hint:</h5><p>Don't forget to play with that time slider!</p>",
+        "targetSelector": "nav.navigation div:nth-child(2).clickable button",
+        "mask": {
+            "xSizeMult": 0.7,
+            "ySizeMult": 0.7
+        }
+    },
+    {
+        "id": "filters",
+        "title": "Filter your View",
+        "description":"Select 'Filters' to see just the comets, or just the asteroids, or just the <span class='clickable underline' data-def='pho'>Potentially Hazardous Objects (PHOs)</span>.",
+        "targetSelector": "nav.navigation div:nth-child(3).clickable button",
+        "mask": {
+            "xSizeMult": 0.7,
+            "ySizeMult": 0.7
+        }
+    },
+    {
+        "id": "search",
+        "title": "Looking for Something?",
+        "description": "Type it in the search bar to look through our entire NEO database.",
+        "targetSelector": ".search>span.icon-search",
+        "mask": {
+            "xSizeMult": 0.5,
+            "ySizeMult": 0.5
+        }
+    },
+    {
+        "id": "settings",
+        "title": "Fine Tuning",
+        "description": "Use the settings menu to toggle display layers, incrementally zoom, change the lighting when the sun is not enough, and go full-screen.",
+        "alternateDescription": "Use the settings menu to toggle display layers, incrementally zoom, and change the lighting when the sun is not enough.",
+        "extra": "<h5>Just in case:</h5><p>The info icon will take you back here if you ever need a recap.</p>",
+        "targetSelector": "div.settings",
+        "mask": {
+            "xSizeMult": 0.5
+        }
+    },
+    {
+        "id": "complete",
+        "title": "Dare Mighty Things",
+        "description": "You are now armed with all the knowledge to explore Eyes on Asteroids like a pro. Happy Learning!",
+        "extra": "<h5>One last secret:</h5><p>Watch out for any underlined text; it may lead you down a rabbit hole of space knowledge...</p>"
+    }
+]

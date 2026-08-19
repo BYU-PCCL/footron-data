@@ -1,0 +1,8 @@
+{
+	"description": {
+		"blurb": "Scientists have three key indicators for determining whether the Voyager spacecraft have reached interstellar space.",
+		"more": "The three key indicators for determining whether the Voyager spacecraft have reached interstellar space are: 1) Outside Particles - An increase and leveling off of high-energy particles coming in from far outside our solar system.2) Inside Particles - A drop to near-zero of low-energy particles that originate from inside the solar bubble. 3) A shift in the direction of the magnetic field or measurements of the plasma environment."
+	},
+	"related": ["sc_voyager_2"],
+	"layers": true
+}

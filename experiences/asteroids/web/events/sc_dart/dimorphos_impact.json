@@ -1,0 +1,6 @@
+{
+	"description": {
+		"blurb": "The DART spacecraft will impact Dimorphos nearly head-on, shortening the time it takes the small asteroid moonlet to orbit Didymos by several minutes. The impulse of energy that DART delivers to the Didymos binary asteroid system is low and cannot disrupt the asteroid, and Didymos's orbit does not intersect Earth's at any point in current predictions. Furthermore, the change in Dimorphos's orbit is designed to bring its orbit closer to Didymos. The DART mission is a demonstration of capability to respond to a potential asteroid impact threat, should one ever be discovered."
+	},
+	"related": ["65803_didymos", "dimorphos"]
+}

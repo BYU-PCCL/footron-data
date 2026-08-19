@@ -1,0 +1,8 @@
+{
+	"title": "19P Borrelly",
+	"description": {
+		"blurb": "19P/Borrelly is a periodic comet, which was visited by the spacecraft Deep Space 1 in 2001.",
+		"more": "With a shape resembling a chicken leg, the nucleus of comet 19P/Borrelly is approximately 5 miles (8 kilometers) long. The nucleus is inside a much larger cloud of gas and dust known as the \"coma.\" Borrelly follows an elliptical orbit around the Sun, looping from inside the orbit of Mars to outside the orbit of Jupiter and back again. It is a \"Jupiter-family comet,\" with an orbit period of less than 20 years and one ds1that has been significantly modified by the gravity of the gas giant planet through close passages. It takes 6.9 years for Borrelly to orbit the Sun once. The comet last reached perihelion (closest approach to the Sun) in 2015. </p> Deep Space 1 encountered comet Borrelly on Sept. 22, 2001. Flying by a speed of 10.3 miles (16.6 kilometers) per second (more than 37,000 mph, or almost 60,000 kph), Deep Space 1 traveled just 1,349 miles (2,171 kilometers) from Borrelly's nucleus. This spacecraft captured the best pictures of any comet's nucleus at the time and collected other valuable scientific data as well."
+	},
+	"related": ["sc_deep_space_1"]
+}

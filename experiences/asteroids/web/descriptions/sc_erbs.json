@@ -1,0 +1,12 @@
+{
+	"title": "ERBS",
+	"description": {
+		"blurb": "NASA's Earth Radiation Budget Satellite (ERBS) was designed to investigate how energy from the Sun is absorbed and re-radiated by the Earth. Understanding this process helps reveal patterns in Earth's weather. One of the longest-running spacecraft missions to date, ERBS was launched on October 5, 1984 on the Space Shuttle Challenger and retired on October 14, 2005. The spacecraft was expected to have a two-year operation life, but ultimately, the mission provided scientific data about the Earth's ozone layer for more than two decades.\n\nWhat's more, ERBS observations have also been used to determine how human activities such as the use of chlorofluorocarbons (CFCs) and the burning of fossil fuels affect Earth's radiation balance. Data on the ozone layer provided by ERBS was key in the international community's decision-making process during the Montreal Protocol Agreement, which has resulted in a near elimination of CFCs in industrialized countries. It was ERBS data, in part, that led to the understanding that CFCs deplete atmospheric ozone concentrations."
+	},
+	"dates": {
+		"start": "1984-10-05T22:18:00",
+		"end": "2005-10-14T00:00:00",
+		"landing": ""
+	},
+	"related": ["sun", "earth"]
+}

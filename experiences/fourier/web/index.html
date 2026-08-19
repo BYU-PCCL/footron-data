@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>FOURIER</title>
+  <link rel="icon" href="data:," /> Prevents favicon.ico 404
+  <link rel="stylesheet" href="css/odometer-theme-default.css" />
+  <link href="css/styles.css" rel="stylesheet" type="text/css" />
+  <script type="text/javascript" src="./js/footron-messaging.development.js"></script>
+</head>
+
+<body>
+  <div id="slideDisplay"></div>
+  <div id="attribution"></div>
+  <div class="canvasContainer leftContainer fullscreen">
+    <canvas id="leftCanvas" class="sketch"></canvas>
+  </div>
+  <div class="canvasContainer rightContainer minimized">
+    <canvas id="rightCanvas" class="sketch"></canvas>
+  </div>
+  <script src="./js/odometer.min.js"></script>
+  <script type="module" src="./js/main.js"></script>
+  <script type="module" src="./js/dev.js"></script>
+  <!-- Uncomment this script to convert any SVGs on the page into data for the experience -->
+  <!-- <script type="module" src="./js/get-points.js"></script> -->
+</body>
+
+</html>

@@ -1,0 +1,8 @@
+{
+	"title": "Kerberos",
+	"description": {
+		"blurb": "Kerberos was discovered on June 28, 2011 by a large team led by Mark Showalter using the Hubble Space Telescope.",
+		"more": "Pluto's tiny moon Kerberos appears to be smaller than scientists expected and has a highly-reflective surface, counter to predictions prior to the July 2015 flyby of the NASA's New Horizons spacecraft. The new data show that Kerberos appears to have a double-lobed shape, with the larger lobe approximately 5 miles (8 kilometers) across and the smaller lobe approximately 3 miles (5 kilometers) across. Scientists speculate from its unusual shape that Kerberos could have been formed by the merger of two smaller objects. The reflectivity of Kerberos' surface is similar to that of Pluto's other small moons (approximately 50 percent) and strongly suggests Kerberos, like the others, is coated with relatively clean water ice. Kerberos is located between the orbits of Nix and Hydra, which Hubble discovered in 2005. Charon was discovered in 1978 at the U.S. Naval Observatory and first resolved using Hubble in 1990 as a separate body from Pluto. Originally designated S/2011 (134340) 1 (and sometime referred to as P4), Kerberos is named after the three-headed dog of Greek mythology."
+	},
+	"related": ["sc_new_horizons"]
+}

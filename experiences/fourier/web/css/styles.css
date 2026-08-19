@@ -1,0 +1,144 @@
+@font-face {
+  font-family: "Urbanist";
+  src: url("./Urbanist-Medium.ttf") format("truetype");
+}
+
+html,
+body {
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  background-color: black;
+  font-family: 'Urbanist';
+}
+
+.inProgress {
+  z-index: 1000;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  height: 200px;
+  margin: auto;
+  text-align: center;
+  color: white;
+  font-family: 'Urbanist';
+}
+
+h1 {
+  font-size: 100px;
+}
+
+h2 {
+  font-size: 50px;
+}
+
+canvas {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: black;
+}
+
+.canvasContainer {
+  top: 0;
+  height: 100vh;
+  position: fixed;
+  width: 50%;
+  transition: all 0.5s ease;
+}
+
+.canvasContainer.fullscreen {
+  width: 100%;
+  left: 0;
+}
+
+.leftContainer {
+  left: 0;
+}
+
+.leftContainer.fullscreen {
+  left: 0;
+  width: 100%
+}
+
+.leftContainer.minimized {
+  left: -50%;
+}
+
+.rightContainer {
+  left: 50%;
+}
+
+.rightContainer.minimized {
+  left: 100%
+}
+
+#leftCanvas {
+  background-color: black;
+}
+
+#rightCanvas {
+  background-color: black;
+}
+
+#slideDisplay {
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  transition: opacity 1s;
+  z-index: 999;
+  position: absolute;
+  top: 1em;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 33%;
+  font-size: 2em;
+  text-align: center;
+}
+
+#slideDisplay.hidden {
+  opacity: 0%;
+}
+
+#attribution {
+  font-size: 2em;
+  position: absolute;
+  bottom: 1em;
+  opacity: 0.5;
+  color: #fff;
+  right: 1em;
+  z-index: 999;
+  transition: all 1s ease-in-out;
+  opacity: 100%;
+}
+
+#attribution.hidden {
+  opacity: 0;
+}
+
+.info-panel {
+  display: inline-block;
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  padding: 5px 10px;
+  font-family: monospace;
+  font-Size: 32px;
+  border-radius: 5px;
+  color: #e7eff380;
+}
+
+.od-container {
+  text-align: center;
+  display: inline-block;
+}
+
+.odometer {
+  font-size: 32px;
+  font-weight: bold;
+}

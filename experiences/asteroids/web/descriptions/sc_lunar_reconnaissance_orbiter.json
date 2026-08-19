@@ -1,0 +1,13 @@
+{
+	"title": "Lunar Reconnaissance Orbiter",
+	"description": {
+		"blurb": "The Lunar Reconnaissance Orbiter (LRO) was launched in 2009 on the first U.S. mission to the Moon in over 10 years.",
+		"more": "LRO’s primary goal was to make a 3D map of the Moon’s surface from lunar polar orbit as part of a high-resolution mapping program to identify landing sites and potential resources, to investigate the radiation environment, and to prove new technologies in anticipation of future automated and human missions to the surface of the Moon.The LRO instruments return global data, such as day-night temperature maps, a global geodetic grid, high resolution color imaging and the moon's UV albedo. However there is particular emphasis on the polar regions of the moon where continuous access to solar illumination may be possible and the prospect of water in the permanently shadowed regions at the poles may exist."
+	},
+	"dates": {
+		"start": "2009-06-18T21:32:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sc_lcross", "moon", "sc_lunar_prospector", "sc_ladee"]
+}

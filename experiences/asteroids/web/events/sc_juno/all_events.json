@@ -1,0 +1,46 @@
+{
+	"launch": {
+		"id": "launch",
+		"title": "Juno Launch",
+		"start": "2011-08-05T17:24:00",
+		"target": "earth",
+		"distance": 0.07,
+		"rate": 5,
+		"horizontalOffset": -25
+	},
+	"earth_flyby": {
+		"id": "earth_flyby",
+		"title": "Earth Flyby",
+		"start": "2013-10-09T16:55:00",
+		"target": "earth",
+		"distance": 0.2,
+		"rate": 300,
+		"horizontalOffset": 5
+	},
+	"deep_space_manuevers": {
+		"id": "deep_space_manuevers",
+		"title": "Deep Space Maneuvers",
+		"start": "2012-08-30T22:30:00"
+	},
+	"jupiter_orbit_insertion": {
+		"id": "jupiter_orbit_insertion",
+		"title": "Jupiter Orbit Insertion",
+		"start": "2016-07-04T14:30:00",
+		"end": "2016-07-05T04:45:00",
+		"target": "jupiter",
+		"distance": 0.1,
+		"rate": 1500,
+		"horizontalOffset": 1
+	},
+	"joi_burn": {
+		"id": "joi_burn",
+		"title": "Jupiter Orbit Insertion Burn",
+		"start": "2016-07-05T02:29:50",
+		"end": "2016-07-05T03:05:00",
+		"target": "jupiter",
+		"distance": 0.05,
+		"rate": 5,
+		"verticalOffset": -50,
+		"horizontalOffset": 5
+	}
+}

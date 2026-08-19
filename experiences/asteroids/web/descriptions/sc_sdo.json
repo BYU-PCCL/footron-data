@@ -1,0 +1,13 @@
+{
+	"title": "Solar Dynamics Observatory",
+	"description": {
+		"blurb": "The Solar Dynamics Observatory (SDO) is the first mission to be launched for NASA's Living With a Star (LWS) Program, a program designed to understand the causes of solar variability and its impacts on Earth.",
+		"more": "SDO is designed to help us understand the Sun's influence on Earth and Near-Earth space by studying the solar atmosphere on small scales of space and time and in many wavelengths simultaneously."
+	},
+	"dates": {
+		"start": "2010-02-11T15:23:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["sun"]
+}

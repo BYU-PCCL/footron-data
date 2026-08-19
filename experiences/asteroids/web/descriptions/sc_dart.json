@@ -1,0 +1,21 @@
+{
+	"title": "DART",
+	"description": {
+		"blurb": "<a href='https://dart.jhuapl.edu/' target='_blank'>DART</a>, or Double Asteroid Redirection Test, was the first attempt to change the course of an asteroid with a kinetic impact.",
+		"more": "An on-orbit demonstration of asteroid deflection was a key test that NASA and other agencies wished to perform before any actual need is present. The DART mission was NASA's demonstration of kinetic impactor technology, impacting an asteroid to adjust its speed and path. The targeted system is composed of two asteroids: the larger asteroid Didymos (diameter: 780 meters, 0.48 miles), and the smaller moonlet asteroid, Dimorphos (diameter: 160 meters, 525 feet), which orbits Didymos. On September 26th, 2022, the DART spacecraft impacted Dimorphos nearly head-on, shortening the time it takes the small asteroid moonlet to orbit Didymos by several minutes."
+	},
+	"dates": {
+		"start": "2021-11-24T06:20:00",
+		"end": "2022-09-26T23:14:20",
+		"landing": ""
+	},
+	"cards": [
+		{ "storyId": "asteroids_missions" }
+	],
+	"featuredEvents": {
+		"initial": [
+			{ "eventId": "dimorphos_impact", "title": "Impact with Dimorphos" }
+		]
+},
+	"related": ["65803_didymos", "dimorphos"]
+}

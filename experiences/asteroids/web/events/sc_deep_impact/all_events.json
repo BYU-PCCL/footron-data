@@ -1,0 +1,30 @@
+{
+	"launch": {
+		"id": "launch",
+		"title": "Deep Impact Launch",
+		"start": "2005-01-12T19:23:00",
+		"target": "earth",
+		"rate": 300,
+		"distance": 0.05,
+		"horizontalOffset": 5
+	},
+	"impactor_separation": {
+		"id": "impactor_separation",
+		"title": "Impactor Probe Separation",
+		"start": "2005-07-03T05:59:55",
+		"target": "sc_deep_impact_impactor",
+		"verticalOffset": 5,
+		"horizontalOffset": 5,
+		"distance": 0.017,
+		"visual": true
+	},
+	"hartley_flyby": {
+		"id": "hartley_flyby",
+		"title": "A Visit to Comet 103P/Hartley",
+		"start": "2010-11-04T14:00:00",
+		"target": "103p_hartley_2",
+		"distance": 0.05,
+		"horizontalOffset": 2,
+		"visual": true
+	}
+}

@@ -1,0 +1,12 @@
+{
+	"title": "PATH",
+	"description": {
+		"blurb": "PATH (Precision and All-Weather Temperature and Humidity) will provide the first geostationary platform for a microwave spectrometer and infrared sounder in tandem. The mission will analyze temperature and water vapor in three dimensions, as well as sea surface temperature and precipitation."
+	},
+	"dates": {
+		"start": "TBD",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["earth"]
+}

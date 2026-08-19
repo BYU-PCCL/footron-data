@@ -1,0 +1,12 @@
+{
+	"title": "FUSE 1",
+	"description": {
+		"blurb": "FUSE (the Far Ultraviolet Spectroscopic Explorer) represented the next generation, high-orbit, ultraviolet space observatory covering the wavelength range of 90.5-119.5 nm. The primary objective of FUSE was to use high-resolution spectroscopy at far ultraviolet wavelengths to study the origin and evolution of the lightest elements (hydrogen and deuterium) created shortly after the Big Bang, and the forces and processes involved in the evolution of galaxies, stars and planetary systems. FUSE is a part of NASA's Origins program. The spacecraft was launched as a joint US-Canada-France project. Only one previous mission, Copernicus, has given us this far-ultraviolet region of the electromagnetic spectrum. However, FUSE will provide sensitivity some ten thousand times greater than Copernicus."
+	},
+	"dates": {
+		"start": "1999-06-24T15:44:00",
+		"end": "2007-10-18T00:00:00",
+		"landing": ""
+	},
+	"related": ["sc_hubble_space_telescope"]
+}

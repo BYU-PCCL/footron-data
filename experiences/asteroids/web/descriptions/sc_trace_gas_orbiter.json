@@ -1,0 +1,13 @@
+{
+	"title": "Trace Gas Orbiter",
+	"description": {
+		"blurb": "The ExoMars Trace Gas Orbiter (ExoMars TGO) is searching for methane and other trace gases in the Martian atmosphere that could be evidence of possible biological or geological activity. The orbiter is the first in a series of joint missions between the European Space Agency (ESA) and Roscosmos, the Russian space agency.",
+		"more": "The ExoMars Trace Gas Orbiter (TGO) was designed to search for trace gases in the Martian atmosphere such as methane, water vapor, nitrogen oxides and acetylene. These gases could provide evidence for possible biological or geological activity on Mars. Organisms on Earth release methane during digestion, although geological processes such as the oxidation of minerals can also release methane.\n\n ExoMars also will monitor seasonal changes in the Martian atmosphere and will look for water-ice beneath the surface. Information gathered during the mission will help decide landing sites for future ESA missions."
+	},
+	"dates": {
+		"start": "2016-03-14T09:31:00",
+		"end": "",
+		"landing": ""
+	},
+	"related": ["mars"]
+}

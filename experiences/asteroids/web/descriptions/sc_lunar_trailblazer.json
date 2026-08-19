@@ -1,0 +1,13 @@
+{
+	"title": "Lunar Trailblazer",
+	"description": {
+		"blurb": "Lunar Trailblazer will map the distribution of the different forms of water that exist on the surface of the Moon. That will help scientists to better understand the lunar water cycle and inform future human missions as to where supplies of water may be found and extracted as a resource.",
+		"more": "While it is known that water exists on the lunar surface, little is known about its form, abundance, or distribution. The water may be locked inside rock and regolith – broken rock and dust – or it may collect as surface water ice inside the Moon’s permanently shadowed craters. In cold shadows, water molecules may also settle for short periods as frost: When the Sun moves across the sky during the lunar day, the shadows move, cycling these water molecules into the Moon’s exosphere and moving them to other cold places where they can settle once more as a frost. <p>Lunar Trailblazer will use two cutting-edge instruments to help scientists better understand where these different forms of water are located, how the thermal properties of the lunar surface affect their distribution, and how the different forms of water change over time."
+	},
+	"dates": {
+		"start": "2024-03-01T12:00:00",
+		"end":"",
+		"landing": ""
+	},
+	"related": ["moon", "sc_lunar_reconnaissance_orbiter", "sc_lunar_prospector"]
+}

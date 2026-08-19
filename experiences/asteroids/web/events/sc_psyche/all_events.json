@@ -1,0 +1,13 @@
+{
+    "arrival": {
+		"id": "arrival",
+		"title": "Psyche arrives at 16 Psyche Asteroid",
+		"start": "2029-08-17T01:02:15",
+		"target": "16_psyche",
+		"distance": 0.085,
+		"visual": true,
+		"horizontalOffset": 0,
+        "verticalOffset": 0,
+		"rate": 1
+	}
+}
