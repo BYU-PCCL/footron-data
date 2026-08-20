@@ -5,24 +5,18 @@ experiences = [ "pi", "pi-circle", "pi-walk", "pi-triangle" ]
 [interactive]
 title = "Interactive Experiences"
 experiences = [
-  "asteroids",
   "fourier",
-  "ifs",
-  "hilbert",
   "wind",
   "style-transfer",
   "fluid",
   "your-campus",
-  "sorting",
-  "butterfly",
-  "maze-generation",
-  "bus-bunching",
   "opinion-dynamics",
   "planes",
   "huffman",
   "gradient-descent",
   "twindragon",
-  "live-dashboard"
+  "live-dashboard",
+  "snowflake"
 ]
 
 [game]
@@ -76,6 +70,13 @@ experiences = [
 [archive]
 title = "Archived Experiences"
 experiences = [
+  "maze-generation",
+  "bus-bunching",
+  "asteroids",
+  "sorting",
+  "butterfly",
+  "ifs",
+  "hilbert",
   "mirror-of-whimsy",
   "ai-artist",
   "hilbert",

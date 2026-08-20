@@ -1,0 +1,15 @@
+{
+  "id": "snowflake",
+  "type": "web",
+  "title": "Snow Crystal Sim",
+  "description": "Grow a snowflake from a speck of ice and watch the weather decide what it becomes.",
+  "long_description": "Every snowflake is a record of the sky it fell through. Its shape is set, moment by moment, by the temperature and the amount of water vapour in the air around it, and those conditions change as it falls.<br><br>This grows one from a single mesoscopic prism of ice, using real attachment kinetics for how fast each kind of face grows and a mesoscopic cellular automaton for the pattern they make. The sizes, thicknesses and fall speeds on the panel are physical, not scaled to look nice.<br><br>From your phone, set the weather: how high the crystal starts, how cold it is at the ground, how fast the air cools with height, how much vapour there is, and how hard the wind is pushing up. Change something halfway down and the crystal changes what it is doing -- start a column in warm air, lift it into cold air, and grow a plate on each end of it.",
+  "artist": "David Wingate",
+  "action_hints": [
+    "change the weather and watch the flake change",
+    "to create your own flake",
+  ],
+  "layout": "full",
+  "lifetime": 240,
+  "queueable": true
+}

@@ -1,0 +1,4006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Snow Crystal Sim</title>
+<script>
+// Error surfacing, registered before anything else so that a failure anywhere
+// below is visible on the wall instead of leaving a black screen. The overlay
+// element does not exist yet at this point, so it is looked up lazily.
+function showError(message) {
+    console.error(message);
+    var overlay = document.getElementById('error-overlay');
+    if (!overlay) {
+        document.addEventListener('DOMContentLoaded', function () { showError(message); });
+        return;
+    }
+    overlay.textContent = String(message);
+    overlay.style.display = 'block';
+}
+window.addEventListener('error', function (e) {
+    showError((e.error && e.error.stack) || e.message || String(e));
+});
+window.addEventListener('unhandledrejection', function (e) {
+    showError('Unhandled promise rejection: ' + ((e.reason && e.reason.stack) || e.reason));
+});
+</script>
+<style>
+@font-face {
+    font-family: 'Urbanist';
+    src: url('./fonts/Urbanist-Light.ttf') format('truetype');
+    font-weight: 300;
+    font-display: block;
+}
+@font-face {
+    font-family: 'Urbanist';
+    src: url('./fonts/Urbanist-Medium.ttf') format('truetype');
+    font-weight: 500;
+    font-display: block;
+}
+
+:root {
+    /* One place to retune the whole palette. The wall is viewed from across a
+       hallway, so everything is high-contrast against a very dark ground. */
+    --ink:        #eaf4ff;
+    --ink-dim:    #9db6d4;
+    --ice:        #8fd8ff;
+    --ice-warm:   #ffd9a8;
+    --panel-line: rgba(140, 190, 240, 0.16);
+
+    /* Panel width as a fraction of the viewport. The WebGL side reads the same
+       number (UI_FRACTION in the script) so the crystal stays centred in the
+       space the panel leaves behind. */
+    --panel-w: 31vw;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #04070f;
+    color: var(--ink);
+    font-family: 'Urbanist', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-weight: 300;
+    -webkit-font-smoothing: antialiased;
+    cursor: none;
+}
+
+/* The single WebGL canvas draws the winter background AND the crystal; every
+   DOM element below floats on top of it. */
+#gl {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* ---------------------------------------------------------------- titling */
+
+#title-block {
+    position: fixed;
+    left: 3.2vw;
+    top: 4.0vh;
+    z-index: 5;
+    pointer-events: none;
+}
+
+#title-block h1 {
+    margin: 0;
+    font-weight: 300;
+    font-size: clamp(24px, 2.5vw, 54px);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink);
+    text-shadow: 0 0 30px rgba(120, 190, 255, 0.35);
+}
+
+#title-block h2 {
+    margin: 0.35em 0 0;
+    font-weight: 300;
+    font-size: clamp(12px, 1.02vw, 22px);
+    letter-spacing: 0.055em;
+    color: var(--ink-dim);
+    max-width: 30vw;
+    line-height: 1.5;
+}
+
+/* --------------------------------------------------------------- caption */
+
+/* The rotating line of explanation under the crystal. In auto mode it narrates
+   what the simulation is doing right now; in interactive mode it reacts to
+   what the visitor just changed. */
+#caption {
+    position: fixed;
+    left: 8.2vw;
+    bottom: 4.4vh;
+    width: min(52vw, calc(100vw - var(--panel-w) - 8vw));
+    z-index: 5;
+    pointer-events: none;
+    font-size: clamp(13px, 1.16vw, 26px);
+    line-height: 1.62;
+    color: var(--ink-dim);
+    opacity: 0;
+    transition: opacity 700ms ease;
+    text-shadow: 0 2px 22px rgba(0, 0, 0, 0.85);
+}
+
+#caption.visible { opacity: 1; }
+#caption b { color: var(--ice); font-weight: 500; }
+
+/* ------------------------------------------------------------ mode badge */
+
+#mode-badge {
+    position: fixed;
+    left: 8.2vw;
+    bottom: calc(4.4vh + clamp(74px, 8.2vh, 150px));
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    gap: 0.7em;
+    font-size: clamp(10px, 0.72vw, 15px);
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    pointer-events: none;
+    transition: color 500ms ease;
+}
+
+#mode-badge .dot {
+    width: 0.62em;
+    height: 0.62em;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 12px currentColor;
+    animation: pulse 3.4s ease-in-out infinite;
+}
+
+#mode-badge.live { color: var(--ice); }
+#mode-badge.live .dot { animation-duration: 1.5s; }
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.35; transform: scale(0.85); }
+    50%      { opacity: 1;    transform: scale(1.1); }
+}
+
+/* -------------------------------------------------------------- UI panel */
+
+#panel {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: var(--panel-w);
+    z-index: 4;
+    padding: clamp(16px, 2.2vh, 40px) clamp(16px, 1.7vw, 40px);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(6px, 1.05vh, 20px);
+    background: linear-gradient(200deg,
+                rgba(10, 22, 42, 0.30) 0%,
+                rgba(7, 15, 30, 0.62) 45%,
+                rgba(5, 11, 23, 0.78) 100%);
+    backdrop-filter: blur(22px) saturate(115%);
+    -webkit-backdrop-filter: blur(22px) saturate(115%);
+    border-left: 1px solid var(--panel-line);
+    box-shadow: -40px 0 90px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+}
+
+.panel-rule {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--panel-line) 12%, var(--panel-line) 88%, transparent);
+    flex: 0 0 auto;
+}
+
+.section-label {
+    font-size: clamp(9px, 0.62vw, 14px);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: rgba(157, 182, 212, 0.62);
+    flex: 0 0 auto;
+}
+
+/* -- the identified crystal ------------------------------------------- */
+
+#habit-block { flex: 0 0 auto; }
+
+#habit-name {
+    font-weight: 500;
+    font-size: clamp(19px, 1.86vw, 42px);
+    line-height: 1.14;
+    letter-spacing: 0.012em;
+    color: var(--ink);
+    margin-top: 0.22em;
+    transition: color 600ms ease;
+}
+
+#habit-note {
+    margin-top: 0.42em;
+    font-size: clamp(11px, 0.86vw, 19px);
+    line-height: 1.5;
+    color: var(--ink-dim);
+    min-height: 3.0em;
+}
+
+/* -- live readouts ----------------------------------------------------- */
+
+#stats {
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: clamp(4px, 0.75vh, 14px) clamp(6px, 0.6vw, 16px);
+}
+
+.stat { min-width: 0; }
+
+.stat .k {
+    font-size: clamp(8.5px, 0.56vw, 12.5px);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(157, 182, 212, 0.58);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stat .v {
+    font-size: clamp(14px, 1.12vw, 25px);
+    font-weight: 500;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.stat .v small {
+    font-size: 0.62em;
+    font-weight: 300;
+    color: var(--ink-dim);
+    margin-left: 0.22em;
+}
+
+/* -- the two diagrams -------------------------------------------------- */
+
+.chart-wrap {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.chart-wrap canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#nakaya-wrap { flex: 1.35 1 0; }
+#profile-wrap { flex: 1 1 0; }
+
+/* -- parameter bars ---------------------------------------------------- */
+
+#params {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(3px, 0.55vh, 10px);
+}
+
+.param {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    gap: 0.3em 0.6em;
+}
+
+.param .pname {
+    font-size: clamp(10px, 0.76vw, 17px);
+    color: var(--ink-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.param .pval {
+    font-size: clamp(11px, 0.82vw, 18px);
+    font-weight: 500;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.param .track {
+    grid-column: 1 / -1;
+    height: clamp(3px, 0.42vh, 7px);
+    border-radius: 99px;
+    background: rgba(120, 165, 215, 0.15);
+    overflow: hidden;
+    position: relative;
+}
+
+.param .fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    border-radius: 99px;
+    background: linear-gradient(90deg, rgba(90, 170, 230, 0.55), var(--ice));
+    box-shadow: 0 0 12px rgba(143, 216, 255, 0.55);
+    transition: width 320ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.param.touched .fill {
+    background: linear-gradient(90deg, rgba(255, 190, 120, 0.55), var(--ice-warm));
+    box-shadow: 0 0 14px rgba(255, 217, 168, 0.6);
+}
+
+/* -- footer ------------------------------------------------------------ */
+
+#panel-foot {
+    flex: 0 0 auto;
+    font-size: clamp(9.5px, 0.66vw, 14px);
+    line-height: 1.55;
+    letter-spacing: 0.04em;
+    color: rgba(157, 182, 212, 0.5);
+}
+
+/* ------------------------------------------------------------ overlays */
+
+#error-overlay {
+    display: none;
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 99;
+    padding: 18px 24px;
+    background: rgba(120, 20, 30, 0.92);
+    color: #fff;
+    font-family: monospace;
+    font-size: 15px;
+    white-space: pre-wrap;
+    max-height: 45vh;
+    overflow: auto;
+}
+</style>
+</head>
+<body>
+
+<canvas id="gl"></canvas>
+
+<div id="title-block">
+    <h1>Snow&nbsp;Crystal&nbsp;Sim</h1>
+    <h2>Every snowflake is a record of the sky it fell through. Change the sky, and you change the snowflake.</h2>
+</div>
+
+<div id="mode-badge"><span class="dot"></span><span id="mode-text">Growing on its own</span></div>
+<div id="caption"></div>
+
+<div id="panel">
+    <div id="habit-block">
+        <div class="section-label">Crystal forming</div>
+        <div id="habit-name">Nucleating&hellip;</div>
+        <div id="habit-note"></div>
+    </div>
+
+    <div class="panel-rule"></div>
+
+    <div id="stats"></div>
+
+    <div class="panel-rule"></div>
+
+    <div class="section-label">Where it is growing &mdash; the Nakaya diagram</div>
+    <div class="chart-wrap" id="nakaya-wrap"><canvas id="nakaya"></canvas></div>
+
+    <div class="section-label">Its fall through the air</div>
+    <div class="chart-wrap" id="profile-wrap"><canvas id="profile"></canvas></div>
+
+    <div class="panel-rule"></div>
+
+    <div class="section-label">The sky you can change</div>
+    <div id="params"></div>
+
+    <div id="panel-foot">Point your phone at the wall&rsquo;s QR code to take control of the weather.</div>
+</div>
+
+<div id="error-overlay"></div>
+
+<script src="./footron-messaging.development.js"></script>
+<script>
+"use strict";
+/* ====================================================================== *\
+ *  SNOW CRYSTAL LAB
+ *
+ *  A snowflake is a weather record. Its shape is set, moment by moment, by
+ *  the temperature and the amount of water vapour in the air around it as it
+ *  falls. This page grows one from scratch under conditions the visitor
+ *  controls, and shows the two diagrams that explain what is happening.
+ *
+ *  There are three pieces of physics here, and they are deliberately kept
+ *  separate because they answer three different questions:
+ *
+ *    A. ATMOSPHERE (this file)    -- what air is the crystal sitting in?
+ *       Saturation vapour pressures over water and over ice, from which the
+ *       supersaturation the crystal actually sees is computed.
+ *
+ *    B. ATTACHMENT KINETICS (this file) -- how fast does each kind of face
+ *       grow? Ice grows on a faceted surface only when a new molecular
+ *       terrace nucleates, which gives an attachment coefficient
+ *       alpha = exp(-sigma0/sigma_surface) whose barrier sigma0 differs
+ *       between the basal (top/bottom) and prism (side) faces and varies
+ *       with temperature. That difference -- and nothing else -- is why a
+ *       crystal comes out as a flat plate at -15 C and as a slender column
+ *       at -6 C. Combined with vapour diffusion this reproduces the Nakaya
+ *       morphology diagram.  [Libbrecht 2019, 2021]
+ *
+ *    C. THE SHAPE (part 3, on the GPU) -- given how fast the faces grow, what
+ *       pattern do they make? A mesoscopic cellular automaton on the
+ *       triangular lattice with a quasi-liquid boundary layer, following
+ *       Gravner & Griffeath, "Modeling snow crystal growth II" (Physica D
+ *       237, 2008). It is the only published model that produces faceting
+ *       and branching together, which is what real snow crystals do.
+ *
+ *  A and B set the numbers -- real micrometres, real minutes, real fall
+ *  speeds. C sets the pattern. Keeping them apart means the sizes reported
+ *  on screen are physical, not scaled to look nice.
+\* ====================================================================== */
+
+/* -- small helpers used throughout ------------------------------------- */
+const clamp01 = (x) => Math.min(1, Math.max(0, x));
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+
+/* ---------------------------------------------------------------------- *\
+ *  A.  ATMOSPHERE
+\* ---------------------------------------------------------------------- */
+
+const RV = 461.5;           // specific gas constant of water vapour, J/(kg K)
+const KB = 1.380649e-23;    // Boltzmann, J/K
+const M_H2O = 2.9915e-26;   // mass of one water molecule, kg
+const N_ICE = 3.07e28;      // number density of molecules in ice, 1/m^3
+const D_VAP = 2.0e-5;       // diffusivity of vapour in air at 1 bar, m^2/s
+const RHO_ICE = 917;        // kg/m^3
+const G = 9.81;
+
+// Buck (1996) saturation vapour pressures, in pascals. Accurate to a few
+// tenths of a percent from 0 C down past -60 C, which is the whole range a
+// snow crystal ever grows in.
+function eWater(tc) {
+    return 611.21 * Math.exp((18.678 - tc / 234.5) * (tc / (257.14 + tc)));
+}
+function eIce(tc) {
+    return 611.15 * Math.exp((23.036 - tc / 333.7) * (tc / (279.82 + tc)));
+}
+
+// Supersaturation relative to ICE when the air is exactly at water
+// saturation -- i.e. inside a cloud full of supercooled droplets. This is
+// the ceiling on how fast a snow crystal can ever grow, and it is the curve
+// drawn across the top of the Nakaya diagram.
+//
+// It is small near 0 C (2% at -2 C) and large when cold (16% at -15 C), which
+// on its own explains why crystals near freezing stay small and simple.
+function sigmaWaterSat(tc) {
+    return eWater(tc) / eIce(tc) - 1;
+}
+
+// The y axis of the classic Nakaya diagram is not a percentage but the excess
+// water vapour density in grams per cubic metre, so convert.
+function excessDensity(tc, sigma) {
+    const tk = tc + 273.15;
+    return (sigma * eIce(tc)) / (RV * tk) * 1000;
+}
+
+// The speed at which ice would grow if every molecule that struck the surface
+// stuck to it. Everything below is a fraction of this. About 200 um/s at
+// -15 C, falling steeply as the air gets colder and drier.
+function vKin(tc) {
+    const tk = tc + 273.15;
+    const cSat = eIce(tc) / (KB * tk);                       // molecules/m^3
+    const vTh = Math.sqrt(8 * KB * tk / (Math.PI * M_H2O));  // m/s
+    return cSat * vTh / (4 * N_ICE) * 1e6;                   // um/s
+}
+
+// The diffusion screening length. A facet whose size is r competes with the
+// vapour field around it; the smaller the facet, the more easily vapour
+// reaches it. alpha_diffusion = X0/r, with X0 = 4D/v_thermal ~ 0.15 um at one
+// bar. This single number is why small crystals grow fast and big ones stall,
+// and why the thin edge of a plate outruns its broad face.
+function screeningLength(tc) {
+    const tk = tc + 273.15;
+    const vTh = Math.sqrt(8 * KB * tk / (Math.PI * M_H2O));
+    return 4 * D_VAP / vTh * 1e6;   // um
+}
+
+// US-standard-ish air density, used only for terminal fall speed.
+function airDensity(altitude) {
+    return 1.225 * Math.exp(-altitude / 8400);
+}
+
+/* ---------------------------------------------------------------------- *\
+ *  B.  ATTACHMENT KINETICS
+ *
+ *  Growth on a faceted ice surface is limited by how often a new molecular
+ *  terrace nucleates, giving
+ *
+ *        alpha(T, sigma_surf) = exp( -sigma0(T) / sigma_surf )
+ *
+ *  where sigma0 is a nucleation barrier set by the terrace step energy. The
+ *  barrier falls as temperature rises, because surface premelting blurs the
+ *  step edge.
+ *
+ *  On top of that smooth trend sit two "SDAK dips" -- Libbrecht's
+ *  structure-dependent attachment kinetics. On a *narrow* facet, molecules
+ *  can diffuse over the corner from the neighbouring face, which lowers the
+ *  barrier dramatically, but only over a limited band of temperature. There
+ *  is one dip on the basal face near -5 C and one on the prism face near
+ *  -15 C. They are what flips the crystal between columns and plates three
+ *  times as you cool from 0 C to -30 C, and reproducing that flip is the
+ *  whole point of the model.
+ *
+ *  The dip edges below are placed at the three habit transitions that have
+ *  been measured over and over since Nakaya: -3 C, -10 C and -22 C.
+\* ---------------------------------------------------------------------- */
+
+const logistic = (x) => 1 / (1 + Math.exp(-x));
+
+// Broad-facet barriers, in units of supersaturation. Both rise as the air gets
+// colder; the prism barrier rises faster, which by itself would make
+// everything below -6 C a column.
+//
+// The absolute size of the gap between them matters as much as its sign, and
+// it has to be large. A snow crystal is quickly big enough that both faces are
+// limited by how fast vapour reaches them rather than by how fast they can
+// absorb it, and diffusion has no preferred direction -- so once both faces
+// are diffusion-limited the crystal grows equally in every direction and its
+// proportions stop changing. Only a barrier difference of a couple of times
+// the available supersaturation keeps one face kinetically throttled long
+// enough for the shape to run away, which is what gives the hundred-to-one
+// plates and the ten-to-one needles that are actually observed. These values
+// put the two barriers at roughly one to three times water saturation, which
+// is the range Libbrecht and Rickerby measured.
+const sigma0PrismBroad = (t) => 0.0195 * t;
+const sigma0BasalBroad = (t) => 0.160 + 0.0060 * t;
+
+// The two SDAK dips, as smooth windows in temperature.
+//   basal dip, -3.3 C .. -9.3 C  -> fast basal growth -> needles and columns
+//   prism dip, -9.0 C .. -21.8 C -> fast prism growth -> thin plates, dendrites
+function basalDip(t) { return 0.90 * logistic((t - 3.3) / 0.9) * logistic((9.3 - t) / 1.0); }
+function prismDip(t) { return 0.80 * logistic((t - 9.0) / 1.6) * logistic((21.8 - t) / 1.8); }
+
+function sigma0Basal(tc) { const t = -tc; return sigma0BasalBroad(t) * (1 - basalDip(t)); }
+function sigma0Prism(tc) { const t = -tc; return sigma0PrismBroad(t) * (1 - prismDip(t)); }
+
+/*  Solve one facet's growth for the supersaturation it actually sees.
+ *
+ *  Two things must agree in steady state: the rate vapour arrives by
+ *  diffusion, and the rate the surface can absorb it.
+ *
+ *      absorbed  =  exp(-sigma0/s) * s
+ *      arriving  =  alphaDiff * (sigmaInf - s)
+ *
+ *  Both sides rise monotonically with s, so there is exactly one crossing and
+ *  bisection finds it in a few dozen iterations. Returning the growth speed
+ *  from the arriving side keeps it exact even when the surface is starved.
+ */
+function facetGrowth(tc, sigmaInf, facetSize, sigma0) {
+    if (sigmaInf <= 0) return { v: 0, sigmaSurf: 0, alpha: 0 };
+    const X0 = screeningLength(tc);
+    const alphaDiff = X0 / Math.max(facetSize, 0.05);   // facetSize in um
+    let lo = 0, hi = sigmaInf;
+    for (let i = 0; i < 40; i++) {
+        const s = 0.5 * (lo + hi);
+        const absorbed = Math.exp(-sigma0 / s) * s;
+        const arriving = alphaDiff * (sigmaInf - s);
+        if (absorbed < arriving) lo = s; else hi = s;
+    }
+    const s = 0.5 * (lo + hi);
+    return {
+        v: alphaDiff * (sigmaInf - s) * vKin(tc),   // um/s
+        sigmaSurf: s,
+        alpha: Math.exp(-sigma0 / Math.max(s, 1e-9))
+    };
+}
+
+/*  The whole growth state at one instant.
+ *
+ *  radius   -- current crystal radius in um (sets how starved the broad basal
+ *              faces are)
+ *  halfThick-- current half-thickness in um (sets how starved the thin prism
+ *              edge is; a thinner edge reaches further into fresh vapour,
+ *              which is exactly why plates run away thinner as they widen)
+ */
+function growthState(tc, sigmaInf, radius, halfThick) {
+    const t = -tc;
+
+    /*  Edge sharpening.
+     *
+     *  A facet does not grow uniformly. New molecular terraces nucleate at its
+     *  corners and spread inward, and where over-the-corner diffusion has
+     *  lowered the nucleation barrier -- the same SDAK effect that produces
+     *  the two dips -- the facet sharpens to an edge far narrower than the
+     *  crystal is thick, and that edge reaches out past the depleted air
+     *  around the crystal. Libbrecht calls the runaway version of this the
+     *  Edge-Sharpening Instability, and it is why a plate keeps getting
+     *  relatively thinner instead of settling at some fixed proportion.
+     *
+     *  Without it the model stalls. Once a crystal is more than a micrometre
+     *  or two across both of its faces are limited by how fast vapour reaches
+     *  them, diffusion has no preferred direction, and the proportions freeze
+     *  wherever they happened to be -- around three to one, whatever the
+     *  temperature says. Sharpening the face that the kinetics already favour
+     *  is what lets the hundred-to-one plates and the twenty-to-one needles
+     *  develop, and it applies to whichever face is in its dip, so it never
+     *  changes which way the crystal goes -- only how far it gets.
+     */
+    const sharpPrism = 1 + 1.3 * (prismDip(t) / 0.80);
+    const sharpBasal = 1 + 1.3 * (basalDip(t) / 0.90);
+
+    const prism = facetGrowth(tc, sigmaInf, halfThick / sharpPrism, sigma0Prism(tc));
+    const basal = facetGrowth(tc, sigmaInf, radius / sharpBasal, sigma0Basal(tc));
+    return { prism, basal };
+}
+
+/* ---------------------------------------------------------------------- *\
+ *  C.  FROM PHYSICS TO THE PATTERN
+ *
+ *  Gravner & Griffeath's automaton takes seven numbers. They are not free
+ *  knobs here: each is tied to something the kinetics above already decided,
+ *  so moving a slider on a phone moves them all together in a physically
+ *  coherent way.
+\* ---------------------------------------------------------------------- */
+
+function automatonParams(tc, sigmaInf, prism) {
+    const t = -tc;
+
+    // Two different questions, and both matter.
+    //
+    // "How close is this to a cloud?" -- the supersaturation against what this
+    // air could hold at water saturation. That is what decides whether a face
+    // is growing fast enough to break into branches, because the instability
+    // is about growth rate relative to the smoothing that opposes it.
+    //
+    // "How much water is there in absolute terms?" -- what the automaton's own
+    // vapour density has to represent. At -2 C a cloud offers two per cent
+    // supersaturation and at -25 C it offers twenty-eight, and a crystal at
+    // -2 C in a cloud is starved even though the air is as wet as it can be.
+    const nearCloud = clamp01(sigmaInf / Math.max(sigmaWaterSat(tc), 1e-6));
+    const wet = clamp01(sigmaInf / 0.20);
+
+    // How strongly this air wants the crystal to facet, from the nucleation
+    // barrier on the prism face measured against the supersaturation actually
+    // at that face. It is near zero around -15 C, where the barrier collapses,
+    // and large near -5 C and below -22 C, where it does not.
+    const barrier = sigma0Prism(tc) / Math.max(prism.sigmaSurf, 1e-6);
+    const facet = Math.pow(clamp01((barrier - 2.2) / 6.5), 0.8);
+
+    /*  beta -- how much harder it is to stick to a flat or protruding piece of
+     *  boundary than into a valley. This is the automaton's single most
+     *  important number and it is what decides the whole family the crystal
+     *  belongs to. Growing crystals to a fixed radius across the parameter
+     *  space puts the boundaries at roughly:
+     *
+     *      beta ~ 1.1        fernlike stellar dendrite
+     *      beta ~ 1.3        stellar dendrite
+     *      beta ~ 1.6        sectored / stellar plate
+     *      beta ~ 1.9+       simple hexagonal plate
+     *
+     *  Two things push it up. Cold or warm air with a high nucleation barrier
+     *  facets the crystal directly. Dry air facets it too, for a different
+     *  reason: a flat face only breaks into branches when it is growing fast
+     *  enough for a bump to outrun the rest of it, and in dry air nothing
+     *  grows fast. Both effects are real and they compound, which is why the
+     *  branched crystals live in one small corner of the Nakaya diagram --
+     *  near -15 C, near water saturation -- exactly as observed.
+     */
+    const facetPush = clamp01(0.62 * facet + 0.45 * (1 - nearCloud));
+    const beta = 1.06 + 1.54 * facetPush;
+
+    /*  rho -- background vapour density, i.e. how much water there is to work
+     *  with. Straightforwardly the supersaturation.
+     *
+     *  The cap is a hard requirement of the model rather than a stylistic
+     *  choice. Below beta ~ 2.85 rho, every surface cell collects enough to
+     *  attach within a step or two, the crystal advances faster than the
+     *  vapour around it can be drawn down, and it grows a featureless disc
+     *  straight to the wall of the parcel in a few hundred steps. Above that
+     *  line growth is limited by how fast vapour arrives, slows as the crystal
+     *  widens, and the tens of thousands of steps of faceting and branching
+     *  that make the model worth using actually happen. Every parameter set
+     *  published with the paper sits just above this line -- (.65, 1.75),
+     *  (.36, 1.09), (.38, 1.06) -- which is the paper saying the same thing.
+     */
+    // The floor is practical rather than physical: below about 0.35 the
+    // automaton needs hundreds of thousands of steps to reach a size worth
+    // drawing, and the shape it eventually draws is the same plain hexagon it
+    // had after a few thousand. What little vapour there really is shows up in
+    // the growth rate, which part 2 owns, not in the pattern.
+    const rho = Math.min(0.40 + 0.24 * Math.pow(wet, 0.9), beta / 2.85);
+
+    // kappa -- the share of arriving vapour that freezes outright instead of
+    // joining the quasi-liquid film. Fast growth deposits ice faster than the
+    // film can spread, and the starved tips that result sprout side branches.
+    const kappa = 0.004 + 0.030 * nearCloud;
+
+    // mu -- quasi-liquid mass evaporating back into the air. The premelted
+    // film is thick near 0 C and vanishes when cold, so this is large just
+    // below freezing. Its effect is to smooth away tip instabilities, which is
+    // part of why crystals near 0 C are plain hexagons.
+    const mu = 0.030 + 0.05 * Math.exp(-t / 6.5);
+
+    // gamma -- ice itself sublimating from the boundary layer. Always tiny.
+    const gamma = 1e-5;
+
+    // alpha, theta -- the knife-edge / edge-sharpening instability, in which a
+    // facet that has thinned enough starts advancing much faster. It is driven
+    // by the same over-the-corner diffusion as the prism SDAK dip, so it is
+    // switched on by the same window of temperature. This is what fills the
+    // bays between branches with thin faceted webbing.
+    //
+    // theta is scaled by rho because it is compared against a sum of vapour
+    // densities, so what matters is how far the patch has been drawn down
+    // relative to the air around it, not an absolute number. It also has a
+    // sharp threshold: above about 0.35 rho the rule fires while there is
+    // still vapour about, every notch fills as fast as it forms, and the
+    // crystal comes out a solid hexagon whatever else is set.
+    const esi = prismDip(t) / 0.80;
+    const alphaCA = 0.15 + 0.18 * esi;
+    const thetaCA = rho * (0.16 + 0.16 * esi);
+
+    return { rho, beta, kappa, mu, gamma, alphaCA, thetaCA, facet, wet, nearCloud };
+}
+
+/* ---------------------------------------------------------------------- *\
+ *  D.  FALLING
+ *
+ *  Terminal velocity from a straight drag balance using the crystal's own
+ *  measured mass and projected area, both read back from the GPU. Plates
+ *  fall face-down and columns fall lengthwise, which is what they really do,
+ *  so the drag coefficient and projected area are picked accordingly.
+\* ---------------------------------------------------------------------- */
+
+function terminalVelocity(massKg, areaM2, altitude, columnar) {
+    if (massKg <= 0 || areaM2 <= 0) return 0.05;
+    const cd = columnar ? 1.0 : 1.4;
+    const v = Math.sqrt(2 * massKg * G / (airDensity(altitude) * cd * areaM2));
+    return clamp(v, 0.02, 4.0);
+}
+
+/* ---------------------------------------------------------------------- *\
+ *  E.  NAMING WHAT CAME OUT
+ *
+ *  The international (Magono & Lee) classification is a continuum with names
+ *  hung on it, so the boundaries below are chosen to match what a person
+ *  looking at the wall would call the thing in front of them.
+\* ---------------------------------------------------------------------- */
+
+const HABITS = {
+    needle: ['Needle',
+        'Long, thin and almost one-dimensional. Near -6 C only the tiny end faces grow, so the crystal shoots along one axis and never widens.'],
+    hollowColumn: ['Hollow Column',
+        'A hexagonal tube. Vapour reaches the rims of the end faces before it reaches their centres, so each end hollows out into a conical pit as it grows.'],
+    solidColumn: ['Solid Column',
+        'A stubby hexagonal pencil of ice. Cold, dry air grows the end faces faster than the sides, but too slowly for the ends to hollow.'],
+    cappedColumn: ['Capped Column',
+        'A column that fell into warmer air and sprouted a plate on each end. Two crystals in one, and a direct record of two different layers of cloud.'],
+    plate: ['Simple Hexagonal Plate',
+        'The plainest snow crystal there is. With little vapour to work with the six faces advance evenly and stay flat, and the crystal never becomes unstable.'],
+    sectored: ['Sectored Plate',
+        'A plate with ridges running to its six corners. The corners reach vapour first, so they run ahead and leave raised ribs marking where the edge used to be.'],
+    stellarPlate: ['Stellar Plate',
+        'Six broad arms with flat, faceted ends. Just unstable enough for the corners to break away, but too faceted for them to branch.'],
+    stellarDendrite: ['Stellar Dendrite',
+        'The snowflake of every photograph. The flat face is unstable, the six corners run away as branches, and each branch sprouts its own side branches.'],
+    fern: ['Fernlike Stellar Dendrite',
+        'The largest and fastest-growing snow crystal, and the one that makes powder. Side branches sprout side branches until the whole thing is more air than ice.'],
+    thick: ['Thick Plate',
+        'Halfway between a plate and a column. Near -10 C the two faces grow at almost the same rate and the crystal has no strong preference at all.'],
+    germ: ['Crystal Germ',
+        'Barely started. A few tens of micrometres of ice, still too small to have chosen a shape.'],
+    melted: ['Melted',
+        'It fell into air above freezing. The crystal is gone; what reaches the ground here is rain.'],
+    sublimed: ['Sublimating',
+        'The air here is drier than ice can tolerate. The crystal is evaporating away from its edges and rounding off.']
+};
+
+function classify(m) {
+    if (m.melted) return HABITS.melted;
+    // Judged on the largest dimension, not the width: a needle is a perfectly
+    // finished crystal that happens to be twenty micrometres across.
+    if (Math.max(m.radiusUm, m.halfThickUm) < 18) return HABITS.germ;
+    if (m.sublimating) return HABITS.sublimed;
+
+    const aspect = m.halfThickUm / m.radiusUm;   // >1 columnar, <<1 plate-like
+
+    if (m.cappedFraction > 0.12 && aspect > 0.45) return HABITS.cappedColumn;
+
+    if (aspect > 1.0) {
+        if (aspect > 3.5) return HABITS.needle;
+        return m.hollowness > 0.18 ? HABITS.hollowColumn : HABITS.solidColumn;
+    }
+    if (aspect > 0.42) return HABITS.thick;
+
+    // fill = how much of the hexagon that circumscribes the crystal is ice.
+    // A plate fills nearly all of it, a fern almost none.
+    const fill = m.fill;
+    if (fill > 0.80) return HABITS.plate;
+    if (fill > 0.58) return HABITS.sectored;
+    if (fill > 0.34) return HABITS.stellarPlate;
+    if (fill > 0.17) return HABITS.stellarDendrite;
+    return HABITS.fern;
+}
+
+/* ====================================================================== *\
+ *  PART 3 -- THE SHAPE, ON THE GPU
+ *
+ *  Gravner & Griffeath's mesoscopic automaton, run as fragment shaders.
+ *
+ *  Every cell carries four numbers:
+ *      a  attached?          1 if this cell is part of the crystal
+ *      b  boundary mass      water held in the quasi-liquid film on the surface
+ *      c  crystal mass       ice
+ *      d  diffusive mass     water vapour
+ *
+ *  and one full step is: diffuse the vapour, freeze some of what reached the
+ *  surface, decide which surface cells have collected enough to become ice,
+ *  evaporate a little back, jiggle the vapour field. That is the entire model.
+ *  Faceting comes out of the attachment thresholds, branching comes out of the
+ *  diffusion, and the interplay of the two is what makes a snowflake.
+ *
+ *  Two extra fields ride along that are not in the original 2D model, because
+ *  a snowflake is not flat:
+ *      hOut  how far this cell reaches along the c axis (half-thickness, um)
+ *      hIn   the inner edge of the ice, so a cell can be a shell rather than
+ *            solid -- this is what lets a column hollow out at its ends, and
+ *            what lets a plate grow on the end of an existing column and give
+ *            a capped column
+ *  Both are advanced with the real basal growth speed computed in part 2.
+ *
+ *  The lattice is triangular, stored in a square texture: the six neighbours
+ *  of (i,j) are the four axis directions plus (1,-1) and (-1,1). Physical
+ *  position is i*(1,0) + j*(1/2, sqrt(3)/2), which makes all six neighbours
+ *  exactly one unit away.
+\* ====================================================================== */
+
+const VERT_SRC = `#version 300 es
+in vec2 aPos;
+void main() { gl_Position = vec4(aPos, 0.0, 1.0); }
+`;
+
+// Shared preamble: lattice geometry and the symmetric noise field.
+const LATTICE_GLSL = `
+const vec2 E1 = vec2(1.0, 0.0);
+const vec2 E2 = vec2(0.5, 0.86602540378);
+
+ivec2 nb(int i) {
+    // The six nearest neighbours in texel space.
+    return i == 0 ? ivec2( 1,  0)
+         : i == 1 ? ivec2(-1,  0)
+         : i == 2 ? ivec2( 0,  1)
+         : i == 3 ? ivec2( 0, -1)
+         : i == 4 ? ivec2( 1, -1)
+         :          ivec2(-1,  1);
+}
+
+vec2 latticePos(ivec2 p, int n) {
+    vec2 ij = vec2(p) - vec2(float(n - 1) * 0.5);
+    return ij.x * E1 + ij.y * E2;
+}
+
+/*  Environmental fluctuation.
+ *
+ *  Real crystals grow in air that is never perfectly uniform, and those
+ *  fluctuations are what decide where a side branch appears. But all six arms
+ *  of a real snowflake see almost the same history, which is why they come out
+ *  matching -- the arms are only ~2 mm apart in a cloud whose eddies are
+ *  metres across.
+ *
+ *  So instead of independent random noise per cell, this is a wave field built
+ *  from three wavevectors 60 degrees apart. Rotating by 60 degrees permutes
+ *  those three vectors up to a sign, and cosine does not care about sign, so
+ *  the field is exactly invariant under the crystal's own symmetry group. The
+ *  six arms therefore stay identical to each other while the pattern along any
+ *  one arm stays irregular -- which is what real snowflakes do, and for the
+ *  same reason: the arms are two millimetres apart in air whose eddies are
+ *  metres across, so they share a history.
+ *
+ *  The cosines must have no phase offset. Adding one destroys the symmetry
+ *  exactly (cos(-x+phi) is not cos(x+phi)) and the crystal comes out lopsided.
+ *  Variety between crystals therefore comes from the three wavelengths, which
+ *  are drawn fresh each time and drift slowly as the crystal falls.
+ *
+ *  What the field perturbs is the attachment threshold, not the vapour. The
+ *  original model jitters the vapour itself, which is fine when the jitter is
+ *  random and independent every step because it averages away. A field that is
+ *  fixed in space cannot average away: multiplying the same cells by 1.02
+ *  every step for a thousand steps multiplies them by e^20, and the
+ *  fluctuation stops being a fluctuation and becomes an inexhaustible source
+ *  of water. The crystal then grows a solid disc to the wall of the parcel in
+ *  a few hundred steps. Perturbing the threshold instead changes where ice
+ *  prefers to attach without inventing any.
+ */
+float symNoise(vec2 P, vec3 freq) {
+    const vec2 K1 = vec2( 1.0, 0.0);
+    const vec2 K2 = vec2( 0.5, 0.86602540378);
+    const vec2 K3 = vec2(-0.5, 0.86602540378);
+    float s = 0.0, w = 1.0, tw = 0.0;
+    for (int i = 0; i < 3; i++) {
+        float f = freq[i];
+        s += w * (cos(f * dot(P, K1)) + cos(f * dot(P, K2)) + cos(f * dot(P, K3))) / 3.0;
+        tw += w;
+        w *= 0.62;
+    }
+    return s / tw;
+}
+`;
+
+/* ---------------------------------------------------------------------- *\
+ *  Pass 1 of a step -- DIFFUSION
+ *
+ *  Vapour spreads by a seven-point average over the cell and its neighbours.
+ *  Attached cells are not part of the vapour field, so a neighbour that is ice
+ *  contributes the cell's own value instead: a reflecting wall, which is the
+ *  statement that vapour cannot pass through ice.
+ *
+ *  The parcel of air is sealed, and it is round: vapour reflects off a circle
+ *  inscribed in the lattice rather than off the lattice's own edges. The
+ *  lattice is a rhombus, whose symmetry is not the crystal's, so once the
+ *  depletion halo reached its walls the six arms would start to disagree. A
+ *  circle has every symmetry, so they do not.
+ *
+ *  Sealing it matters as much as rounding it. That matters more than it sounds:
+ *  with a reservoir at the edge instead, vapour is replenished as fast as the
+ *  crystal can eat it, no depletion halo ever forms, and the crystal grows a
+ *  cell every couple of steps until it hits the wall. Sealed, the crystal has
+ *  to wait for vapour to reach it, growth self-limits within a few hundred
+ *  steps, and the tens of thousands of steps of slow, faceted, branch-by-branch
+ *  development that make the model worth using actually happen.
+ *
+ *  The neighbour census is written out at the same time because the next pass
+ *  needs to know, for each cell, how many attached neighbours it has and
+ *  whether its neighbours are surface cells -- and gathering that again there
+ *  would mean reaching two rings out.
+\* ---------------------------------------------------------------------- */
+
+const DIFFUSE_SRC = `#version 300 es
+precision highp float;
+${LATTICE_GLSL}
+
+uniform highp sampler2D uState;
+uniform float uRho;
+uniform float uBoxR;      // radius of the sealed parcel, lattice units
+uniform int uN;
+
+layout(location = 0) out vec4 outState;
+layout(location = 1) out vec4 outFlags;
+
+void main() {
+    ivec2 p = ivec2(gl_FragCoord.xy);
+    vec4 s = texelFetch(uState, p, 0);
+
+    // Outside the parcel there is nothing at all. Without this the corners of
+    // the lattice keep their starting vapour untouched forever, because they
+    // are never diffused -- and the moment a branch tip reaches one it finds a
+    // pocket of air nothing has drawn on, and takes off.
+    if (length(latticePos(p, uN)) > uBoxR) {
+        // Any ice that made it out here stays -- deleting it would carve a
+        // circle out of the crystal -- but it holds no water, so nothing new
+        // can attach beyond the wall.
+        outState = vec4(s.x, 0.0, s.z, 0.0);
+        outFlags = vec4(0.0, 0.0, 0.0, 0.0);
+        return;
+    }
+
+    float sum = s.w;
+    int nAtt = 0;
+    for (int i = 0; i < 6; i++) {
+        ivec2 q = p + nb(i);
+        bool wall = q.x < 0 || q.y < 0 || q.x >= uN || q.y >= uN
+                    || length(latticePos(q, uN)) > uBoxR;
+        vec4 t = wall ? s : texelFetch(uState, q, 0);  // reflect off the wall
+        if (t.x > 0.5) { nAtt++; sum += s.w; }         // ...and off ice
+        else           { sum += t.w; }
+    }
+
+    float d = (s.x > 0.5) ? 0.0 : sum / 7.0;
+    outState = vec4(s.x, s.y, s.z, d);
+    outFlags = vec4(float(nAtt), (s.x < 0.5 && nAtt > 0) ? 1.0 : 0.0, 0.0, 0.0);
+}
+`;
+
+/* ---------------------------------------------------------------------- *\
+ *  Pass 2 of a step -- FREEZE, ATTACH, MELT, AND GROW IN THICKNESS
+ *
+ *  The attachment rule is the heart of it. A surface cell joins the crystal
+ *  when it has collected enough water, and "enough" depends on how sheltered
+ *  the spot is:
+ *
+ *    1 or 2 attached neighbours (a tip, or a flat face)  needs beta  (> 1)
+ *    3 attached neighbours      (a notch)                needs 1
+ *    4 or more                  (a deep pocket)          fills immediately
+ *
+ *  That single graded threshold is what makes ice facet. A flat face is hard
+ *  to extend, so the face stays flat and sharp; a notch fills itself in. How
+ *  far beta sits above 1 sets how strongly faceted the crystal is, and part 2
+ *  ties it to the real nucleation barrier on the prism face.
+ *
+ *  The alpha/theta clause is the knife-edge instability: once the vapour in a
+ *  neighbourhood has been drawn down below theta, a cell that has thinned out
+ *  can attach on much less water. A very thin plate needs very little ice to
+ *  advance, so it advances fast. This is what fills the bays between branches
+ *  with thin faceted webbing, and it happens in the real crystal too.
+\* ---------------------------------------------------------------------- */
+
+const UPDATE_SRC = `#version 300 es
+precision highp float;
+${LATTICE_GLSL}
+
+uniform highp sampler2D uState;    // after diffusion
+uniform highp sampler2D uFlags;    // neighbour census from the diffusion pass
+uniform highp sampler2D uHeight;   // hOut, hIn, age, unused
+
+uniform float uBeta, uKappa, uMu, uGamma, uAlphaCA, uThetaCA;
+uniform float uRho;
+uniform float uNoise;
+uniform vec3  uFreq;
+uniform int   uN;
+
+// A fresh cell starts as a plate at least this thick, hanging off the ice it
+// joined, in um.
+uniform float uSeedH;
+// How thick a sheet of new ice the present conditions build, in um: the
+// thickness a plate growing here would settle at, which is the crystal's own
+// radius times the ratio of its basal to its prism growth speed.
+//
+// New ice spreads outward from the corners of the existing crystal. If the
+// face it is spreading along is no taller than this, the whole face advances
+// together and the crystal simply gets wider. If the face is much taller --
+// the side of a column, say -- only a sheet this thick advances at each end,
+// and a gap is left between them. Since the field is mirrored about the
+// midplane, one sheet grows at each end at once. That is a capped column, and
+// it needs no special case: a column that falls into air where plates are
+// favoured grows them by itself.
+uniform float uPlateT;
+// 1 when the crystal is already tall enough that its side face cannot advance
+// as a whole, so new ice arrives only as a sheet at each end.
+uniform float uColumnar;
+// Sublimation: ice per step removed from exposed surface cells when the air is
+// drier than ice can stand, or when it is above freezing.
+uniform float uErode;
+uniform float uErodeH;   // and the matching loss of thickness, um per step
+
+layout(location = 0) out vec4 outState;
+layout(location = 1) out vec4 outHeight;
+
+void main() {
+    ivec2 p = ivec2(gl_FragCoord.xy);
+    vec4 s = texelFetch(uState, p, 0);
+    vec2 fl = texelFetch(uFlags, p, 0).xy;
+    vec4 H = texelFetch(uHeight, p, 0);
+
+    float a = s.x, b = s.y, c = s.z, d = s.w;
+    int nAtt = int(fl.x + 0.5);
+    bool isBoundary = fl.y > 0.5;
+    bool wasIce = a > 0.5;
+
+    // Neighbourhood survey. sumD is how much vapour is standing in this patch
+    // right after diffusion and before any of it freezes -- "the diffusive mass
+    // in a mesoscopic boundary patch" that the knife-edge rule below tests.
+    // It has to be the post-diffusion value: the freezing step empties every
+    // surface cell, so measuring after it would make the patch read as empty
+    // everywhere and fire the rule constantly, which fills in every notch as
+    // fast as vapour arrives and lets the crystal outrun its own vapour field.
+    float sumD = d;
+    float maxHOut = 0.0;
+    float minHIn = 1e9;
+    for (int i = 0; i < 6; i++) {
+        ivec2 q = p + nb(i);
+        bool oob = q.x < 0 || q.y < 0 || q.x >= uN || q.y >= uN;
+        if (oob) { sumD += d; continue; }
+        vec4 t = texelFetch(uState, q, 0);
+        sumD += t.w;
+        if (t.x > 0.5) {
+            vec4 hq = texelFetch(uHeight, q, 0);
+            maxHOut = max(maxHOut, hq.x);
+            minHIn = min(minHIn, hq.y);
+        }
+    }
+    if (minHIn > 1e8) minHIn = 0.0;
+
+    if (isBoundary) {
+        // ii. freezing -- part of what arrived becomes ice outright, the rest
+        //     joins the quasi-liquid film on the surface.
+        b += (1.0 - uKappa) * d;
+        c += uKappa * d;
+        d = 0.0;
+
+        // iii. attachment
+        // The environment is not perfectly uniform, and where it is a little
+        // easier to attach is where a side branch starts.
+        float betaHere = uBeta * (1.0 + uNoise * symNoise(latticePos(p, uN), uFreq));
+
+        bool attach;
+        if (nAtt >= 4)      attach = true;
+        else if (nAtt == 3) attach = (b >= 1.0) || (sumD < uThetaCA && b >= uAlphaCA);
+        else                attach = (b >= betaHere);
+
+        if (attach) {
+            a = 1.0;
+            c += b;
+            b = 0.0;
+            // A new cell inherits the outer surface of the ice it grew from
+            // and starts out as a thin plate hanging off it. On a flat crystal
+            // that is simply "the plate got wider". On the end of a tall
+            // column it is a plate spreading sideways from the column's tip --
+            // and because the field is mirrored about the middle, one grows at
+            // each end. That is a capped column.
+            float top = max(maxHOut, uSeedH);
+            float want = max(uPlateT, uSeedH);
+            if (uColumnar > 0.5) {
+                // Tall side face: a sheet grows outward at each end and leaves
+                // the gap between them behind. A capped column.
+                outHeight = vec4(top, max(0.0, top - want), 0.0, 0.0);
+            } else {
+                // Short side face: the whole of it advances, so the new ice is
+                // solid. If the air now wants a thinner plate than the crystal
+                // already is, the rim comes out thinner than the middle --
+                // which is how a thick centre ends up carrying a thin plate.
+                outHeight = vec4(min(top, want), 0.0, 0.0, 0.0);
+            }
+        } else {
+            // iv. melting -- the film and a trace of the ice go back to vapour
+            d += uMu * b + uGamma * c;
+            b *= (1.0 - uMu);
+            c *= (1.0 - uGamma);
+            outHeight = H;
+        }
+    } else {
+        outHeight = H;
+    }
+
+    // ---- thickness ----------------------------------------------------
+    if (a > 0.5) {
+        float hOut = outHeight.x;
+        float hIn = outHeight.y;
+
+        if (uErode > 0.0) {
+            // Drier than ice saturation, or warmer than freezing: the crystal
+            // loses its most exposed ice first, so it rounds off from the tips
+            // inward -- exactly what a sublimating snowflake does.
+            if (nAtt < 6) {
+                c -= uErode;
+                hOut -= uErodeH;
+                hIn += uErodeH * 0.35;
+            }
+            if (c <= 0.0 || hOut <= hIn) {
+                a = 0.0; b = 0.0; c = 0.0;
+                hOut = 0.0; hIn = 0.0;
+            }
+        }
+        outHeight = vec4(hOut, hIn, H.z + 1.0, 0.0);
+    }
+
+    outState = vec4(a, b, c, d);
+}
+`;
+
+/* ---------------------------------------------------------------------- *\
+ *  Thickening.
+ *
+ *  The crystal grows along its c axis at the rate part 2 computed, once per
+ *  frame and independently of the automaton. It has to be independent: the
+ *  automaton is run only as fast as the crystal's width needs it, and on a
+ *  column that is hardly at all -- a needle's outline is settled within a
+ *  couple of thousand steps and then stops changing, while the needle itself
+ *  is still lengthening for another half hour. Tying thickness to automaton
+ *  steps froze every column at the length it happened to have when its
+ *  outline finished.
+ *
+ *  Vapour reaches a basal face from its rim and is absorbed as it spreads
+ *  inward, so the further a spot is from the edge the less it gets. This is
+ *  why the middle of a growing column's end face falls behind its rim and
+ *  hollows into a conical pit, and why a plate ends up with a raised rim. The
+ *  middle of a crystal is thick only because it has been growing since the
+ *  beginning, back when it *was* the edge.
+\* ---------------------------------------------------------------------- */
+
+const THICKEN_SRC = `#version 300 es
+precision highp float;
+${LATTICE_GLSL}
+uniform highp sampler2D uState;
+uniform highp sampler2D uHeight;
+uniform highp sampler2D uDist;
+uniform float uBasalStep;   // um of growth at the rim this frame
+uniform float uScreen;      // how far vapour penetrates a basal face, in cells
+out vec4 outHeight;
+
+void main() {
+    ivec2 p = ivec2(gl_FragCoord.xy);
+    vec4 H = texelFetch(uHeight, p, 0);
+    if (texelFetch(uState, p, 0).x < 0.5) { outHeight = H; return; }
+
+    float dEdge = max(0.0, -texelFetch(uDist, p, 0).x);
+    // Vapour reaching a basal face from its rim is absorbed as it spreads
+    // inward, so the middle of the face falls behind. On a column that carves
+    // a conical pit into each end -- a hollow column, which is exactly what
+    // grows at these temperatures. Bounded, because in reality some vapour
+    // also arrives straight down onto the middle of the face rather than in
+    // from the rim, which this one-dimensional picture cannot represent.
+    float shade = mix(1.0, uScreen / (uScreen + dEdge), 0.75);
+    // The inner faces of a pair of end plates look straight at each other
+    // across a starved gap, so that gap closes far more slowly than the
+    // outside grows -- which is what keeps a capped column capped.
+    outHeight = vec4(H.x + uBasalStep * shade,
+                     max(0.0, H.y - uBasalStep * shade * 0.06),
+                     H.z, H.w);
+}
+`;
+
+/* ---------------------------------------------------------------------- *\
+ *  Distance to the crystal's edge, by jump flooding.
+ *
+ *  Needed twice: the growth above uses it to know how sheltered a spot on the
+ *  basal face is, and the renderer uses it as a signed distance field so the
+ *  silhouette comes out as a clean sharp edge instead of a staircase of cells.
+\* ---------------------------------------------------------------------- */
+
+const JFA_SEED_SRC = `#version 300 es
+precision highp float;
+${LATTICE_GLSL}
+uniform highp sampler2D uState;
+uniform int uN;
+out vec4 outSeed;
+
+void main() {
+    ivec2 p = ivec2(gl_FragCoord.xy);
+    bool ice = texelFetch(uState, p, 0).x > 0.5;
+    bool edge = false;
+    for (int i = 0; i < 6; i++) {
+        ivec2 q = p + nb(i);
+        bool oob = q.x < 0 || q.y < 0 || q.x >= uN || q.y >= uN;
+        bool nice_ = oob ? false : texelFetch(uState, q, 0).x > 0.5;
+        if (nice_ != ice) edge = true;
+    }
+    // A seed sits at the centre of every cell that straddles the silhouette;
+    // the resolve pass below shifts by half a cell so the surface lands where
+    // the ice actually stops rather than on the last cell's centre.
+    outSeed = edge ? vec4(latticePos(p, uN), 1.0, 0.0)
+                   : vec4(0.0, 0.0, 0.0, 0.0);
+}
+`;
+
+const JFA_STEP_SRC = `#version 300 es
+precision highp float;
+${LATTICE_GLSL}
+uniform highp sampler2D uSeed;
+uniform int uN;
+uniform int uJump;
+out vec4 outSeed;
+
+void main() {
+    ivec2 p = ivec2(gl_FragCoord.xy);
+    vec2 me = latticePos(p, uN);
+    vec4 best = texelFetch(uSeed, p, 0);
+    float bestD = best.z > 0.5 ? distance(me, best.xy) : 1e9;
+    for (int dy = -1; dy <= 1; dy++) {
+        for (int dx = -1; dx <= 1; dx++) {
+            ivec2 q = p + ivec2(dx, dy) * uJump;
+            if (q.x < 0 || q.y < 0 || q.x >= uN || q.y >= uN) continue;
+            vec4 cand = texelFetch(uSeed, q, 0);
+            if (cand.z < 0.5) continue;
+            float dd = distance(me, cand.xy);
+            if (dd < bestD) { bestD = dd; best = cand; }
+        }
+    }
+    outSeed = best;
+}
+`;
+
+// Signed: negative inside the ice, positive outside, in lattice units.
+const JFA_RESOLVE_SRC = `#version 300 es
+precision highp float;
+${LATTICE_GLSL}
+uniform highp sampler2D uSeed;
+uniform highp sampler2D uState;
+uniform int uN;
+out vec4 outDist;
+
+void main() {
+    ivec2 p = ivec2(gl_FragCoord.xy);
+    vec4 seed = texelFetch(uSeed, p, 0);
+    float d = seed.z > 0.5 ? distance(latticePos(p, uN), seed.xy) : float(uN);
+    bool ice = texelFetch(uState, p, 0).x > 0.5;
+    outDist = vec4((ice ? -d : d) - 0.5, 0.0, 0.0, 0.0);
+}
+`;
+
+/* ---------------------------------------------------------------------- *\
+ *  Render preparation.
+ *
+ *  Repackages the simulation into the one texture the raytracer samples:
+ *      x  signed distance to the silhouette, lattice units
+ *      y  outer half-thickness, um
+ *      z  inner half-thickness, um  (non-zero where the ice is a shell)
+ *      w  internal markings
+ *
+ *  The height fields get dilated outward by a cell so that bilinear sampling
+ *  right at the silhouette still lands on real ice, which keeps the prism edge
+ *  a crisp vertical wall rather than a taper down to nothing.
+ *
+ *  The markings channel is the automaton's crystal mass, which records how much
+ *  ice was laid down where and when. Gravner and Griffeath noticed that this
+ *  field reproduces the ridges, ribs and sector lines seen inside real snow
+ *  crystals, so the renderer perturbs the surface with it: the ornament on the
+ *  finished crystal is a fossil of its own growth history, as it is in nature.
+\* ---------------------------------------------------------------------- */
+
+const PREP_SRC = `#version 300 es
+precision highp float;
+${LATTICE_GLSL}
+uniform highp sampler2D uState;
+uniform highp sampler2D uHeight;
+uniform highp sampler2D uDist;
+uniform highp sampler2D uHeightAge;   // same texture as uHeight; .z is age
+uniform float uCMax;
+uniform float uCMean;
+uniform float uAgeMax;                // automaton steps since this crystal began
+uniform float uBands;                 // growth fronts to draw across the crystal
+uniform float uCovScale;              // coverage units -> lattice units, near the edge
+uniform int uN;
+out vec4 outPrep;
+
+void main() {
+    ivec2 p = ivec2(gl_FragCoord.xy);
+    vec4 H = texelFetch(uHeight, p, 0);
+    vec4 s = texelFetch(uState, p, 0);
+    float sd = texelFetch(uDist, p, 0).x;
+
+    float hOut = H.x, hIn = H.y, cm = s.z;
+
+    if (s.x < 0.5) {
+        // Just outside the ice, borrow the nearest ice cell's profile. Without
+        // this the bilinear filter would fade the thickness to zero across the
+        // last cell and the crystal would end in a taper; with it the prism
+        // face stays a vertical wall and the silhouette is set purely by the
+        // distance field, which is exact.
+        float found = 0.0;
+        for (int i = 0; i < 6; i++) {
+            ivec2 q = p + nb(i);
+            if (q.x < 0 || q.y < 0 || q.x >= uN || q.y >= uN) continue;
+            vec4 t = texelFetch(uState, q, 0);
+            if (t.x < 0.5) continue;
+            vec4 hq = texelFetch(uHeight, q, 0);
+            if (found < 0.5) { hOut = hq.x; hIn = hq.y; cm = t.z; found = 1.0; }
+            else { hOut = max(hOut, hq.x); hIn = min(hIn, hq.y); cm = max(cm, t.z); }
+        }
+    }
+
+    /*  The silhouette, reconstructed below the size of a lattice cell.
+     *
+     *  The jump-flood field measures the distance to the nearest cell *centre*
+     *  on the boundary, so along an edge that runs at an angle to the lattice
+     *  its contours scallop in and out with a period of exactly one cell. That
+     *  is invisible on its own, but the bevel where a flat face meets the
+     *  outline follows it, and turns each scallop into its own little bright
+     *  wedge -- a comb of tick marks running down the side of every arm.
+     *
+     *  So near the edge the distance is taken instead from a smoothed coverage
+     *  field. Blurring the hard mask over a couple of cells and reading off
+     *  how far the result sits from the half-way point gives a sub-cell
+     *  estimate of where the surface really is, with no preferred direction
+     *  and no period. Further out the jump-flood distance takes over, because
+     *  coverage saturates and stops carrying any distance information -- and
+     *  out there the marcher needs a real distance more than it needs a smooth
+     *  one.
+     */
+    // One ring only. Two rings is enough blur to round the facet corners off
+    // by a couple of cells, and on a crystal a hundred cells across that is
+    // plainly visible -- it stops looking like a crystal and starts looking
+    // like something moulded. One ring removes the cell-period scalloping and
+    // leaves the corners where they are.
+    float cov = (s.x > 0.5 ? 1.0 : 0.0) * 2.0, cw = 2.0;
+    for (int i = 0; i < 6; i++) {
+        ivec2 q = clamp(p + nb(i), ivec2(0), ivec2(uN - 1));
+        cov += (texelFetch(uState, q, 0).x > 0.5 ? 1.0 : 0.0);
+        cw += 1.0;
+    }
+    cov /= cw;
+
+    // Blended on the coverage rather than on the jump-flood distance: that
+    // distance scallops too, so using it to decide where to stop trusting it
+    // puts a scalloped seam right where the fix was supposed to go.
+    float sdNear = (0.5 - cov) * uCovScale;
+    float sdSmooth = mix(sdNear, sd, smoothstep(0.26, 0.47, abs(cov - 0.5)));
+
+    /*  RELIEF -- what the surface of the crystal is actually shaped like.
+     *
+     *  Two things make the pattern inside a real snow crystal, and both of
+     *  them are already sitting in the simulation.
+     *
+     *  Ribs. Where two growth fronts met, ice piled up and left a raised
+     *  spine: down the centreline of every arm, and out to every corner.
+     *  Geometrically those lines are the medial axis of the shape -- the set
+     *  of points equidistant from two parts of the edge -- and a distance
+     *  field finds them for free. The gradient of a distance field has unit
+     *  length everywhere except on the medial axis, where two fronts meet and
+     *  it collapses, so one minus the gradient magnitude *is* the rib map.
+     *
+     *  Bands. The crystal records where its own edge used to be, as ridges
+     *  running parallel to the outline. Each cell already carries how long ago
+     *  it froze, so the level sets of that age are exactly those old outlines.
+     *
+     *  Both are large and geometric, which is the point. The crystal-mass
+     *  field is used too, but only as fine grain on top: on its own it is
+     *  organic and blobby, and terracing it gave something that looked like a
+     *  contour map rather than a crystal.
+     */
+    float dIn = max(0.0, -sd);
+    float grad;
+    {
+        // Differenced across four cells rather than two. The outline is a
+        // staircase of lattice cells, so at one cell the gradient is dominated
+        // by that staircase and the detector lights up everywhere; across four
+        // it sees the shape instead of the lattice.
+        const ivec2 D[3] = ivec2[3](ivec2(2, 0), ivec2(0, 2), ivec2(2, -2));
+        float g = 0.0;
+        for (int i = 0; i < 3; i++) {
+            ivec2 a = clamp(p + D[i], ivec2(0), ivec2(uN - 1));
+            ivec2 b = clamp(p - D[i], ivec2(0), ivec2(uN - 1));
+            float da = max(0.0, -texelFetch(uDist, a, 0).x);
+            float db = max(0.0, -texelFetch(uDist, b, 0).x);
+            g = max(g, abs(da - db) * 0.25);
+        }
+        grad = g / 0.93;
+    }
+    float ribs = clamp(1.0 - grad, 0.0, 1.0);
+    // Only well inside the crystal. Near the rim every point is close to two
+    // bits of outline at once and the detector fires along the whole border,
+    // which turns a few clean spines into an etched circuit board.
+    ribs *= smoothstep(2.0, 6.0, dIn);
+
+    float age = texelFetch(uHeightAge, p, 0).z;
+    float ageN = clamp(age / max(uAgeMax, 1.0), 0.0, 1.0);
+    // Square-rooted, because the crystal slows as it widens and the fronts it
+    // leaves behind crowd together toward the rim, as they do on a real one.
+    float bands = 0.5 - 0.5 * cos(sqrt(ageN) * uBands * 6.2831853);
+
+    /*  The markings, smoothed over two rings of neighbours.
+     *
+     *  Cell to cell the crystal-mass field is speckled -- it is the outcome of
+     *  a threshold rule, so neighbouring cells can differ sharply. Terracing
+     *  that directly turns every speck into its own step and the crystal comes
+     *  out looking scribbled on. Averaged over a couple of cells first, the
+     *  same field's contours become the smooth ribs and concentric bands that
+     *  are actually there in the growth history, and terracing those draws the
+     *  markings on a real crystal.
+     *
+     *  Centred on the mean rather than scaled by the maximum: a handful of
+     *  cells near the middle carry far more ice than the rest, so dividing by
+     *  the largest squashes everything else into the bottom of the range.
+     */
+    float mSum = cm * 3.0, mW = 3.0;
+    for (int i = 0; i < 6; i++) {
+        ivec2 o1 = nb(i), o2 = nb((i + 1) % 6);
+        ivec2 taps[3] = ivec2[3](o1, o1 * 2, o1 + o2);
+        float wts[3] = float[3](2.0, 1.0, 1.0);
+        for (int k = 0; k < 3; k++) {
+            ivec2 q = p + taps[k];
+            if (q.x < 0 || q.y < 0 || q.x >= uN || q.y >= uN) continue;
+            vec4 t = texelFetch(uState, q, 0);
+            if (t.x < 0.5) continue;
+            mSum += t.z * wts[k];
+            mW += wts[k];
+        }
+    }
+    float cmS = mSum / max(mW, 1e-6);
+
+    float span = max(uCMax - uCMean, 1e-4);
+    float marks = clamp((cmS - uCMean) / span * 0.5 + 0.5, 0.0, 1.0);
+
+    float relief = clamp(0.14 + 0.66 * ribs + 0.24 * bands + 0.09 * marks, 0.0, 1.0);
+
+    outPrep = vec4(sdSmooth, hOut, hIn, relief);
+}
+`;
+
+/* ---------------------------------------------------------------------- *\
+ *  One blur pass over the relief channel only.
+ *
+ *  The ribs are found from a distance field that steps by whole lattice cells,
+ *  so they come out as staircases and the terraces built on them look etched
+ *  rather than grown. Softening the relief lets the terrace contours flow.
+ *  The silhouette and the two thickness channels are passed through untouched:
+ *  blurring those would round off the facet corners, which are the one thing
+ *  that has to stay sharp.
+\* ---------------------------------------------------------------------- */
+
+const RELIEF_SMOOTH_SRC = `#version 300 es
+precision highp float;
+${LATTICE_GLSL}
+uniform highp sampler2D uPrep;
+uniform int uN;
+out vec4 outPrep;
+
+void main() {
+    ivec2 p = ivec2(gl_FragCoord.xy);
+    vec4 c = texelFetch(uPrep, p, 0);
+    // One ring. Two rings blurs the terraces flat on a crystal that is only a
+    // hundred cells across, and the whole point of them is to be crisp.
+    float sum = c.w * 2.0, w = 2.0;
+    for (int i = 0; i < 6; i++) {
+        ivec2 a = clamp(p + nb(i), ivec2(0), ivec2(uN - 1));
+        sum += texelFetch(uPrep, a, 0).w;
+        w += 1.0;
+    }
+    outPrep = vec4(c.xyz, sum / w);
+}
+`;
+
+/* ---------------------------------------------------------------------- *\
+ *  Measurement.
+ *
+ *  Everything the panel reports -- size, thickness, mass, fall speed, and the
+ *  name of the crystal -- comes from counting what is actually on the lattice.
+ *  Reduced 8x8 at a time down to a single texel so only one tiny read crosses
+ *  back from the GPU. Channels mix sums and maxima, hence the hand-written
+ *  reduction rather than mipmaps.
+\* ---------------------------------------------------------------------- */
+
+const REDUCE_SRC = `#version 300 es
+precision highp float;
+${LATTICE_GLSL}
+uniform highp sampler2D uState;
+uniform highp sampler2D uHeight;
+uniform highp sampler2D uSrcA;
+uniform highp sampler2D uSrcB;
+uniform int uN;
+uniform int uLevel;      // 0 = read the simulation, >0 = fold a previous pass
+uniform int uSrcSize;
+
+layout(location = 0) out vec4 outA;
+layout(location = 1) out vec4 outB;
+
+void main() {
+    ivec2 o = ivec2(gl_FragCoord.xy) * 8;
+    // A: cell count, sum of (hOut-hIn), max radius, count of shell cells
+    // B: sum of hOut, max hOut, max crystal mass, sum of crystal mass
+    vec4 A = vec4(0.0, 0.0, 0.0, 0.0);
+    vec4 B = vec4(0.0, 0.0, 0.0, 0.0);
+
+    for (int j = 0; j < 8; j++) {
+        for (int i = 0; i < 8; i++) {
+            ivec2 q = o + ivec2(i, j);
+            if (q.x >= uSrcSize || q.y >= uSrcSize) continue;
+            vec4 a, b;
+            if (uLevel == 0) {
+                vec4 s = texelFetch(uState, q, 0);
+                if (s.x < 0.5) continue;
+                vec4 H = texelFetch(uHeight, q, 0);
+                float r = length(latticePos(q, uN));
+                bool shell = H.y > 0.15 * max(H.x, 1e-6);
+                a = vec4(1.0, max(0.0, H.x - H.y), r, shell ? 1.0 : 0.0);
+                b = vec4(H.x, H.x, s.z, s.z);
+            } else {
+                a = texelFetch(uSrcA, q, 0);
+                b = texelFetch(uSrcB, q, 0);
+            }
+            A.x += a.x; A.y += a.y; A.z = max(A.z, a.z); A.w += a.w;
+            B.x += b.x; B.y = max(B.y, b.y); B.z = max(B.z, b.z); B.w += b.w;
+        }
+    }
+    outA = A;
+    outB = B;
+}
+`;
+
+/* ====================================================================== *\
+ *  PART 4 -- WHAT YOU ACTUALLY SEE
+ *
+ *  Two fragment shaders.
+ *
+ *  The first paints the night: a cold gradient, drifting mist, a faint aurora
+ *  and five parallax layers of falling snow. It goes to a texture rather than
+ *  straight to the screen, because the crystal has to refract it.
+ *
+ *  The second raytraces the crystal. The simulation's output is a height field
+ *  on a triangular lattice, which makes the crystal a generalised prism: a
+ *  silhouette given by a signed distance field, and a top and bottom surface
+ *  given by the two thickness channels. Rays are marched against that, and at
+ *  each interface Fresnel decides how much reflects and how much refracts.
+ *  Ice has a refractive index of 1.31, low enough that most rays go through
+ *  and high enough that the ones near grazing incidence bounce around inside
+ *  before they escape -- which is precisely why real snow is white and a
+ *  single crystal is not.
+\* ====================================================================== */
+
+/* ---------------------------------------------------------------------- *\
+ *  Winter night.
+\* ---------------------------------------------------------------------- */
+
+const BG_SRC = `#version 300 es
+precision highp float;
+uniform vec2 uRes;
+uniform float uTime;
+out vec4 fragColor;
+
+float hash11(float n) { return fract(sin(n) * 43758.5453123); }
+vec2 hash22(vec2 p) {
+    p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+    return fract(sin(p) * 43758.5453123);
+}
+
+float vnoise(vec2 p) {
+    vec2 i = floor(p), f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    float a = hash22(i).x, b = hash22(i + vec2(1, 0)).x;
+    float c = hash22(i + vec2(0, 1)).x, d = hash22(i + vec2(1, 1)).x;
+    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+float fbm(vec2 p) {
+    float s = 0.0, a = 0.5;
+    for (int i = 0; i < 5; i++) { s += a * vnoise(p); p *= 2.03; p += 17.3; a *= 0.5; }
+    return s;
+}
+
+/*  Snow, in five layers.
+ *
+ *  Each layer is a jittered grid of flakes drifting down and swaying. Layers
+ *  nearer the camera move faster, are larger and are blurrier, which is the
+ *  whole trick: parallax plus depth of field reads as distance, and a still
+ *  image of it reads as depth even before anything moves.
+ */
+vec3 snowfall(vec2 uv, float aspect) {
+    vec3 acc = vec3(0.0);
+    for (int L = 0; L < 5; L++) {
+        float fl = float(L);
+        float depth = fl / 4.0;                    // 0 far .. 1 near
+        float density = mix(42.0, 13.0, depth);    // cells across the screen
+        float speed = mix(0.010, 0.062, depth);
+        float sway = mix(0.008, 0.038, depth);
+        float radius = mix(0.0007, 0.0034, depth);
+        float soft = mix(1.20, 2.6, depth);
+        float bright = mix(0.30, 0.13, depth);
+
+        vec2 q = vec2(uv.x * aspect, uv.y) * density;
+        q.y += uTime * speed * density;
+        q.x += sin(uTime * 0.21 + fl * 2.7 + q.y * 0.35) * sway * density;
+
+        vec2 cell = floor(q);
+        vec2 f = fract(q);
+        for (int oy = -1; oy <= 1; oy++) {
+            for (int ox = -1; ox <= 1; ox++) {
+                vec2 o = vec2(float(ox), float(oy));
+                vec2 h = hash22(cell + o + fl * 71.3);
+                // Only some cells carry a flake, so the field does not read as a grid.
+                if (h.x > 0.30) continue;
+                vec2 centre = o + vec2(h.y, fract(h.x * 37.0));
+                float r = radius * density * (0.55 + fract(h.y * 53.0));
+                float dd = length(f - centre);
+                float g = exp(-pow(dd / max(r, 1e-4), soft));
+                float tw = 0.72 + 0.28 * sin(uTime * (0.8 + h.y * 2.2) + h.x * 30.0);
+                acc += vec3(0.80, 0.90, 1.0) * g * bright * tw;
+            }
+        }
+    }
+    return acc;
+}
+
+void main() {
+    vec2 uv = gl_FragCoord.xy / uRes;
+    float aspect = uRes.x / uRes.y;
+    vec2 p = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;
+
+    // The ground colour. Very dark, slightly warmer low down as if there were
+    // snow-covered ground somewhere below the frame catching a distant light.
+    vec3 col = mix(vec3(0.016, 0.030, 0.058),
+                   vec3(0.045, 0.075, 0.120),
+                   smoothstep(0.55, -0.55, p.y));
+    col = mix(col, vec3(0.008, 0.014, 0.030), smoothstep(0.0, 0.62, p.y));
+
+    // Aurora: two slow curtains of light, deliberately faint. They give the
+    // upper half of the frame something to do without competing with the
+    // crystal for attention.
+    for (int i = 0; i < 2; i++) {
+        float fi = float(i);
+        float t = uTime * (0.021 + 0.013 * fi);
+        float band = fbm(vec2(p.x * 1.5 + t, p.y * 0.55 - t * 0.35) + fi * 13.0);
+        float ridge = 1.0 - abs(band * 2.0 - 1.0);
+        float y0 = 0.16 + 0.13 * fi + 0.06 * sin(uTime * 0.07 + fi * 2.0);
+        float mask = exp(-pow(abs(p.y - y0) * (3.4 - 0.9 * fi), 2.0));
+        vec3 tint = mix(vec3(0.13, 0.42, 0.36), vec3(0.24, 0.20, 0.52), fi);
+        col += tint * pow(ridge, 3.2) * mask * 0.30;
+    }
+
+    // Mist: two domain-warped layers drifting at different speeds, low in the
+    // frame, so the crystal appears to hang in air that has weight to it.
+    float m1 = fbm(vec2(p.x * 1.05 - uTime * 0.020, p.y * 1.9 + uTime * 0.006));
+    float m2 = fbm(vec2(p.x * 2.15 + uTime * 0.032 + m1 * 0.5, p.y * 2.9 - uTime * 0.011));
+    float mist = smoothstep(0.30, 0.95, m1 * 0.62 + m2 * 0.48);
+    mist *= smoothstep(0.52, -0.42, p.y);
+    col += vec3(0.34, 0.48, 0.68) * mist * 0.115;
+
+    // A soft glow behind where the crystal will hang, so it never sits on flat
+    // black and always has something to refract.
+    float halo = exp(-length((p - vec2(-0.30, 0.02)) * vec2(1.0, 1.15)) * 1.30);
+    col += vec3(0.15, 0.27, 0.46) * halo * 0.85;
+
+    col += snowfall(uv, aspect);
+
+    // Vignette and a little dithering; without the dither the very dark
+    // gradient bands visibly on a large panel.
+    col *= 1.0 - 0.42 * pow(length(p * vec2(0.62, 0.95)), 2.3);
+    col += (hash11(dot(gl_FragCoord.xy, vec2(12.9898, 78.233)) + uTime) - 0.5) / 255.0;
+
+    fragColor = vec4(col, 1.0);
+}
+`;
+
+/* ---------------------------------------------------------------------- *\
+ *  The crystal.
+ *
+ *  Object space has the crystal's six-fold axis along z and its basal plane in
+ *  xy, scaled so the whole thing fits inside a unit cylinder however extreme
+ *  its proportions are. The simulation supplies three fields sampled from one
+ *  texture: an exact signed distance to the silhouette, and the outer and
+ *  inner half-thicknesses, which together make the crystal a generalised prism
+ *  that can also be a shell.
+ *
+ *  Thickness is shown compressed, not true. A real stellar dendrite is about
+ *  three hundred times wider than it is thick, and drawn honestly at the size
+ *  of this wall it would be a few pixels of edge and invisible. Raising the
+ *  true ratio to the power 0.78 leaves columns as columns, leaves the ordering
+ *  of every habit intact, and gives plates an edge you can actually see. The
+ *  true ratio is printed on the panel, unexaggerated.
+\* ---------------------------------------------------------------------- */
+
+const CRYSTAL_SRC = `#version 300 es
+precision highp float;
+
+uniform vec2  uRes;
+uniform float uTime;
+uniform sampler2D uBg;
+uniform highp sampler2D uPrep;    // sdf | hOuter | hInner | markings
+uniform highp sampler2D uState;   // a | b | c | d -- only d is read, for the halo
+
+uniform int   uN;
+uniform float uRmax;       // crystal radius in lattice units
+uniform float uSceneR;     // ...and in scene units, after fitting to the frame
+uniform float uZScale;     // um of half-thickness -> scene units
+uniform float uHmax;       // largest half-thickness, scene units
+uniform float uMark;       // how strongly growth markings emboss the surface
+uniform float uTerrace;    // height of one growth terrace, scene units
+uniform float uDispersion; // how far apart the red and blue refractive indices sit
+uniform float uBevel;      // chamfer where a plateau meets the silhouette
+uniform float uNormEps;    // normal sampling radius, about one lattice cell
+uniform float uRho;        // background vapour density, for the depletion halo
+uniform float uFade;       // 0..1, used to dissolve between crystals
+uniform float uHaloAmt;
+uniform float uReach;      // conservative screen-space radius of the crystal
+uniform int   uDebug;      // 1 = flat fill on hit, to separate geometry from shading
+uniform mat3  uRot;        // object -> world
+uniform vec2  uCentrePx;
+uniform float uScalePx;
+
+out vec4 fragColor;
+
+const float IOR_G = 1.3110;                       // ice, mid-spectrum
+const vec3  IOR = vec3(1.3062, 1.3110, 1.3178);   // red, green, blue
+const float FOCAL = 3.2;
+
+// Pre-normalised: GLSL ES does not allow function calls in global initialisers.
+const vec3 MOON = vec3(-0.4208, 0.6211, 0.6611);
+const vec3 RIM1 = vec3(0.8488, 0.0999, -0.5192);
+const vec3 RIM2 = vec3(-0.3011, -0.7226, 0.6223);
+
+/* ---- the sky the crystal reflects and refracts ------------------------ */
+
+/*  The sky the crystal reflects and refracts.
+ *
+ *  Brighter and more structured than the night actually is behind it, and
+ *  deliberately so. A snow crystal is nearly index-matched to air -- only four
+ *  per cent of light reflects at normal incidence -- so against a genuinely
+ *  dark sky a physically exact crystal is very close to invisible. Every
+ *  photograph of one is lit: from behind, from the side, off snow. This is
+ *  that lighting, with three sources placed so that a slowly turning crystal
+ *  always has at least one of them somewhere in its cone of refraction, and
+ *  never goes dark as it turns.
+ */
+vec3 envColor(vec3 d) {
+    float up = clamp(d.y, -1.0, 1.0);
+    // Darker overhead than it used to be, and deliberately so. A crystal is
+    // only legible if some directions come back nearly black: the dark line
+    // running alongside every bright one in a photograph of a snowflake is
+    // light that was turned away from the camera and found nothing. With the
+    // sky lit evenly there is nothing for an edge to be dark against.
+    vec3 c = mix(vec3(0.075, 0.150, 0.280), vec3(0.008, 0.020, 0.055),
+                 smoothstep(-0.10, 0.85, up));
+    c = mix(vec3(0.045, 0.075, 0.120), c, smoothstep(-0.60, -0.02, up));
+
+    float md = max(0.0, dot(d, MOON));
+    c += vec3(1.00, 0.97, 0.90) * pow(md, 520.0) * 40.0;   // the moon itself
+    c += vec3(0.62, 0.80, 1.00) * pow(md, 6.0) * 0.95;     // its halo
+    c += vec3(0.45, 0.72, 1.00) * pow(max(0.0, dot(d, RIM1)), 14.0) * 1.05;
+    c += vec3(1.00, 0.80, 0.55) * pow(max(0.0, dot(d, RIM2)), 20.0) * 0.70;
+
+    // And a broad lamp directly behind the crystal, away from the camera.
+    // Light that reaches the eye through a plate seen face-on has passed
+    // almost straight through it, so it is whatever lies behind -- and with
+    // nothing there but night sky the crystal goes dark exactly when it is
+    // showing its best side. Backlighting is how every photograph of a snow
+    // crystal is taken, for precisely this reason.
+    c += vec3(0.54, 0.72, 1.00) * pow(max(0.0, -d.z), 3.0) * 0.80;
+    return c;
+}
+
+/* ---- the crystal as a distance field ---------------------------------- */
+
+vec4 prepAt(vec2 xy) {
+    // Scene xy -> lattice units -> texture coordinates. The lattice is
+    // triangular: position = i*(1,0) + j*(1/2, sqrt(3)/2).
+    vec2 L = xy * (uRmax / uSceneR);
+    float j = L.y / 0.86602540378;
+    float i = L.x - j * 0.5;
+    vec2 uv = (vec2(i, j) + vec2(float(uN - 1) * 0.5) + 0.5) / float(uN);
+    if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) return vec4(1e3, 0.0, 0.0, 0.0);
+    return texture(uPrep, uv);
+}
+
+float mapField(vec3 p) {
+    // uDebug 4 replaces the crystal with an analytic cylinder of the same
+    // overall dimensions, to separate a marching problem from a data problem.
+    if (uDebug == 4) return max(length(p.xy) - uSceneR, abs(p.z) - uHmax);
+    vec4 pr = prepAt(p.xy);
+    float sdXY = pr.x * (uSceneR / uRmax);        // exact distance to silhouette
+    float hOut = pr.y * uZScale;
+    float hIn = pr.z * uZScale;
+
+    /*  Ridges, ribs and sector markings.
+     *
+     *  The field driving them is the automaton's own crystal-mass record, so
+     *  the ornament on the finished crystal is a fossil of the order in which
+     *  it grew -- which is where the markings on real ones come from too.
+     *
+     *  Then the surface is quantised into terraces. Ice does not grow as a
+     *  smooth mound; it grows by stacking flat layers, and a real crystal
+     *  surface is a staircase whose risers are what every photograph of a
+     *  snowflake actually shows. Smoothly varying the height instead gives
+     *  gentle gradients, gentle gradients give a nearly constant surface
+     *  normal, and a nearly constant normal is why the crystal was reading as
+     *  a flat white cut-out. Quantising turns those same gradients into
+     *  contour lines of the growth history: plateaus that face the viewer, and
+     *  vertical risers between them that catch light edge-on. Every line in
+     *  the finished picture is one of those risers.
+     */
+    //  Quantised as a whole, so a step falls wherever the surface crosses a
+    //  level and the contours run right across the face -- terracing only the
+    //  ornament leaves everything flat wherever the ornament happens to be
+    //  weak, which is most of a plate.
+    //
+    //  The step height comes from the relief, not from the thickness. That is
+    //  what keeps it sane on a column: there the relief is a fraction of a
+    //  per cent of the length, so the steps are far finer than a pixel and the
+    //  quantisation simply disappears, instead of slicing a millimetre-long
+    //  rod into a stack of discs.
+    hOut *= 1.0 + uMark * (pr.w - 0.5);
+    hOut = floor(hOut / uTerrace + 0.5) * uTerrace;
+
+    float az = abs(p.z);
+
+    // Outside the outline there is no ice, so the height field reads zero
+    // there -- and taking that literally would say "this point is |z| away
+    // from the nearest ice", which for a tall crystal is most of its length.
+    // The marcher would then take one enormous step and pass clean through the
+    // side of a column. Beyond the outline, assume instead that the crystal is
+    // as tall as its tallest point, which keeps the field a genuine lower
+    // bound on the distance and lets the outline term do the work it should.
+    // Plates never showed this: their height is small, so the bad step was
+    // small too. Columns were being rendered as a stubby spindle with a few
+    // stray blades, which is what a ray that only occasionally lands inside
+    // looks like.
+    float outer = az - (pr.x <= 0.0 ? hOut : uHmax);
+    // Only treat a cell as a shell when its inner surface is meaningfully off
+    // the midplane; otherwise this term would carve a spurious sheet straight
+    // through the middle of every solid crystal.
+    float inner = (pr.z > 0.06 * max(pr.y, 1e-6)) ? (hIn - az) : -1.0;
+
+    // A chamfer where a flat face meets the outline, instead of a perfectly
+    // sharp right angle. Ice really is rounded at that corner on this scale,
+    // and it earns its keep optically: a sharp edge is one pixel of silhouette
+    // and reads as a cut-out, while a chamfer is a narrow band of surface at a
+    // steep angle, which catches the sky and draws the bright line that runs
+    // around the border of every arm in a photograph of a real crystal.
+    float sharp = max(sdXY, max(outer, inner));
+    vec2 corner = max(vec2(sdXY, max(outer, inner)) + uBevel, 0.0);
+    return min(sharp, 0.0) + length(corner) - uBevel;
+}
+
+/*  Surface normal, by central differences at about one lattice cell.
+ *
+ *  The radius matters. Sampled tighter than a cell, all four taps land inside
+ *  the same bilinear patch of the height texture, where the field can be flat
+ *  or very nearly so; the difference then comes out near zero, normalize()
+ *  amplifies whatever noise is left, and the pixel refracts in a meaningless
+ *  direction. Those were the black specks scattered over the surface.
+ */
+vec3 calcNormal(vec3 p, float e) {
+    vec2 k = vec2(1.0, -1.0) * e;
+    vec3 g = k.xyy * mapField(p + k.xyy) + k.yyx * mapField(p + k.yyx)
+           + k.yxy * mapField(p + k.yxy) + k.xxx * mapField(p + k.xxx);
+    float len = length(g);
+    return len > 1e-9 ? g / len : vec3(0.0, 0.0, 1.0);
+}
+
+// Where a ray enters and leaves the cylinder containing the whole crystal.
+vec2 boundsOf(vec3 ro, vec3 rd, float R, float H) {
+    float a = dot(rd.xy, rd.xy);
+    float b = dot(ro.xy, rd.xy);
+    float c = dot(ro.xy, ro.xy) - R * R;
+    float t0 = -1e9, t1 = 1e9;
+    if (a > 1e-9) {
+        float disc = b * b - a * c;
+        if (disc < 0.0) return vec2(1.0, -1.0);
+        float sq = sqrt(disc);
+        t0 = (-b - sq) / a; t1 = (-b + sq) / a;
+    } else if (c > 0.0) {
+        return vec2(1.0, -1.0);
+    }
+    if (abs(rd.z) > 1e-9) {
+        float za = (-H - ro.z) / rd.z, zb = (H - ro.z) / rd.z;
+        t0 = max(t0, min(za, zb));
+        t1 = min(t1, max(za, zb));
+    } else if (abs(ro.z) > H) {
+        return vec2(1.0, -1.0);
+    }
+    return vec2(max(t0, 0.0), t1);
+}
+
+// March until the field turns negative, then bisect onto the surface.
+// Bisecting matters: the field is only approximately a distance along z, so
+// stopping at "close enough" leaves visible terracing on shallow surfaces.
+bool traceIn(vec3 ro, vec3 rd, float tStart, float tEnd, out float tHit) {
+    // The floor on the step is a lattice cell, not a fixed fraction of the
+    // scene. Fixed, it is far too small for a large crystal: a ray crossing a
+    // plate from one face to the other needs more steps than the loop has, the
+    // search gives up part way through, and the pixel falls back to whatever
+    // the miss case returns.
+    float minStep = max(uNormEps * 0.6, 0.00045);
+    float t = tStart, prev = tStart;
+    for (int i = 0; i < 240; i++) {
+        if (t > tEnd) return false;
+        float d = mapField(ro + rd * t);
+        if (d < 0.0) {
+            float lo = prev, hi = t;
+            for (int k = 0; k < 7; k++) {
+                float m = 0.5 * (lo + hi);
+                if (mapField(ro + rd * m) < 0.0) hi = m; else lo = m;
+            }
+            tHit = hi;
+            return true;
+        }
+        prev = t;
+        t += max(d * 0.72, minStep);
+    }
+    return false;
+}
+
+// The same from inside, looking for the way out.
+bool traceOut(vec3 ro, vec3 rd, float tEnd, out float tHit) {
+    float minStep = max(uNormEps * 0.6, 0.00045);
+    float t = minStep, prev = 0.0;
+    for (int i = 0; i < 140; i++) {
+        if (t > tEnd) { tHit = tEnd; return false; }
+        float d = mapField(ro + rd * t);
+        if (d > 0.0) {
+            float lo = prev, hi = t;
+            for (int k = 0; k < 7; k++) {
+                float m = 0.5 * (lo + hi);
+                if (mapField(ro + rd * m) > 0.0) hi = m; else lo = m;
+            }
+            tHit = hi;
+            return true;
+        }
+        prev = t;
+        t += max(-d * 0.72, minStep);
+    }
+    tHit = t;
+    return false;
+}
+
+void main() {
+    vec2 uv = gl_FragCoord.xy / uRes;
+    vec3 bg = texture(uBg, uv).rgb;
+    vec3 outCol = bg;
+
+    vec2 rel = (gl_FragCoord.xy - uCentrePx) / uScalePx;
+
+    if (dot(rel, rel) > uReach * uReach || uRmax < 0.5) {
+        fragColor = vec4(outCol, 1.0);
+        return;
+    }
+
+    vec3 roW = vec3(0.0, 0.0, FOCAL + 1.0);
+    vec3 rdW = normalize(vec3(rel, -FOCAL));
+
+    // Everything is traced in the crystal's own frame; only directions headed
+    // back out to the sky get rotated into world space.
+    mat3 inv = transpose(uRot);
+    vec3 ro = inv * roW;
+    vec3 rd = inv * rdW;
+
+    // --- the depletion halo -------------------------------------------
+    // Where the crystal has eaten the vapour around it. This is drawn under
+    // the ice, faintly: the halo is the reason the branches exist at all, so
+    // it is worth seeing, but it must not compete with the crystal.
+    // Sampled on the crystal's own midplane, which means it is only meaningful
+    // when that plane is somewhere near face-on. Seen edge-on -- which is how
+    // a column is always seen -- the plane projects to a line, and the halo
+    // becomes a bright wire running out to the edge of the air parcel. So it
+    // fades out with the viewing angle.
+    float haloFace = smoothstep(0.12, 0.45, abs(rd.z));
+    if (uHaloAmt * haloFace > 0.001) {
+        float tPlane = -ro.z / rd.z;
+        if (tPlane > 0.0) {
+            vec2 g = (ro + rd * tPlane).xy * (uRmax / uSceneR);
+            float j = g.y / 0.86602540378;
+            float i = g.x - j * 0.5;
+            vec2 suv = (vec2(i, j) + vec2(float(uN - 1) * 0.5) + 0.5) / float(uN);
+            if (suv.x > 0.0 && suv.y > 0.0 && suv.x < 1.0 && suv.y < 1.0) {
+                float dv = texture(uState, suv).w;
+                float depleted = clamp(1.0 - dv / max(uRho, 1e-4), 0.0, 1.0);
+                // Only the halo hugging the crystal. The far side of the air
+                // parcel is depleted too by the end, but drawing that just
+                // paints a large disc over the frame.
+                float sd = max(0.0, texture(uPrep, suv).x);
+                float near = exp(-sd / (0.30 * uRmax + 0.8));
+                outCol += vec3(0.13, 0.28, 0.52) * pow(depleted, 2.0) * near * uHaloAmt * haloFace;
+            }
+        }
+    }
+
+    // --- the ice -------------------------------------------------------
+    vec2 bd = boundsOf(ro, rd, uSceneR * 1.03, max(uHmax, 0.004) * 1.3);
+    float t0;
+    if (bd.y > bd.x && traceIn(ro, rd, bd.x, bd.y, t0)) {
+        vec3 p = ro + rd * t0;
+        vec3 n = calcNormal(p, uNormEps);
+        if (dot(n, rd) > 0.0) n = -n;
+
+        float cosi = clamp(dot(-rd, n), 0.0, 1.0);
+        float f0 = 0.0179;                        // ((1.31-1)/(1.31+1))^2
+        float fres = f0 + (1.0 - f0) * pow(1.0 - cosi, 5.0);
+
+        vec3 refl = envColor(uRot * reflect(rd, n));
+
+        // Follow the transmitted ray. Up to three internal segments: rays that
+        // meet a face beyond the critical angle (about 50 degrees in ice)
+        // bounce instead of leaving, and it is those bounces that make a
+        // crystal glitter rather than merely look like a pane of glass.
+        // Entry, at the middle of the spectrum. The two outer wavelengths are
+        // carried along as the angular spread they have already picked up here,
+        // and that spread is added to whatever the exit interface contributes.
+        // Splitting the march three ways would be exact and three times the
+        // cost for a difference nobody could point to.
+        // Faded out at grazing incidence. There the three wavelengths part
+        // company violently -- one can pass while another turns back -- and
+        // the result is a saturated magenta seam down the shaded side of every
+        // arm. Real dispersion is at its weakest near grazing anyway, because
+        // almost nothing gets in at all.
+        float disp = uDispersion * smoothstep(0.05, 0.35, cosi);
+        vec3 dirR = refract(rd, n, 1.0 / (IOR_G + disp));
+        vec3 dirB = refract(rd, n, 1.0 / (IOR_G - disp));
+        vec3 dir = refract(rd, n, 1.0 / IOR_G);
+        vec3 entrySplitR = dirR - dir;
+        vec3 entrySplitB = dirB - dir;
+        vec3 q = p + dir * max(uNormEps * 0.6, 0.00045);
+        float pathLen = 0.0;
+        vec3 exitN = n, inDir = dir, outDir = dir;
+        bool escaped = false;
+
+        for (int bounce = 0; bounce < 3; bounce++) {
+            float tOut;
+            // A ray that entered at a grazing angle runs along just under the
+            // surface through a sliver of ice, and the search for the far side
+            // runs out of steps before it finds one. Carrying on with whatever
+            // point it stopped at refracts through a meaningless normal, which
+            // is what produced the ragged dark fringe along the shaded side of
+            // every arm. At that angle Fresnel says almost all of the light
+            // reflected anyway, so treat it as reflected and stop.
+            if (!traceOut(q, dir, 3.2, tOut)) { escaped = false; break; }
+            pathLen += tOut;
+            vec3 e = q + dir * tOut;
+            vec3 en = calcNormal(e, uNormEps);
+            if (dot(en, dir) < 0.0) en = -en;      // point it along the ray
+            vec3 od = refract(dir, -en, IOR_G);
+            if (dot(od, od) > 1e-6) {
+                exitN = en; inDir = dir; outDir = od;
+                escaped = true;
+                break;
+            }
+            dir = reflect(dir, -en);
+            q = e + dir * max(uNormEps * 0.6, 0.00045);
+            exitN = en; inDir = dir; outDir = dir;
+        }
+
+        vec3 trans;
+        if (escaped) {
+            // Dispersion. Ice separates colours only weakly, but a long path
+            // through a wedge-shaped branch is enough for the flashes of
+            // colour real crystals throw, so each channel leaves through its
+            // own refractive index.
+            vec3 dR = refract(inDir, -exitN, (IOR_G + disp) / IOR_G);
+            vec3 dB = refract(inDir, -exitN, (IOR_G - disp) / IOR_G);
+            dR = (dot(dR, dR) > 1e-6 ? dR : outDir) + entrySplitR * 1.6;
+            dB = (dot(dB, dB) > 1e-6 ? dB : outDir) + entrySplitB * 1.6;
+            vec3 wR = uRot * normalize(dR);
+            vec3 wG = uRot * outDir;
+            vec3 wB = uRot * normalize(dB);
+            vec3 spectral = vec3(envColor(wR).r, envColor(wG).g, envColor(wB).b);
+
+            /*  How far the ray was bent decides what it shows.
+             *
+             *  A ray that went almost straight through -- nearly all of them,
+             *  over the flat middle of a plate -- shows the sky that was
+             *  behind the crystal, very slightly displaced. That is what makes
+             *  the crystal a window: the background gradient runs visibly
+             *  through its arms, exactly as it does in a photograph of one.
+             *
+             *  A ray bent hard -- at a facet edge, off a terrace riser,
+             *  through the wedge of a corner -- has been somewhere else
+             *  entirely and comes back with whatever the sky holds in that
+             *  direction, split into colours. That is where all the brightness
+             *  and all the fringing live.
+             *
+             *  Having this the wrong way round is what made the crystal read
+             *  as a white sticker: give the flat middle the lit environment
+             *  and every plateau turns the same bright colour at once.
+             */
+            vec2 bend = (wG.xy - rdW.xy) * 0.22;
+            vec3 behind = texture(uBg, clamp(uv + bend, vec2(0.002), vec2(0.998))).rgb;
+            float deviated = clamp(length(wG - rdW) * 1.45, 0.0, 1.0);
+            trans = mix(behind * 1.45, spectral * 2.4, deviated);
+        } else {
+            // Lost track of it inside. Reflecting it back was worse than
+            // useless: off a plateau that points at the viewer the reflection
+            // points at the zenith, which is the darkest part of the sky, so
+            // every pixel the search gave up on came out black -- a stipple of
+            // dead pixels across the flat faces. Whatever is behind the
+            // crystal is both the likelier answer and an invisible one.
+            trans = texture(uBg, uv).rgb * 1.25;
+        }
+
+        // Ice absorbs red a little more than blue, so long paths cool in
+        // colour. Slight, but it is what stops the crystal looking like plain
+        // grey glass.
+        trans *= exp(-pathLen * vec3(0.62, 0.26, 0.15) * 0.55);
+
+        if (uDebug == 1 || uDebug == 4) { fragColor = vec4(1.0, 0.0, 0.0, 1.0); return; }
+        if (uDebug == 2) { fragColor = vec4(fract(abs(p.z) * 4.0), fract(length(p.xy) * 12.0), 0.0, 1.0); return; }
+        vec3 shade = mix(trans, refl, fres);
+        vec3 nW = uRot * n;
+
+        // Almost nothing added on top. Everything the crystal shows should be
+        // light that went through it or bounced off it -- a diffuse term large
+        // enough to see is a term large enough to flatten every facet into the
+        // same shade, which is exactly how ice stops looking like ice. What is
+        // left here stands in for the scattering off growth steps and the
+        // quasi-liquid film, and it is deliberately at the threshold of
+        // visibility.
+        shade += vec3(0.34, 0.52, 0.82) * 0.020;
+
+        // Terrace risers. A riser stands perpendicular to the flat faces, so
+        // it presents its edge to the viewer as a line one or two pixels wide,
+        // and whether that line is bright or dark depends on where it happens
+        // to be pointing. Both cases matter: the bright ones draw the ribs and
+        // the dark ones draw the facet boundaries, and a real crystal is made
+        // almost entirely of the two of them side by side.
+        float riser = 1.0 - abs(dot(n, vec3(0.0, 0.0, 1.0)));
+        vec3 riserDir = uRot * normalize(vec3(n.xy, 0.0) + vec3(0.0, 0.0, 1e-4));
+        float riserLit = max(0.0, dot(riserDir, MOON));
+        shade += vec3(0.85, 0.95, 1.00) * pow(riser, 1.6) * pow(riserLit, 2.0) * 1.10;
+
+        // A hard glint, and a Fresnel rim that reflects whatever the sky
+        // actually holds in that direction rather than adding white regardless.
+        vec3 hv = normalize(MOON - rdW);
+        shade += vec3(1.0, 0.99, 0.96) * pow(max(0.0, dot(nW, hv)), 260.0) * 7.0;
+        shade += envColor(reflect(rdW, nW)) * pow(1.0 - cosi, 3.0) * 2.2;
+
+        // Roll the highlights off instead of clipping them. Ice concentrates
+        // light hard -- a glint off a facet, or a whole arm lit from behind --
+        // and without this the crystal spends part of every turn as a solid
+        // white silhouette with all of its structure burnt out.
+        shade = vec3(1.0) - exp(-max(shade, vec3(0.0)) * 1.60);
+
+        outCol = mix(outCol, shade, uFade);
+    }
+
+    fragColor = vec4(outCol, 1.0);
+}
+`;
+
+/* ====================================================================== *\
+ *  PART 5 -- THE ENGINE
+ *
+ *  WebGL plumbing, the growth loop that ties parts 2 and 3 together, the
+ *  instrument panel, and the two display modes.
+\* ====================================================================== */
+
+/* ---- tuning ---------------------------------------------------------- */
+
+const N = 481;              // lattice is N x N cells
+const MAX_STEPS_FRAME = 48; // automaton updates per frame, ceiling
+const STEP_GAIN = 10;       // automaton updates per micrometre, erosion only
+const BOX_R = 0.425;        // sealed air parcel radius, as a fraction of N
+const COV_SCALE = 2.0;      // smoothed coverage -> lattice units at the silhouette
+const R_HALF_UM = 320;      // crystal size at which the lattice is half spent
+const GROWTH_SECONDS = 42;  // wall-clock seconds a full fall is compressed into
+const SHOW_SECONDS = 13;    // how long a finished crystal turns before the next
+const FADE_SECONDS = 2.2;
+const MAX_GROW_SECONDS = 74;
+const MAX_AGE_S = 2700;     // 45 minutes: about as long as a crystal ever grows
+const IDLE_TO_AUTO_MS = 30000;
+const SEED_HALF_UM = 0.5;   // the seed prism, and the thinnest a new plate can be, um
+const UI_FRACTION = 0.31;   // must match --panel-w in the stylesheet
+const MIN_DISPLAY_ASPECT = 0.042;   // thinnest a crystal is ever drawn
+const MAX_DISPLAY_ASPECT = 6.0;     // ...and the most slender
+// Diagnostic overrides, used only by build/sweep.mjs when exploring the
+// automaton's parameter space. The wall never passes a query string.
+const QS = new URLSearchParams(location.search);
+const GG_CHECK = QS.has('gg') || QS.has('ca');
+const CA_OVERRIDE = QS.has('ca')
+    ? (() => {
+        const v = QS.get('ca').split(',').map(Number);
+        return { rho: v[0], beta: v[1], kappa: v[2], mu: v[3],
+                 gamma: v[4], alphaCA: v[5], thetaCA: v[6], noise: v[7] };
+      })()
+    : null;
+const STOP_STEPS = QS.has('steps') ? parseInt(QS.get('steps'), 10) : 0;
+const STOP_R = QS.has('stopR') ? parseFloat(QS.get('stopR')) : 0;
+
+/* ---- WebGL scaffolding ----------------------------------------------- */
+
+const canvas = document.getElementById('gl');
+const gl = canvas.getContext('webgl2', {
+    alpha: false, antialias: false, depth: false, stencil: false,
+    powerPreference: 'high-performance', preserveDrawingBuffer: false
+});
+if (!gl) throw new Error('This display needs WebGL2, which the browser did not provide.');
+if (!gl.getExtension('EXT_color_buffer_float')) {
+    throw new Error('This display needs floating point render targets (EXT_color_buffer_float).');
+}
+gl.getExtension('OES_texture_float_linear');
+
+function compile(type, src, label) {
+    const sh = gl.createShader(type);
+    gl.shaderSource(sh, src);
+    gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+        const log = gl.getShaderInfoLog(sh);
+        // Line numbers in the log refer to the assembled source, so echo it to
+        // the console -- on the wall there is no other way to find the line.
+        console.error(label + ' failed to compile:\n' + log + '\n' + src);
+        throw new Error(label + ': ' + log);
+    }
+    return sh;
+}
+
+function program(fragSrc, label) {
+    const p = gl.createProgram();
+    gl.attachShader(p, compile(gl.VERTEX_SHADER, VERT_SRC, label + ' (vertex)'));
+    gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fragSrc, label));
+    gl.bindAttribLocation(p, 0, 'aPos');
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+        throw new Error(label + ' failed to link: ' + gl.getProgramInfoLog(p));
+    }
+    // Cache uniform locations up front; looking them up per frame is one of
+    // the few things that actually shows up in a profile here.
+    const u = {};
+    const count = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+    for (let i = 0; i < count; i++) {
+        const name = gl.getActiveUniform(p, i).name.replace(/\[0\]$/, '');
+        u[name] = gl.getUniformLocation(p, name);
+    }
+    return { p, u };
+}
+
+const quadVao = gl.createVertexArray();
+gl.bindVertexArray(quadVao);
+const quadBuf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+gl.enableVertexAttribArray(0);
+gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+gl.bindVertexArray(null);
+
+function texture(w, h, internal, filter) {
+    const t = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texStorage2D(gl.TEXTURE_2D, 1, internal, w, h);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    return t;
+}
+
+function framebuffer(attachments) {
+    const f = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, f);
+    const draw = [];
+    attachments.forEach((tex, i) => {
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, tex, 0);
+        draw.push(gl.COLOR_ATTACHMENT0 + i);
+    });
+    gl.drawBuffers(draw);
+    const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+    if (status !== gl.FRAMEBUFFER_COMPLETE) {
+        throw new Error('Incomplete framebuffer: 0x' + status.toString(16));
+    }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    return f;
+}
+
+function bindTex(prog, name, unit, tex) {
+    if (prog.u[name] === undefined || prog.u[name] === null) return;
+    gl.activeTexture(gl.TEXTURE0 + unit);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.uniform1i(prog.u[name], unit);
+}
+
+function drawTo(fb, w, h) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+    gl.viewport(0, 0, w, h);
+    gl.bindVertexArray(quadVao);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+/* ---- programs -------------------------------------------------------- */
+
+const progDiffuse = program(DIFFUSE_SRC, 'diffusion');
+const progUpdate = program(UPDATE_SRC, 'update');
+const progJfaSeed = program(JFA_SEED_SRC, 'jfa seed');
+const progJfaStep = program(JFA_STEP_SRC, 'jfa step');
+const progJfaResolve = program(JFA_RESOLVE_SRC, 'jfa resolve');
+const progThicken = program(THICKEN_SRC, 'thicken');
+const progPrep = program(PREP_SRC, 'render prep');
+const progRelief = program(RELIEF_SMOOTH_SRC, 'relief smooth');
+const progReduce = program(REDUCE_SRC, 'reduce');
+const progBg = program(BG_SRC, 'background');
+const progCrystal = program(CRYSTAL_SRC, 'crystal');
+
+/* ---- simulation textures --------------------------------------------- */
+
+// state0 is the crystal; state1 is scratch used between the two halves of a
+// step. height ping-pongs because a cell reads its neighbours' thickness while
+// writing its own.
+const texState = [texture(N, N, gl.RGBA32F, gl.NEAREST), texture(N, N, gl.RGBA32F, gl.NEAREST)];
+const texHeight = [texture(N, N, gl.RGBA32F, gl.NEAREST), texture(N, N, gl.RGBA32F, gl.NEAREST)];
+const texFlags = texture(N, N, gl.RGBA32F, gl.NEAREST);
+const texJfa = [texture(N, N, gl.RGBA32F, gl.NEAREST), texture(N, N, gl.RGBA32F, gl.NEAREST)];
+const texDist = texture(N, N, gl.RGBA32F, gl.NEAREST);
+const texPrep = texture(N, N, gl.RGBA32F, gl.LINEAR);
+const texPrep2 = texture(N, N, gl.RGBA32F, gl.LINEAR);
+
+const fbDiffuse = framebuffer([texState[1], texFlags]);
+const fbUpdate = [framebuffer([texState[0], texHeight[0]]), framebuffer([texState[0], texHeight[1]])];
+const fbHeight = [framebuffer([texHeight[0]]), framebuffer([texHeight[1]])];
+const fbJfa = [framebuffer([texJfa[0]]), framebuffer([texJfa[1]])];
+const fbDist = framebuffer([texDist]);
+const fbPrep = framebuffer([texPrep]);
+const fbPrep2 = framebuffer([texPrep2]);
+
+// Reduction chain: N -> ceil(N/8) -> ... -> 1
+const reduceSizes = [];
+for (let s = N; s > 1; s = Math.ceil(s / 8)) reduceSizes.push(Math.ceil(s / 8));
+const reduceA = reduceSizes.map((s) => texture(s, s, gl.RGBA32F, gl.NEAREST));
+const reduceB = reduceSizes.map((s) => texture(s, s, gl.RGBA32F, gl.NEAREST));
+const fbReduce = reduceSizes.map((_, i) => framebuffer([reduceA[i], reduceB[i]]));
+
+let heightIdx = 0;
+
+/* ---- seeding the lattice --------------------------------------------- */
+
+// A single mesoscopic prism of ice at the origin, in air holding vapour at the
+// cloud's background density. Everything else follows from this.
+// Held rather than allocated: these are 3.7 MB each and a new crystal starts
+// every minute, which is a garbage collection the wall would show as a hitch
+// at exactly the moment the visitor is looking at a fresh crystal.
+const seedState = new Float32Array(N * N * 4);
+const seedHeight = new Float32Array(N * N * 4);
+
+function seedLattice(rho) {
+    seedState.fill(0);
+    for (let i = 0; i < N * N; i++) seedState[i * 4 + 3] = rho;
+    const c = ((N - 1) / 2) | 0;
+    const o = (c * N + c) * 4;
+    seedState[o] = 1; seedState[o + 2] = 1; seedState[o + 3] = 0;
+
+    for (const t of texState) {
+        gl.bindTexture(gl.TEXTURE_2D, t);
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, N, N, gl.RGBA, gl.FLOAT, seedState);
+    }
+
+    seedHeight.fill(0);
+    seedHeight[o] = SEED_HALF_UM;
+    for (const t of texHeight) {
+        gl.bindTexture(gl.TEXTURE_2D, t);
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, N, N, gl.RGBA, gl.FLOAT, seedHeight);
+    }
+    heightIdx = 0;
+}
+
+/* ---- one automaton step ---------------------------------------------- */
+
+let stepCount = 0;
+// Wavelengths of the three octaves of environmental fluctuation, redrawn for
+// every crystal and drifting a little as it falls.
+const noiseFreq = [0.055, 0.130, 0.310];
+const noiseJitter = [1, 1, 1];
+const noiseDrift = [0.000041, 0.000073, 0.000112];
+
+function simStep(ca) {
+    // (i) diffusion, and the neighbour census the second half needs
+    gl.useProgram(progDiffuse.p);
+    bindTex(progDiffuse, 'uState', 0, texState[0]);
+    gl.uniform1f(progDiffuse.u.uRho, ca.rho);
+    gl.uniform1f(progDiffuse.u.uBoxR, BOX_R * N);
+    gl.uniform1i(progDiffuse.u.uN, N);
+    drawTo(fbDiffuse, N, N);
+
+    // (ii)-(v) freeze, attach, melt, fluctuate -- and grow in thickness
+    gl.useProgram(progUpdate.p);
+    bindTex(progUpdate, 'uState', 0, texState[1]);
+    bindTex(progUpdate, 'uFlags', 1, texFlags);
+    bindTex(progUpdate, 'uHeight', 2, texHeight[heightIdx]);
+    gl.uniform1f(progUpdate.u.uRho, ca.rho);
+    gl.uniform1f(progUpdate.u.uBeta, ca.beta);
+    gl.uniform1f(progUpdate.u.uKappa, ca.kappa);
+    gl.uniform1f(progUpdate.u.uMu, ca.mu);
+    gl.uniform1f(progUpdate.u.uGamma, ca.gamma);
+    gl.uniform1f(progUpdate.u.uAlphaCA, ca.alphaCA);
+    gl.uniform1f(progUpdate.u.uThetaCA, ca.thetaCA);
+    gl.uniform1f(progUpdate.u.uNoise, ca.noise);
+    gl.uniform3f(progUpdate.u.uFreq,
+        noiseFreq[0] * noiseJitter[0] * (1 + 0.18 * Math.sin(stepCount * noiseDrift[0])),
+        noiseFreq[1] * noiseJitter[1] * (1 + 0.18 * Math.sin(stepCount * noiseDrift[1])),
+        noiseFreq[2] * noiseJitter[2] * (1 + 0.18 * Math.sin(stepCount * noiseDrift[2])));
+    gl.uniform1i(progUpdate.u.uN, N);
+    gl.uniform1f(progUpdate.u.uSeedH, SEED_HALF_UM);
+    gl.uniform1f(progUpdate.u.uPlateT, ca.plateT);
+    gl.uniform1f(progUpdate.u.uColumnar, ca.columnar);
+    gl.uniform1f(progUpdate.u.uErode, ca.erode);
+    gl.uniform1f(progUpdate.u.uErodeH, ca.erodeH);
+    drawTo(fbUpdate[1 - heightIdx], N, N);
+
+    heightIdx = 1 - heightIdx;
+    stepCount++;
+}
+
+// Once a frame, regardless of how many automaton steps ran.
+function thicken(ca, umThisFrame) {
+    if (!(umThisFrame > 0)) return;
+    gl.useProgram(progThicken.p);
+    bindTex(progThicken, 'uState', 0, texState[0]);
+    bindTex(progThicken, 'uHeight', 1, texHeight[heightIdx]);
+    bindTex(progThicken, 'uDist', 2, texDist);
+    gl.uniform1f(progThicken.u.uBasalStep, umThisFrame);
+    gl.uniform1f(progThicken.u.uScreen, ca.screen);
+    drawTo(fbHeight[1 - heightIdx], N, N);
+    heightIdx = 1 - heightIdx;
+}
+
+// Diagnostic: the thickness profile straight across the middle of the lattice,
+// which is the quickest way to see what shape the c-axis growth has actually
+// produced.
+function heightRow() {
+    const buf = new Float32Array(N * 4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbHeight[heightIdx]);
+    gl.readBuffer(gl.COLOR_ATTACHMENT0);
+    gl.readPixels(0, (N - 1) / 2, N, 1, gl.RGBA, gl.FLOAT, buf);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    const out = [];
+    for (let i = 0; i < N; i++) {
+        if (buf[i * 4] > 0) out.push([i - (N - 1) / 2, +buf[i * 4].toFixed(1), +buf[i * 4 + 1].toFixed(1)]);
+    }
+    return out;
+}
+
+/* ---- distance field, render texture, measurement ---------------------- */
+
+function computeDistance() {
+    gl.useProgram(progJfaSeed.p);
+    bindTex(progJfaSeed, 'uState', 0, texState[0]);
+    gl.uniform1i(progJfaSeed.u.uN, N);
+    drawTo(fbJfa[0], N, N);
+
+    let src = 0;
+    gl.useProgram(progJfaStep.p);
+    gl.uniform1i(progJfaStep.u.uN, N);
+    for (let jump = 1 << Math.ceil(Math.log2(N)); jump >= 1; jump >>= 1) {
+        bindTex(progJfaStep, 'uSeed', 0, texJfa[src]);
+        gl.uniform1i(progJfaStep.u.uJump, jump);
+        drawTo(fbJfa[1 - src], N, N);
+        src = 1 - src;
+    }
+
+    gl.useProgram(progJfaResolve.p);
+    bindTex(progJfaResolve, 'uSeed', 0, texJfa[src]);
+    bindTex(progJfaResolve, 'uState', 1, texState[0]);
+    gl.uniform1i(progJfaResolve.u.uN, N);
+    drawTo(fbDist, N, N);
+}
+
+function computePrep(cMax, cMean, bands) {
+    gl.useProgram(progPrep.p);
+    bindTex(progPrep, 'uState', 0, texState[0]);
+    bindTex(progPrep, 'uHeight', 1, texHeight[heightIdx]);
+    bindTex(progPrep, 'uDist', 2, texDist);
+    bindTex(progPrep, 'uHeightAge', 3, texHeight[heightIdx]);
+    gl.uniform1f(progPrep.u.uAgeMax, Math.max(stepCount, 1));
+    gl.uniform1f(progPrep.u.uBands, bands);
+    gl.uniform1f(progPrep.u.uCovScale, COV_SCALE);
+    gl.uniform1f(progPrep.u.uCMax, cMax);
+    gl.uniform1f(progPrep.u.uCMean, cMean);
+    gl.uniform1i(progPrep.u.uN, N);
+    drawTo(fbPrep, N, N);
+
+    gl.useProgram(progRelief.p);
+    bindTex(progRelief, 'uPrep', 0, texPrep);
+    gl.uniform1i(progRelief.u.uN, N);
+    drawTo(fbPrep2, N, N);
+}
+
+/*  Folds the lattice down to one texel and reads those eight numbers back.
+ *
+ *  This is the only place data crosses from the GPU to the CPU, and it is done
+ *  asynchronously, which matters more than it sounds. Calling readPixels
+ *  straight into a JavaScript array makes the CPU wait for the GPU to finish
+ *  everything queued ahead of it; measured on the development machine that was
+ *  costing 7 ms every third frame -- a seventh of the whole frame budget, and
+ *  the only thing in this program that showed up as visible stutter.
+ *
+ *  Instead the read goes into a buffer object, which the driver can satisfy in
+ *  its own time, and a fence records when it is done. A later frame notices the
+ *  fence has signalled and picks the numbers up. Nothing ever blocks. The data
+ *  is then two or three frames stale, which for a crystal that takes forty
+ *  seconds to grow is not a meaningful delay.
+ */
+const READ_SLOTS = 3;
+const readSlots = [];
+for (let i = 0; i < READ_SLOTS; i++) {
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, buf);
+    gl.bufferData(gl.PIXEL_PACK_BUFFER, 32, gl.STREAM_READ);
+    readSlots.push({ buf, sync: null, data: new Float32Array(8) });
+}
+gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+let readCursor = 0;
+let lastMeasurement = null;
+
+function reduceToTexel() {
+    gl.useProgram(progReduce.p);
+    gl.uniform1i(progReduce.u.uN, N);
+    let srcSize = N;
+    for (let i = 0; i < reduceSizes.length; i++) {
+        gl.uniform1i(progReduce.u.uLevel, i);
+        gl.uniform1i(progReduce.u.uSrcSize, srcSize);
+        if (i === 0) {
+            bindTex(progReduce, 'uState', 0, texState[0]);
+            bindTex(progReduce, 'uHeight', 1, texHeight[heightIdx]);
+            bindTex(progReduce, 'uSrcA', 2, texState[0]);
+            bindTex(progReduce, 'uSrcB', 3, texState[0]);
+        } else {
+            bindTex(progReduce, 'uSrcA', 2, reduceA[i - 1]);
+            bindTex(progReduce, 'uSrcB', 3, reduceB[i - 1]);
+        }
+        drawTo(fbReduce[i], reduceSizes[i], reduceSizes[i]);
+        srcSize = reduceSizes[i];
+    }
+
+    return fbReduce[reduceSizes.length - 1];
+}
+
+// Collect anything the GPU has finished with, then queue one more read.
+function measure() {
+    for (const slot of readSlots) {
+        if (!slot.sync) continue;
+        const state = gl.clientWaitSync(slot.sync, 0, 0);   // poll, never block
+        if (state === gl.TIMEOUT_EXPIRED) continue;
+        gl.deleteSync(slot.sync);
+        slot.sync = null;
+        if (state !== gl.WAIT_FAILED) {
+            gl.bindBuffer(gl.PIXEL_PACK_BUFFER, slot.buf);
+            gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, slot.data);
+            gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+            const d = slot.data;
+            lastMeasurement = { cells: d[0], sumSolid: d[1], maxR: d[2], shellCells: d[3],
+                                sumH: d[4], maxH: d[5], maxC: d[6], sumC: d[7] };
+        }
+    }
+
+    const slot = readSlots[readCursor];
+    if (!slot.sync) {
+        readCursor = (readCursor + 1) % READ_SLOTS;
+        const fb = reduceToTexel();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, slot.buf);
+        gl.readBuffer(gl.COLOR_ATTACHMENT0);
+        gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.FLOAT, 0);
+        gl.readBuffer(gl.COLOR_ATTACHMENT1);
+        gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.FLOAT, 16);
+        gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        slot.sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+    }
+    return lastMeasurement;
+}
+
+// A fresh crystal must not be measured against the old one's numbers.
+function discardMeasurements() {
+    for (const slot of readSlots) {
+        if (slot.sync) { gl.deleteSync(slot.sync); slot.sync = null; }
+    }
+    lastMeasurement = null;
+}
+
+/* ---------------------------------------------------------------------- *\
+ *  The world: one crystal, falling.
+ *
+ *  Five numbers describe the sky, and they are the five things a visitor can
+ *  change. Everything else -- how fast the crystal grows, which faces win,
+ *  how fast it falls, how long it takes, what it ends up being called -- is
+ *  worked out from them.
+\* ---------------------------------------------------------------------- */
+
+const PARAMS = [
+    {
+        key: 'seedAltitude', name: 'Where it starts', unit: 'm',
+        min: 500, max: 7000, def: 2400,
+        fmt: (v) => Math.round(v / 10) * 10 + ' m',
+        restart: true
+    },
+    {
+        key: 'groundTemp', name: 'Temperature at the ground', unit: 'C',
+        min: -30, max: 8, def: -7,
+        fmt: (v) => (v > 0 ? '+' : '') + v.toFixed(1) + ' °C'
+    },
+    {
+        key: 'lapseRate', name: 'Cooling with height', unit: 'C/km',
+        min: 1.5, max: 10, def: 4.2,
+        fmt: (v) => '−' + v.toFixed(1) + ' °C / km'
+    },
+    {
+        key: 'humidity', name: 'How much vapour', unit: '',
+        min: -0.25, max: 1.00, def: 0.9,
+        fmt: (v) => (v <= 0 ? 'drier than ice — it evaporates'
+                            : Math.round(v * 100) + '% of what a cloud holds')
+    },
+    {
+        key: 'updraft', name: 'Updraft', unit: 'm/s',
+        min: -0.6, max: 1.8, def: 0.0,
+        fmt: (v) => (Math.abs(v) < 0.03 ? 'still air'
+                   : (v > 0 ? 'rising ' : 'sinking ') + Math.abs(v).toFixed(2) + ' m/s')
+    }
+];
+
+const world = {
+    params: {},
+    altitude: 0,
+    ageSim: 0,          // seconds of simulated growth
+    phase: 'growing',
+    phaseTime: 0,
+    growTime: 0,        // wall seconds spent growing
+    timeScale: 60,
+
+    radiusUm: 2.0,
+    halfThickUm: SEED_HALF_UM,
+    rimThickUm: SEED_HALF_UM,
+    cellUm: 2.0,
+
+    stepCarry: 0,
+
+    tc: -15, sigmaInf: 0.15, gs: null, ca: null,
+    fallSpeed: 0.5, massKg: 0, areaM2: 0,
+    metrics: { cells: 0, maxR: 1, sumH: 0, maxH: 0, maxC: 1, sumSolid: 0, shellCells: 0 },
+    habit: HABITS.germ,
+    melted: false,
+    sublimating: false,
+    fade: 0,
+
+    trail: [],          // recent points on the Nakaya diagram
+    profileTrail: []    // recent points on the altitude/temperature chart
+};
+
+PARAMS.forEach((p) => { world.params[p.key] = p.def; });
+
+/* ---- curated skies ---------------------------------------------------- */
+
+/*  Each of these is a sky that reliably produces one particular kind of
+ *  crystal, so that the unattended display works through the whole morphology
+ *  diagram rather than showing eight variations on a dendrite. The comment on
+ *  each says which band of the diagram the crystal spends its life in.
+ */
+const PRESETS = [
+    {
+        name: 'Fernlike stellar dendrite',
+        why: 'Held in the dendrite band around <b>&minus;15 &deg;C</b>, in air as wet as a cloud ever gets.',
+        p: { seedAltitude: 2000, groundTemp: -12.5, lapseRate: 2.4, humidity: 1.0, updraft: 0.05 }
+    },
+    {
+        name: 'Needle',
+        why: 'Held near <b>&minus;6 &deg;C</b>, where only the tiny end faces of the crystal can grow.',
+        p: { seedAltitude: 900, groundTemp: -4.5, lapseRate: 1.8, humidity: 0.95, updraft: 0.05 }
+    },
+    {
+        name: 'Hollow column',
+        why: 'The same columnar band, a little colder and a little drier, so the ends hollow rather than run away.',
+        p: { seedAltitude: 1000, groundTemp: -7.2, lapseRate: 1.8, humidity: 0.95, updraft: 0.0 }
+    },
+    {
+        name: 'Simple hexagonal plate',
+        why: 'Just below freezing, where the air holds almost no extra vapour and growth is very slow.',
+        p: { seedAltitude: 700, groundTemp: -1.5, lapseRate: 2.2, humidity: 0.55, updraft: 0.0 }
+    },
+    {
+        name: 'Sectored plate',
+        why: 'The plate band at <b>&minus;13 &deg;C</b> with the vapour turned down, so the corners lead but never branch.',
+        p: { seedAltitude: 1500, groundTemp: -11.5, lapseRate: 2.6, humidity: 0.62, updraft: 0.0 }
+    },
+    {
+        name: 'Capped column',
+        why: 'A column started at <b>&minus;8 &deg;C</b> and then lifted by an updraft into the colder plate band above.',
+        p: { seedAltitude: 700, groundTemp: -3.0, lapseRate: 6.5, humidity: 0.95, updraft: 1.25 }
+    },
+    {
+        name: 'Cold columns',
+        why: 'Below <b>&minus;22 &deg;C</b> the prism faces stall again and the crystal goes back to growing lengthwise.',
+        p: { seedAltitude: 1600, groundTemp: -25.5, lapseRate: 3.0, humidity: 0.8, updraft: 0.1 }
+    },
+    {
+        name: 'Stellar plate',
+        why: 'The middle of the dendrite band, but dry enough that the six arms stay broad and faceted.',
+        p: { seedAltitude: 1800, groundTemp: -12.0, lapseRate: 2.8, humidity: 0.68, updraft: 0.0 }
+    },
+    {
+        name: 'Rain, not snow',
+        why: 'A perfectly good snow crystal, falling into air above freezing. This is what most snow does.',
+        p: { seedAltitude: 1500, groundTemp: 4.5, lapseRate: 6.5, humidity: 0.95, updraft: 0.0 }
+    }
+];
+
+function randomSky() {
+    const r = (a, b) => a + Math.random() * (b - a);
+    const ground = r(-24, 1);
+    return {
+        seedAltitude: r(800, 4200),
+        groundTemp: ground,
+        lapseRate: r(2.5, 7.5),
+        humidity: r(0.30, 1.0),
+        updraft: Math.random() < 0.25 ? r(0.4, 1.4) : r(-0.15, 0.4)
+    };
+}
+
+/* ---- starting over ---------------------------------------------------- */
+
+function resetCrystal() {
+    const p = world.params;
+    world.altitude = p.seedAltitude;
+    world.ageSim = 0;
+    world.growTime = 0;
+    world.phase = 'growing';
+    world.phaseTime = 0;
+    // The seed is a single mesoscopic prism, and it has to start square: it is
+    // the same size across as it is tall. Give it any head start in one
+    // direction and diffusion locks it in -- the smaller face always reaches
+    // vapour more easily, so whichever face starts smaller wins and keeps
+    // winning, and the crystal's habit is decided by the seed instead of by
+    // the air. Square, and the attachment kinetics decide, which is the point.
+    world.radiusUm = SEED_HALF_UM;
+    world.halfThickUm = SEED_HALF_UM;
+    world.rimThickUm = SEED_HALF_UM;
+    world.cellUm = SEED_HALF_UM;
+    world.stepCarry = 0;
+    world.melted = false;
+    world.sublimating = false;
+    world.habit = HABITS.germ;
+    world.metrics = { cells: 1, maxR: 1, sumH: SEED_HALF_UM, maxH: SEED_HALF_UM,
+                      maxC: 1, sumSolid: SEED_HALF_UM, shellCells: 0 };
+    world.trail.length = 0;
+    world.profileTrail.length = 0;
+    world.fade = 0;
+
+    // A whole fall is compressed into roughly GROWTH_SECONDS of wall time,
+    // whatever the height, so a crystal seeded at 6 km does not take ten times
+    // as long to watch as one seeded at 600 m. The factor is shown on screen.
+    const guessFall = Math.max(0.25, 0.6 - p.updraft);
+    const fallTime = Math.min(p.seedAltitude / guessFall, MAX_AGE_S);
+    world.timeScale = clamp(fallTime / GROWTH_SECONDS, 8, 400);
+
+    const tc = temperatureAt(p.seedAltitude);
+    const sigma = supersaturationAt(tc);
+    const ca = automatonParams(tc, Math.max(sigma, 0.001),
+                               facetGrowth(tc, Math.max(sigma, 0.001), SEED_HALF_UM, sigma0Prism(tc)));
+    { const t = performance.now(); seedLattice(ca.rho); discardMeasurements(); census.tSeed += performance.now() - t; lastCulprit = 'reseed'; }
+
+    // Fresh fluctuation wavelengths mean no two crystals grown under identical
+    // conditions come out identical -- which is also true of real ones.
+    for (let i = 0; i < 3; i++) noiseJitter[i] = 0.7 + Math.random() * 0.7;
+    stepCount = 0;
+
+    computeDistance();
+    computePrep(1, 0, 6);
+}
+
+function temperatureAt(z) {
+    return world.params.groundTemp - world.params.lapseRate * z / 1000;
+}
+
+/*  Supersaturation with respect to ICE, which is what the crystal responds to.
+ *
+ *  The slider runs from zero to one across the range that is actually
+ *  available, from ice saturation (where a crystal neither grows nor shrinks)
+ *  to water saturation (a cloud full of supercooled droplets, the wettest air
+ *  there is). That is the y axis of the Nakaya diagram, and it is the useful
+ *  quantity here.
+ *
+ *  Expressing it as ordinary relative humidity over water instead would make
+ *  most of the slider useless: at -15 C, ice saturation already sits at 86% RH
+ *  over water, so everything below 86% is the same answer -- the crystal
+ *  evaporates -- and the entire interesting range is squeezed into the last
+ *  seventh of the travel. A little of that range is kept below zero, because
+ *  air drier than ice is a real thing that happens to real snowflakes and it
+ *  is worth being able to show it.
+ */
+function supersaturationAt(tc) {
+    if (tc >= 0) return -1;
+    return world.params.humidity * sigmaWaterSat(tc);
+}
+
+/* ---- one frame of growth --------------------------------------------- */
+
+function advance(dtWall) {
+    const p = world.params;
+    const dtSim = dtWall * world.timeScale;
+
+    const tc = temperatureAt(world.altitude);
+    const sigmaInf = supersaturationAt(tc);
+    world.tc = tc;
+    world.sigmaInf = sigmaInf;
+
+    /*  The two facet sizes that decide which way the crystal goes.
+     *
+     *  The basal faces are the flat top and bottom, so their size is the
+     *  crystal's radius. The prism faces are the sides, so their size is how
+     *  thick the crystal is at its rim -- and that has to be integrated here
+     *  rather than read back from the lattice. The lattice only thickens on
+     *  the steps the automaton actually runs, which early on is not every
+     *  frame, and a rim thickness that lags while the radius does not hands
+     *  the prism faces a permanent head start in the competition for vapour.
+     *  The advantage then compounds, because the smaller face always reaches
+     *  vapour more easily and so keeps winning, and every crystal comes out a
+     *  plate whatever the temperature says.
+     */
+    const gs = growthState(tc, Math.max(sigmaInf, 0),
+                           Math.max(world.radiusUm, 0.4),
+                           Math.max(world.rimThickUm, 0.4));
+    world.gs = gs;
+
+    const ca = automatonParams(tc, Math.max(sigmaInf, 0), gs.prism);
+    ca.noise = 0.075;
+    ca.erode = 0;
+    ca.erodeH = 0;
+
+    // ?gg=1 pins the automaton to Gravner & Griffeath's published "simple
+    // star" parameters and lets it run unthrottled, so the shader can be
+    // checked against build/ggcheck.mjs and against the update counts in the
+    // paper. Never used by the wall.
+    if (CA_OVERRIDE) {
+        Object.assign(ca, CA_OVERRIDE);
+    } else if (GG_CHECK) {
+        ca.rho = 0.65; ca.beta = 1.75; ca.kappa = 0.15; ca.mu = 0.015;
+        ca.gamma = 0.00001; ca.alphaCA = 0.026; ca.thetaCA = 0.2; ca.noise = 0;
+    }
+
+    world.melted = tc > 0;
+    world.sublimating = !world.melted && sigmaInf < 0 && world.metrics.cells > 4;
+
+    let stepsPerSimSec = 0, basalRate = 0, shrinking = false;
+    if (world.melted) {
+        // Above freezing the crystal does not sublimate, it melts, and it does
+        // so fast. Give it a few seconds on screen and then let it go.
+        shrinking = true;
+        stepsPerSimSec = 240 / Math.max(world.timeScale, 1);
+        ca.erode = 0.09;
+        ca.erodeH = Math.max(world.halfThickUm, 1) * 0.02;
+    } else if (sigmaInf < 0) {
+        // Drier than ice saturation: evaporation, diffusion-limited, from the
+        // most exposed ice first.
+        shrinking = true;
+        const X0 = screeningLength(tc);
+        const vSub = (X0 / Math.max(world.radiusUm, 0.4)) * vKin(tc) * (-sigmaInf);
+        stepsPerSimSec = STEP_GAIN * vSub;
+        ca.erode = 0;      // filled in below, once the step count is known
+        ca.erodeH = 0;
+        world.subRate = vSub;
+    } else {
+        basalRate = gs.basal.v;
+        world.radiusUm += gs.prism.v * dtSim;
+        world.rimThickUm += gs.basal.v * dtSim;
+    }
+
+    // The thickness a plate growing in this air would settle at: its radius
+    // times the ratio of the two growth speeds, which is the aspect ratio the
+    // crystal is heading for. On a plate this equals the plate's own thickness,
+    // so new ice at the rim is solid. On a column it is far less than the
+    // column's height, so new ice arrives as a thin sheet on each end. See the
+    // uPlateT note in part 3.
+    const ratio = gs.basal.v / Math.max(gs.prism.v, 1e-12);
+    ca.plateT = clamp(world.radiusUm * ratio, SEED_HALF_UM, 1e7);
+
+    // Whether the crystal is already a column. Below about twenty micrometres
+    // it is too small for the question to mean anything, so it counts as flat.
+    ca.columnar = (world.radiusUm > 18 && world.metrics.maxH > 0.35 * world.radiusUm) ? 1 : 0;
+
+    // Vapour reaching a basal face from its rim is absorbed as it spreads
+    // inward. The penetration depth is the crystal's own thickness, shortened
+    // when the air is very wet because the gradients are steeper then.
+    const screenUm = Math.max(world.halfThickUm, 0.6) / (1 + 6 * Math.max(sigmaInf, 0));
+    // Never shorter than a good fraction of the crystal, so the pit it carves
+    // is a smooth cone. Left to the raw number it collapses to a step: only
+    // the outermost ring of cells grows at full rate and everything inside it
+    // stops, so a column comes out as a short fat core with a couple of long
+    // thin blades -- the rim seen edge-on -- running past each end of it.
+    ca.screen = clamp(Math.max(screenUm / Math.max(world.cellUm, 1e-3),
+                               0.35 * Math.max(world.metrics.maxR, 1)), 1.0, 500);
+
+    /*  How many automaton steps to run.
+     *
+     *  While the crystal is growing, the physics owns the size and the
+     *  automaton owns the pattern: part 2 integrates the real radius in
+     *  micrometres, and the automaton is simply run until its own outline has
+     *  caught up with that radius, at a fixed mesoscopic cell size. Tying the
+     *  two together this way means the automaton's step count -- which has no
+     *  physical meaning of its own, and whose relation to real time depends on
+     *  every one of its seven parameters -- never has to be calibrated. It
+     *  also means the crystal is always exactly as big as the panel says it is.
+     *
+     *  Shrinking is different: there is no envelope to chase, so evaporation
+     *  is paced directly by its own rate.
+     */
+    let nSteps;
+    if (shrinking) {
+        world.stepCarry += stepsPerSimSec * dtSim;
+        nSteps = Math.min(MAX_STEPS_FRAME, Math.floor(world.stepCarry));
+        world.stepCarry -= nSteps;
+    } else if (GG_CHECK) {
+        const done = (STOP_STEPS && stepCount >= STOP_STEPS)
+                  || (STOP_R && world.metrics.maxR >= STOP_R);
+        nSteps = done ? 0 : MAX_STEPS_FRAME;
+    } else {
+        // How much of the lattice this crystal has earned. It saturates, so a
+        // twenty-micrometre needle gets a dozen cells and stays a clean little
+        // hexagon while a four-millimetre fern gets the whole lattice and all
+        // the branch structure that comes with it -- and the relative sizes
+        // stay honest because the picture is scaled by the real dimensions,
+        // not by the cell count.
+        const R = world.radiusUm;
+        // Stopping well short of the parcel wall is what leaves a crystal room
+        // to be a shape rather than a disc: a dendrite needs clear air around
+        // it, and one grown right up against the wall comes out as a filled
+        // circle with markings, which is not a snowflake.
+        // The floor keeps even the smallest crystal on enough cells to render
+        // as a clean hexagonal prism rather than as a handful of blocks.
+        const target = Math.max(16, BOX_R * N * 0.72 * (R / (R + R_HALF_UM)));
+        // The step ceiling is a guard for the faceted, slow-growing corner of
+        // the parameter space, where the automaton can chase an envelope it
+        // will not reach within the crystal's lifetime. The pattern is settled
+        // long before this; carrying on only costs frames.
+        nSteps = (stepCount < 130000 && world.metrics.maxR < target)
+               ? MAX_STEPS_FRAME : 0;
+        world.stepCarry = 0;
+    }
+
+    if (nSteps > 0) {
+        if (sigmaInf < 0 && !world.melted) {
+            const perStep = (world.subRate || 0) * dtSim / nSteps;
+            ca.erodeH = perStep;
+            ca.erode = clamp(perStep / Math.max(world.cellUm, 1e-3), 0, 0.5);
+        }
+        for (let i = 0; i < nSteps; i++) simStep(ca);
+    }
+
+    // The c axis advances every frame whether or not the automaton ran.
+    thicken(ca, basalRate * dtSim);
+    world.ca = ca;
+
+    if (world.phase === 'growing') {
+        world.ageSim += dtSim;
+        world.growTime += dtWall;
+        world.altitude -= (world.fallSpeed - p.updraft) * dtSim;
+        world.altitude = clamp(world.altitude, 0, 9000);
+    }
+}
+
+/* ---- what the measurement means -------------------------------------- */
+
+function absorbMeasurement(m) {
+    world.metrics = m;
+    if (m.cells < 1) return;
+
+    // One lattice cell is however wide it has to be for the pattern to match
+    // the size the physics says the crystal has reached. The automaton draws
+    // the shape; part 2 sets the scale.
+    world.cellUm = world.radiusUm / Math.max(m.maxR, 1);
+    world.halfThickUm = m.sumH / m.cells;
+
+    const cellAreaUm2 = 0.86602540378 * world.cellUm * world.cellUm;
+    world.massKg = m.sumSolid * cellAreaUm2 * 2 * RHO_ICE * 1e-18;
+    world.areaM2 = m.cells * cellAreaUm2 * 1e-12;
+
+    const aspect = world.halfThickUm / Math.max(world.radiusUm, 1e-6);
+    const columnar = aspect > 0.8;
+    // A column falls lengthwise, so it presents its side, not its end.
+    const area = columnar
+        ? Math.max(2 * world.radiusUm * 2 * m.maxH, 1) * 1e-12
+        : world.areaM2;
+    world.fallSpeed = terminalVelocity(world.massKg, area, world.altitude, columnar);
+
+    // Hexagon of this radius, in cells: area (3*sqrt(3)/2)R^2 at 2/sqrt(3)
+    // cells per unit area.
+    const hexCells = 3.0 * m.maxR * m.maxR;
+    world.habit = classify({
+        radiusUm: world.radiusUm,
+        halfThickUm: world.halfThickUm,
+        fill: clamp01(m.cells / Math.max(hexCells, 1)),
+        cappedFraction: m.shellCells / m.cells,
+        hollowness: clamp01(1 - (m.sumH / m.cells) / Math.max(m.maxH, 1e-6)),
+        melted: world.melted && m.cells < 60,
+        sublimating: world.sublimating
+    });
+}
+
+/* ---------------------------------------------------------------------- *\
+ *  The instrument panel.
+ *
+ *  Two charts and a column of numbers. The charts are the point: the Nakaya
+ *  diagram says *why* this crystal looks the way it does, and the fall profile
+ *  says *where* that happened. Watching the marker cross from one band of the
+ *  Nakaya diagram into the next while the crystal on the left changes what it
+ *  is doing is the whole lesson, delivered without a word of text.
+\* ---------------------------------------------------------------------- */
+
+const el = (id) => document.getElementById(id);
+const habitNameEl = el('habit-name');
+const habitNoteEl = el('habit-note');
+const statsEl = el('stats');
+const paramsEl = el('params');
+const captionEl = el('caption');
+const modeBadgeEl = el('mode-badge');
+const modeTextEl = el('mode-text');
+
+/* ---- readouts --------------------------------------------------------- */
+
+const STATS = [
+    { k: 'Altitude', get: () => fmtNum(world.altitude, 0), unit: 'm' },
+    { k: 'Air temp', get: () => (world.tc > 0 ? '+' : '') + world.tc.toFixed(1), unit: '°C' },
+    { k: 'Supersat.', get: () => (world.sigmaInf * 100).toFixed(1), unit: '%' },
+    { k: 'Falling', get: () => Math.max(0, world.fallSpeed - world.params.updraft).toFixed(2), unit: 'm/s' },
+    { k: 'Across', get: () => sizeVal(2 * world.radiusUm), unit: () => sizeUnit(2 * world.radiusUm) },
+    { k: 'Thick', get: () => sizeVal(2 * world.halfThickUm), unit: () => sizeUnit(2 * world.halfThickUm) },
+    { k: 'Proportions', get: () => aspectText(), unit: '' },
+    { k: 'Growing for', get: () => (world.ageSim / 60).toFixed(1), unit: 'min' }
+];
+
+const statNodes = STATS.map((s) => {
+    const d = document.createElement('div');
+    d.className = 'stat';
+    d.innerHTML = '<div class="k">' + s.k + '</div><div class="v"></div>';
+    statsEl.appendChild(d);
+    return d.querySelector('.v');
+});
+
+function fmtNum(v, dp) {
+    return v.toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp });
+}
+function sizeVal(um) { return um >= 1000 ? (um / 1000).toFixed(2) : Math.round(um).toString(); }
+function sizeUnit(um) { return um >= 1000 ? 'mm' : 'µm'; }
+
+// Reported honestly, not as drawn: the picture exaggerates thickness so that a
+// plate is visible at all, and this line is where the truth lives.
+function aspectText() {
+    const r = world.halfThickUm / Math.max(world.radiusUm, 1e-9);
+    if (!isFinite(r) || r <= 0) return '—';
+    return r >= 1 ? (r.toFixed(1) + ' : 1 tall') : ('1 : ' + Math.round(1 / r) + ' flat');
+}
+
+function updateStats() {
+    for (let i = 0; i < STATS.length; i++) {
+        const u = typeof STATS[i].unit === 'function' ? STATS[i].unit() : STATS[i].unit;
+        statNodes[i].innerHTML = STATS[i].get() + (u ? '<small>' + u + '</small>' : '');
+    }
+}
+
+/* ---- the five parameter bars ------------------------------------------ */
+
+const paramNodes = PARAMS.map((p) => {
+    const d = document.createElement('div');
+    d.className = 'param';
+    d.innerHTML = '<div class="pname">' + p.name + '</div><div class="pval"></div>'
+                + '<div class="track"><div class="fill"></div></div>';
+    paramsEl.appendChild(d);
+    return { root: d, val: d.querySelector('.pval'), fill: d.querySelector('.fill') };
+});
+
+// Bars a visitor has touched glow warm rather than cold, so from across the
+// room it is obvious which parts of the sky are theirs and which are still the
+// display's own.
+const touched = new Set();
+
+function updateParams() {
+    PARAMS.forEach((p, i) => {
+        const v = world.params[p.key];
+        paramNodes[i].val.textContent = p.fmt(v);
+        paramNodes[i].fill.style.width = (100 * clamp01((v - p.min) / (p.max - p.min))) + '%';
+        paramNodes[i].root.classList.toggle('touched', touched.has(p.key));
+    });
+}
+
+/* ---- charts ----------------------------------------------------------- */
+
+function fitCanvas(c) {
+    const r = c.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(2, Math.round(r.width * dpr));
+    const h = Math.max(2, Math.round(r.height * dpr));
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    return { ctx: c.getContext('2d'), w, h, s: dpr };
+}
+
+const nakayaCanvas = el('nakaya');
+const profileCanvas = el('profile');
+
+const T_LEFT = 0, T_RIGHT = -32;      // the diagram's temperature axis
+const RHO_TOP = 0.34;                 // g/m^3 of excess vapour
+
+/*  The habit field, painted once into an offscreen canvas.
+ *
+ *  This is not a picture of the Nakaya diagram copied from a paper -- it is
+ *  the model in part 2 evaluated on a grid. Wherever the prism faces have the
+ *  lower nucleation barrier the crystal grows outward and the region is drawn
+ *  cool; wherever the basal faces win it grows lengthwise and the region is
+ *  drawn warm. The three reversals as you cool from 0 to −30 °C fall out of
+ *  the two SDAK dips, and land where Nakaya measured them.
+ */
+const habitField = document.createElement('canvas');
+(function paintHabitField() {
+    const W = 240, H = 168;
+    habitField.width = W; habitField.height = H;
+    const ctx = habitField.getContext('2d');
+    const img = ctx.createImageData(W, H);
+    for (let y = 0; y < H; y++) {
+        const rhov = RHO_TOP * (1 - (y + 0.5) / H);
+        for (let x = 0; x < W; x++) {
+            const tc = T_LEFT + (T_RIGHT - T_LEFT) * (x + 0.5) / W;
+            const tk = tc + 273.15;
+            const sigma = (rhov * 1e-3) * RV * tk / eIce(tc);
+            const cap = sigmaWaterSat(tc);
+            const o = (y * W + x) * 4;
+
+            // Above the water saturation line no cloud can hold that much
+            // vapour, so nothing grows there; leave it nearly empty.
+            if (sigma > cap * 1.02 || sigma <= 0) {
+                img.data[o] = 6; img.data[o + 1] = 10; img.data[o + 2] = 20;
+                img.data[o + 3] = 150;
+                continue;
+            }
+
+            const s = Math.max(0.35 * sigma, 1e-4);
+            const ab = Math.exp(-sigma0Basal(tc) / s);
+            const ap = Math.exp(-sigma0Prism(tc) / s);
+            const plateness = (ap - ab) / (ap + ab + 1e-30);   // +1 plate, -1 column
+
+            // Brighter and more saturated upward: more vapour means faster,
+            // more elaborate growth, which is the diagram's other axis.
+            const vigour = Math.pow(clamp01(sigma / 0.22), 0.65);
+            const plate = [0.30, 0.66, 1.00];
+            const column = [1.00, 0.68, 0.32];
+            const m = clamp01((plateness + 1) * 0.5);
+            const base = 0.26 + 0.42 * vigour;
+            for (let ch = 0; ch < 3; ch++) {
+                const c = lerp(column[ch], plate[ch], m);
+                img.data[o + ch] = Math.round(255 * clamp01(c * base));
+            }
+            img.data[o + 3] = 235;
+        }
+    }
+    ctx.putImageData(img, 0, 0);
+})();
+
+function drawNakaya() {
+    const { ctx, w, h, s } = fitCanvas(nakayaCanvas);
+    const padL = 30 * s, padR = 6 * s, padT = 8 * s, padB = 20 * s;
+    const gw = w - padL - padR, gh = h - padT - padB;
+    ctx.clearRect(0, 0, w, h);
+
+    const X = (tc) => padL + gw * (tc - T_LEFT) / (T_RIGHT - T_LEFT);
+    const Y = (rhov) => padT + gh * (1 - rhov / RHO_TOP);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(padL, padT, gw, gh);
+    ctx.clip();
+    ctx.imageSmoothingEnabled = true;
+    ctx.globalAlpha = 0.92;
+    ctx.drawImage(habitField, padL, padT, gw, gh);
+    ctx.globalAlpha = 1;
+
+    // The water saturation line: the ceiling on how much vapour a cloud full
+    // of supercooled droplets can offer, and the line real crystals grow just
+    // underneath.
+    ctx.beginPath();
+    for (let i = 0; i <= 140; i++) {
+        const tc = T_LEFT + (T_RIGHT - T_LEFT) * i / 140;
+        const yv = excessDensity(tc, sigmaWaterSat(tc));
+        const px = X(tc), py = Y(yv);
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.strokeStyle = 'rgba(232, 244, 255, 0.72)';
+    ctx.lineWidth = 1.4 * s;
+    ctx.setLineDash([4 * s, 3 * s]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Region names, in the places Nakaya put them.
+    ctx.font = (8.2 * s) + 'px Urbanist, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.80)';
+    ctx.textAlign = 'center';
+    const labels = [
+        ['PLATES', -1.7, 0.030], ['NEEDLES', -5.2, 0.215], ['COLUMNS', -7.0, 0.055],
+        ['PLATES', -11.6, 0.045], ['DENDRITES', -15.0, 0.235], ['COLUMNS', -26.0, 0.115]
+    ];
+    ctx.shadowColor = 'rgba(0,0,0,0.85)';
+    ctx.shadowBlur = 4 * s;
+    labels.forEach(([t, tc, rv]) => { ctx.fillText(t, X(tc), Y(rv)); });
+    ctx.shadowBlur = 0;
+
+    // Where this crystal has been, and where it is now.
+    if (world.trail.length > 1) {
+        ctx.lineWidth = 1.8 * s;
+        for (let i = 1; i < world.trail.length; i++) {
+            const a = world.trail[i - 1], b = world.trail[i];
+            ctx.strokeStyle = 'rgba(255,255,255,' + (0.05 + 0.55 * i / world.trail.length) + ')';
+            ctx.beginPath();
+            ctx.moveTo(X(a.t), Y(a.r));
+            ctx.lineTo(X(b.t), Y(b.r));
+            ctx.stroke();
+        }
+    }
+    if (world.sigmaInf > 0 && world.tc < 0) {
+        const px = X(world.tc), py = Y(excessDensity(world.tc, world.sigmaInf));
+        ctx.fillStyle = 'rgba(255,255,255,0.95)';
+        ctx.beginPath(); ctx.arc(px, py, 3.4 * s, 0, 6.2832); ctx.fill();
+        ctx.strokeStyle = 'rgba(143,216,255,0.85)';
+        ctx.lineWidth = 1.4 * s;
+        ctx.beginPath(); ctx.arc(px, py, 7.5 * s, 0, 6.2832); ctx.stroke();
+    }
+    ctx.restore();
+
+    // Axes.
+    ctx.font = (8.2 * s) + 'px Urbanist, sans-serif';
+    ctx.fillStyle = 'rgba(157,182,212,0.72)';
+    ctx.textAlign = 'center';
+    [0, -5, -10, -15, -20, -25, -30].forEach((tc) => {
+        ctx.fillText(String(tc), X(tc), h - 7 * s);
+    });
+    ctx.textAlign = 'right';
+    ctx.fillText('0.3', padL - 4 * s, Y(0.30) + 3 * s);
+    ctx.fillText('0', padL - 4 * s, Y(0) + 3 * s);
+    ctx.save();
+    ctx.translate(9 * s, padT + gh * 0.5);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillText('extra vapour  g/m³', 0, 0);
+    ctx.restore();
+    ctx.textAlign = 'center';
+    ctx.fillText('air temperature  °C', padL + gw * 0.5, h - 0.5 * s);
+}
+
+function drawProfile() {
+    const { ctx, w, h, s } = fitCanvas(profileCanvas);
+    const padL = 30 * s, padR = 8 * s, padT = 8 * s, padB = 20 * s;
+    const gw = w - padL - padR, gh = h - padT - padB;
+    ctx.clearRect(0, 0, w, h);
+
+    const zTop = Math.max(world.params.seedAltitude, world.altitude) * 1.12 + 200;
+    const tAtTop = temperatureAt(zTop), tAtBottom = temperatureAt(0);
+    const tMin = Math.min(tAtTop, tAtBottom, -1) - 2;
+    const tMax = Math.max(tAtTop, tAtBottom, 1) + 2;
+
+    const X = (tc) => padL + gw * (tc - tMin) / (tMax - tMin);
+    const Y = (z) => padT + gh * (1 - z / zTop);
+
+    // The band of altitudes where the air is actually supersaturated with
+    // respect to ice -- the only place this crystal can grow.
+    ctx.save();
+    ctx.beginPath(); ctx.rect(padL, padT, gw, gh); ctx.clip();
+    let bandStart = null;
+    for (let i = 0; i <= 90; i++) {
+        const z = zTop * i / 90;
+        const grows = temperatureAt(z) < 0 && supersaturationAt(temperatureAt(z)) > 0;
+        if (grows && bandStart === null) bandStart = z;
+        if ((!grows || i === 90) && bandStart !== null) {
+            const y0 = Y(z), y1 = Y(bandStart);
+            const g = ctx.createLinearGradient(0, y0, 0, y1);
+            g.addColorStop(0, 'rgba(80, 150, 220, 0.20)');
+            g.addColorStop(1, 'rgba(80, 150, 220, 0.06)');
+            ctx.fillStyle = g;
+            ctx.fillRect(padL, Math.min(y0, y1), gw, Math.abs(y1 - y0));
+            bandStart = null;
+        }
+    }
+
+    // Freezing level.
+    if (tMin < 0 && tMax > 0) {
+        ctx.strokeStyle = 'rgba(255, 190, 140, 0.55)';
+        ctx.lineWidth = 1.2 * s;
+        ctx.setLineDash([3 * s, 3 * s]);
+        ctx.beginPath(); ctx.moveTo(X(0), padT); ctx.lineTo(X(0), padT + gh); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.font = (7.6 * s) + 'px Urbanist, sans-serif';
+        ctx.fillStyle = 'rgba(255, 190, 140, 0.75)';
+        ctx.textAlign = 'left';
+        ctx.fillText('0 °C', X(0) + 3 * s, padT + 9 * s);
+    }
+
+    // The temperature profile itself.
+    ctx.beginPath();
+    ctx.moveTo(X(tAtBottom), Y(0));
+    ctx.lineTo(X(tAtTop), Y(zTop));
+    ctx.strokeStyle = 'rgba(200, 224, 255, 0.55)';
+    ctx.lineWidth = 1.6 * s;
+    ctx.stroke();
+
+    // Where it started.
+    const zs = world.params.seedAltitude;
+    ctx.strokeStyle = 'rgba(157,182,212,0.35)';
+    ctx.lineWidth = 1 * s;
+    ctx.beginPath(); ctx.moveTo(padL, Y(zs)); ctx.lineTo(padL + gw, Y(zs)); ctx.stroke();
+
+    // The path it has taken, and where it is.
+    if (world.profileTrail.length > 1) {
+        ctx.beginPath();
+        world.profileTrail.forEach((pt, i) => {
+            const px = X(pt.t), py = Y(pt.z);
+            i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        });
+        ctx.strokeStyle = 'rgba(143,216,255,0.60)';
+        ctx.lineWidth = 2.0 * s;
+        ctx.stroke();
+    }
+    const cx = X(world.tc), cy = Y(world.altitude);
+    ctx.fillStyle = 'rgba(255,255,255,0.96)';
+    ctx.beginPath(); ctx.arc(cx, cy, 3.6 * s, 0, 6.2832); ctx.fill();
+    ctx.restore();
+
+    ctx.font = (8.2 * s) + 'px Urbanist, sans-serif';
+    ctx.fillStyle = 'rgba(157,182,212,0.72)';
+    ctx.textAlign = 'right';
+    ctx.fillText((zTop / 1000).toFixed(1) + ' km', padL - 4 * s, Y(zTop) + 7 * s);
+    ctx.fillText('ground', padL - 4 * s, Y(0) + 3 * s);
+    ctx.textAlign = 'center';
+    ctx.fillText('air temperature  °C', padL + gw * 0.5, h - 5 * s);
+}
+
+/* ---------------------------------------------------------------------- *\
+ *  Narration.
+ *
+ *  One line at a time, chosen for what the crystal is doing at that moment.
+ *  A visitor who walks up mid-cycle should be told something true about the
+ *  thing in front of them within a few seconds, without having to have seen
+ *  the beginning.
+\* ---------------------------------------------------------------------- */
+
+const CAPTIONS = [
+    { when: (w) => w.melted,
+      text: 'Above freezing now. Everything this crystal spent half an hour building is coming apart in seconds — <b>this is rain</b>.' },
+    { when: (w) => w.sublimating,
+      text: 'The air here is <b>drier than ice can tolerate</b>. The crystal is evaporating from its sharpest points first, and rounding off.' },
+    { when: (w) => w.metrics.cells < 25,
+      text: 'It begins on a speck of dust, as a hexagonal prism a few micrometres across. <b>Ice is hexagonal</b>, and everything six-fold about a snowflake follows from that.' },
+    { when: (w) => w.tc > -3.5 && w.tc < 0,
+      text: 'Just below freezing, air can hold barely any extra water vapour. There is almost nothing to build with, so the crystal stays <b>a small plain plate</b>.' },
+    { when: (w) => w.tc <= -3.5 && w.tc > -9.5,
+      text: 'Between −3 and −10 °C the crystal&rsquo;s <b>end faces</b> grow far faster than its sides. It stops spreading and starts to lengthen — a needle, or a column.' },
+    { when: (w) => w.tc <= -9.5 && w.tc > -22,
+      text: 'Between −10 and −22 °C the <b>side faces</b> take over. The crystal spreads flat, and every corner reaches vapour before the middle does.' },
+    { when: (w) => w.tc <= -22,
+      text: 'Below −22 °C the side faces stall again and the crystal returns to growing lengthwise. <b>Three reversals</b> between 0 and −30 °C, and nobody fully knows why.' },
+    { when: (w) => w.habit === HABITS.cappedColumn,
+      text: 'A column that changed its mind. It grew lengthwise in one layer of cloud, then met colder air and <b>sprouted a plate on each end</b>.' },
+    { when: (w) => w.sigmaInf > 0.10 && w.metrics.cells > 400,
+      text: 'A flat face growing this fast cannot stay flat. Any bump reaches fresh vapour first and runs away from the rest — <b>that is what makes branches</b>.' },
+    { when: (w) => w.sigmaInf > 0 && w.sigmaInf < 0.05 && w.metrics.cells > 300,
+      text: 'Growing slowly, in dry air. Vapour arrives faster than the surface can be disturbed, so the faces stay flat and the crystal stays simple.' },
+    { when: () => true,
+      text: 'The dark halo around the crystal is <b>air it has already stripped of vapour</b>. Only the outermost tips reach past it, so only they keep growing.' },
+    { when: () => true,
+      text: 'All six arms match because all six grew in the same air at the same time. They are not copying each other — <b>they never communicate</b>.' },
+    { when: () => true,
+      text: 'The ridges and lines inside the ice are a record of the order in which it was laid down. A snowflake is, quite literally, <b>its own weather diary</b>.' },
+    { when: (w) => Math.abs(w.params.updraft) > 0.4,
+      text: 'A strong enough updraft carries the crystal <b>upward into colder air</b> instead of letting it fall — and a crystal that changes bands changes shape.' },
+    { when: (w) => w.habit === HABITS.fern || w.habit === HABITS.stellarDendrite,
+      text: 'This is the shape everyone draws. It needs one particular temperature, near −15 °C, and <b>as much water vapour as a cloud can hold</b>.' }
+];
+
+let captionIdx = -1;
+let captionUntil = 0;
+
+function updateCaption(nowSec) {
+    // A crystal grown to a recipe opens with that recipe's own reason, so the
+    // first thing on screen after the sky changes explains the sky rather than
+    // some general fact about snow.
+    if (world.presetWhy) {
+        const why = world.presetWhy;
+        world.presetWhy = null;
+        captionIdx = -1;
+        captionUntil = nowSec + 13;
+        captionEl.classList.remove('visible');
+        setTimeout(() => {
+            captionEl.innerHTML = why;
+            captionEl.classList.add('visible');
+        }, 420);
+        return;
+    }
+    if (nowSec < captionUntil) return;
+    const pool = [];
+    CAPTIONS.forEach((c, i) => { if (c.when(world)) pool.push(i); });
+    if (!pool.length) return;
+    let pick = pool[Math.floor(Math.random() * pool.length)];
+    if (pool.length > 1) {
+        let guard = 0;
+        while (pick === captionIdx && guard++ < 8) pick = pool[Math.floor(Math.random() * pool.length)];
+    }
+    captionIdx = pick;
+    captionUntil = nowSec + 10.5;
+    captionEl.classList.remove('visible');
+    setTimeout(() => {
+        captionEl.innerHTML = CAPTIONS[pick].text;
+        captionEl.classList.add('visible');
+    }, 420);
+}
+
+/* ---------------------------------------------------------------------- *\
+ *  Modes.
+ *
+ *  Unattended, the display works through a list of skies, each chosen to
+ *  produce a different kind of crystal, so a passer-by sees the range rather
+ *  than eight dendrites in a row. The moment a phone sends anything, the sky
+ *  becomes the visitor's; thirty seconds after they stop, it goes back.
+\* ---------------------------------------------------------------------- */
+
+let mode = 'auto';
+let lastMessageAt = -1e9;
+let presetIdx = -1;
+
+function setMode(next) {
+    if (mode === next) return;
+    mode = next;
+    modeBadgeEl.classList.toggle('live', next === 'interactive');
+    modeTextEl.textContent = next === 'interactive' ? 'You have the sky' : 'Growing on its own';
+}
+
+function applySky(sky) {
+    PARAMS.forEach((p) => {
+        if (sky[p.key] !== undefined) world.params[p.key] = clamp(sky[p.key], p.min, p.max);
+    });
+}
+
+// ?preset=N pins the display to one sky. Only used when checking the page;
+// the wall itself never passes a query string.
+const FORCED_PRESET = (() => {
+    const v = new URLSearchParams(location.search).get('preset');
+    return v === null ? null : (parseInt(v, 10) | 0);
+})();
+
+function nextAutoSky() {
+    if (FORCED_PRESET !== null) {
+        const pr = PRESETS[((FORCED_PRESET % PRESETS.length) + PRESETS.length) % PRESETS.length];
+        applySky(pr.p);
+        world.presetWhy = pr.why;
+        return;
+    }
+    // Mostly the curated list, occasionally something entirely random, so the
+    // display keeps its own capacity to surprise.
+    if (Math.random() < 0.25) {
+        applySky(randomSky());
+        world.presetWhy = null;
+    } else {
+        presetIdx = (presetIdx + 1) % PRESETS.length;
+        applySky(PRESETS[presetIdx].p);
+        world.presetWhy = PRESETS[presetIdx].why;
+    }
+}
+
+function enterAuto() {
+    setMode('auto');
+    touched.clear();
+    nextAutoSky();
+    resetCrystal();
+    sendState();
+}
+
+function nextCrystal() {
+    if (mode === 'auto') nextAutoSky();
+    resetCrystal();
+    sendState();
+}
+
+/* ---------------------------------------------------------------------- *\
+ *  The phone.
+\* ---------------------------------------------------------------------- */
+
+let messagingReady = false;
+const pendingMessages = [];
+let lastStateSent = 0;
+
+const messaging = new FootronMessaging.Messaging();
+
+function sendState() {
+    const params = {};
+    PARAMS.forEach((p) => { params[p.key] = world.params[p.key]; });
+    // A display that cannot reach a phone must keep drawing regardless, so
+    // both the synchronous and the asynchronous failure paths are swallowed.
+    try {
+        const r = messaging.sendMessage({
+            type: 'state',
+            params,
+            habit: world.habit[0],
+            auto: mode === 'auto',
+            presets: PRESETS.map((x) => x.name)
+        });
+        if (r && typeof r.catch === 'function') r.catch(() => {});
+    } catch (e) {
+        console.warn('sendState failed:', e && e.message);
+    }
+    lastStateSent = performance.now();
+}
+
+function handleMessage(msg) {
+    if (!msg || typeof msg !== 'object') return;
+
+    // "hello" is the phone announcing itself; it asks for state but does not
+    // count as the visitor taking control, so the display does not stop its
+    // own cycle just because someone opened the page.
+    if (msg.type === 'hello') { sendState(); return; }
+
+    lastMessageAt = performance.now();
+
+    switch (msg.type) {
+        case 'param': {
+            const spec = PARAMS.find((p) => p.key === msg.key);
+            if (!spec) return;
+            setMode('interactive');
+            world.params[spec.key] = clamp(Number(msg.value), spec.min, spec.max);
+            touched.add(spec.key);
+            world.presetWhy = null;
+            // Height only matters at the moment of nucleation, so changing it
+            // has to start a new crystal. The other four are properties of the
+            // air the crystal is in right now, so they take effect where it
+            // is -- which is how a visitor can hand-build a capped column.
+            if (spec.restart || world.phase !== 'growing') resetCrystal();
+            break;
+        }
+        case 'preset': {
+            const pr = PRESETS[msg.value | 0];
+            if (!pr) return;
+            setMode('interactive');
+            applySky(pr.p);
+            touched.clear();
+            PARAMS.forEach((p) => touched.add(p.key));
+            world.presetWhy = pr.why;
+            resetCrystal();
+            break;
+        }
+        case 'new':
+            setMode('interactive');
+            resetCrystal();
+            break;
+        case 'random':
+            setMode('interactive');
+            applySky(randomSky());
+            PARAMS.forEach((p) => touched.add(p.key));
+            world.presetWhy = null;
+            resetCrystal();
+            break;
+        case 'auto':
+            enterAuto();
+            break;
+        default:
+            return;
+    }
+    sendState();
+}
+
+messaging.addMessageListener((msg) => {
+    if (!messagingReady) { pendingMessages.push(msg); return; }
+    handleMessage(msg);
+});
+
+/* ---------------------------------------------------------------------- *\
+ *  Drawing.
+\* ---------------------------------------------------------------------- */
+
+let texBg = null, fbBg = null, VW = 0, VH = 0;
+
+// A little supersampling costs a lot less than it looks like it should on this
+// hardware, and it is the difference between crisp branch edges and a shimmer
+// that is very obvious on a wall-sized panel. It is given up on a very wide
+// wall, where the raytracer is already the frame budget and there is no sense
+// spending what is left on antialiasing.
+const SUPERSAMPLE = 1.35;
+const PIXEL_BUDGET = 4.2e6;
+let ss = SUPERSAMPLE;
+
+// ...and given up entirely if the hardware cannot keep up. The wall this runs
+// on is not the machine it was written on, and the raytracer is the whole
+// frame budget: better to lose the antialiasing than the frame rate.
+let quality = 1.0;
+let qualityDue = 0;
+
+function adaptQuality(nowMs) {
+    if (nowMs < qualityDue) return;
+    qualityDue = nowMs + 1500;
+    const before = quality;
+    if (fpsEstimate < 46) quality = Math.max(0.66, quality - 0.12);
+    else if (fpsEstimate > 57) quality = Math.min(1.0, quality + 0.06);
+    if (quality !== before) resize();
+}
+
+function resize() {
+    const native = Math.max(1, canvas.clientWidth * canvas.clientHeight);
+    ss = clamp(Math.sqrt(PIXEL_BUDGET / native) * quality, 0.72, SUPERSAMPLE);
+    const w = Math.round(canvas.clientWidth * ss);
+    const h = Math.round(canvas.clientHeight * ss);
+    if (w === VW && h === VH) return;
+    // The canvas backing store is the render resolution; CSS keeps it filling
+    // the wall, so the browser does the downsample for free.
+
+    VW = w; VH = h;
+    canvas.width = w;
+    canvas.height = h;
+    if (texBg) { gl.deleteTexture(texBg); gl.deleteFramebuffer(fbBg); }
+    texBg = texture(VW, VH, gl.RGBA16F, gl.LINEAR);
+    fbBg = framebuffer([texBg]);
+}
+
+/*  Object -> world, as Rz(precess) . Rx(tilt) . Rz(spin).
+ *
+ *  The crystal's own axis is held at a fixed angle from the viewer and walked
+ *  slowly around a cone, while the crystal turns in its own plane. A single
+ *  turn about a screen axis would instead swing the crystal edge-on twice
+ *  every revolution, and a plate seen exactly edge-on is a bright line -- half
+ *  the time there would be nothing to look at. This way it is always seen at a
+ *  three-quarter angle: flat enough to read the six arms, tilted enough to see
+ *  that it is a solid object and not a drawing.
+ */
+const rotBuf = new Float32Array(9);
+
+function rotationColumns(spin, tilt, precess) {
+    const c1 = Math.cos(spin), s1 = Math.sin(spin);
+    const cb = Math.cos(tilt), sb = Math.sin(tilt);
+    const c2 = Math.cos(precess), s2 = Math.sin(precess);
+
+    // Rz(precess) . Rx(tilt) . Rz(spin), written out and stored column-major.
+    const m00 = c2 * c1 - s2 * cb * s1, m01 = -c2 * s1 - s2 * cb * c1, m02 = s2 * sb;
+    const m10 = s2 * c1 + c2 * cb * s1, m11 = -s2 * s1 + c2 * cb * c1, m12 = -c2 * sb;
+    const m20 = sb * s1,                m21 = sb * c1,                 m22 = cb;
+    rotBuf[0] = m00; rotBuf[1] = m10; rotBuf[2] = m20;
+    rotBuf[3] = m01; rotBuf[4] = m11; rotBuf[5] = m21;
+    rotBuf[6] = m02; rotBuf[7] = m12; rotBuf[8] = m22;
+    return rotBuf;
+}
+
+function render(tSec, dtView) {
+    resize();
+
+    gl.useProgram(progBg.p);
+    gl.uniform2f(progBg.u.uRes, VW, VH);
+    gl.uniform1f(progBg.u.uTime, tSec);
+    drawTo(fbBg, VW, VH);
+
+    const m = world.metrics;
+    const RmaxLat = Math.max(m.maxR, 1);
+    const hRefUm = Math.max(world.halfThickUm, 0.04);
+    const Rphys = Math.max(world.radiusUm, 0.5);
+    const hMaxUm = Math.max(m.maxH, hRefUm);
+
+    // Proportions are drawn true through the middle of the range and clamped at
+    // both ends, because both ends of the range are a hairline on a screen: a
+    // plate one part in three hundred thick, and a needle twenty times longer
+    // than it is wide, are each about a dozen pixels across at this size and
+    // read as a scratch rather than as a crystal. Everything between the two
+    // clamps -- which is most of what grows here -- is exactly its real shape,
+    // and the true ratio is printed on the panel in either case.
+    const aTrue = clamp(hRefUm / Rphys, 1e-6, 1e6);
+    const aDisp = clamp(aTrue, MIN_DISPLAY_ASPECT, MAX_DISPLAY_ASPECT);
+    const fit = Math.max(1, aDisp * (hMaxUm / hRefUm));
+    const sceneR = 1 / fit;
+    const zScale = aDisp / (hRefUm * fit);
+    const hMaxScene = zScale * hMaxUm;
+
+    const availW = canvas.clientWidth * (1 - UI_FRACTION);
+
+    // The crystal is drawn at a size that tracks how big it really is, so a
+    // visitor watches it grow from a speck instead of watching a full-frame
+    // shape merely gain detail. A 3 mm fern fills the frame; a 150 um plate is
+    // a small bright chip of ice near the middle. The reference is the largest
+    // dimension, not the width, so a needle does not vanish.
+    const extentUm = Math.max(Rphys, hMaxUm);
+    const growFrac = GG_CHECK ? 1.0 : clamp(Math.pow(extentUm / 1400, 0.5), 0.13, 1.0);
+    const radiusPx = 0.50 * Math.min(availW, canvas.clientHeight) * ss * growFrac;
+    const scalePx = radiusPx / 0.762;
+    const centrePx = [availW * 0.5 * ss, canvas.clientHeight * 0.505 * ss];
+
+    const Rsphere = Math.sqrt(sceneR * sceneR + hMaxScene * hMaxScene);
+    const reach = Rsphere * 3.2 / Math.max(4.2 - Rsphere, 0.6) + 0.04;
+
+    // How far from face-on to hold the crystal. A plate has to be seen close to
+    // flat or its six arms collapse into a line; a column has to be seen close
+    // to side-on or it collapses into a dot. So the viewing angle follows the
+    // crystal's own proportions, eased over a couple of seconds so that a
+    // crystal changing habit as it falls does not snap round.
+    const columnar = clamp01(Math.log(Math.max(aTrue, 1e-4) / 0.35) / Math.log(6));
+    viewColumnar += (columnar - viewColumnar) * Math.min(1, dtView * 0.55);
+    const spin = tSec * (6.2831853 / 41.0);
+    const precess = tSec * (6.2831853 / 29.0);
+    const tilt = lerp(0.62, 1.42, viewColumnar) + 0.22 * Math.sin(tSec * 0.083);
+
+    gl.useProgram(progCrystal.p);
+    gl.uniform2f(progCrystal.u.uRes, VW, VH);
+    gl.uniform1f(progCrystal.u.uTime, tSec);
+    bindTex(progCrystal, 'uBg', 0, texBg);
+    bindTex(progCrystal, 'uPrep', 1, texPrep2);
+    bindTex(progCrystal, 'uState', 2, texState[0]);
+    gl.uniform1i(progCrystal.u.uN, N);
+    gl.uniform1f(progCrystal.u.uRmax, RmaxLat);
+    gl.uniform1f(progCrystal.u.uSceneR, sceneR);
+    gl.uniform1f(progCrystal.u.uZScale, zScale);
+    gl.uniform1f(progCrystal.u.uHmax, hMaxScene);
+    // Growth ridges are a micrometre or two of relief. As a fraction of the
+    // thickness that is a lot on a plate and almost nothing on a column, so it
+    // is set from the thickness rather than fixed -- at a fixed fraction the
+    // ends of a column erupt into spikes a tenth of its length high.
+    /*  Relief.
+     *
+     *  A real plate is not a sheet of even thickness with a pattern on it. Its
+     *  ribs stand well proud of the sectors between them -- often two or three
+     *  times the local thickness -- and that relief is most of what the eye
+     *  reads as "crystal" rather than "cut-out".
+     *
+     *  But it is ornament on a *face*, so its size belongs to the face, not to
+     *  the crystal's thickness. Set as a flat fraction of the thickness it is
+     *  right on a plate, where the thickness is small, and absurd on a column,
+     *  where the same fraction of a millimetre of length carves the rod into
+     *  slices. Capping it against the crystal's width keeps it ornament in
+     *  both cases: strong across the broad face of a plate, and almost nothing
+     *  on the small end faces of a needle, which is what they really look like.
+     */
+    const reliefFrac = Math.min(0.62, 0.22 * Rphys / Math.max(hRefUm, 1e-6));
+    gl.uniform1f(progCrystal.u.uMark, reliefFrac);
+
+    // Terrace height, sized against the relief so there are eight or so steps
+    // across it. Too few and the surface is a smooth mound again; too many and
+    // the risers land closer together than a pixel and turn into shimmer.
+    const reliefScene = reliefFrac * hRefUm * zScale;
+    // Three steps across the relief, not ten. A riser has to be a couple of
+    // pixels tall to read as an edge, and seen at a three-quarter angle it
+    // projects to less than that.
+    const terraceScene = Math.max(reliefScene / 3.0, 1e-6);
+    gl.uniform1f(progCrystal.u.uTerrace, terraceScene);
+
+    // The chamfer follows the silhouette, so it is the one thing that shows up
+    // every wobble in it. Kept to a fraction of a lattice cell: any wider and
+    // it turns the cell-by-cell steps of the outline into a row of bright
+    // wedges -- a comb of ticks down the side of every arm.
+    const cellScene = sceneR / Math.max(RmaxLat, 1);
+    gl.uniform1f(progCrystal.u.uBevel, Math.max(Math.min(terraceScene * 0.8, cellScene * 0.5), 1e-6));
+    gl.uniform1f(progCrystal.u.uNormEps, Math.max(cellScene * 0.75, 0.0009));
+    gl.uniform1f(progCrystal.u.uDispersion, 0.020);
+    gl.uniform1f(progCrystal.u.uRho, world.ca ? world.ca.rho : 0.6);
+    gl.uniform1f(progCrystal.u.uFade, world.fade);
+    gl.uniform1f(progCrystal.u.uHaloAmt, world.phase === 'growing' ? 0.30 * world.fade : 0.10 * world.fade);
+    gl.uniform1f(progCrystal.u.uReach, reach);
+    gl.uniform1i(progCrystal.u.uDebug, DEBUG_MODE);
+    gl.uniformMatrix3fv(progCrystal.u.uRot, false, rotationColumns(spin, tilt, precess));
+    gl.uniform2f(progCrystal.u.uCentrePx, centrePx[0], centrePx[1]);
+    gl.uniform1f(progCrystal.u.uScalePx, scalePx);
+    drawTo(null, VW, VH);
+}
+
+/* ---------------------------------------------------------------------- *\
+ *  The loop.
+\* ---------------------------------------------------------------------- */
+
+let lastFrame = performance.now();
+let frameNo = 0;
+let panelDue = 0;
+let lastCulprit = 'none';
+let panelTick = 0;
+let fpsEstimate = 60;
+
+// Frame-time census. Averages hide stutter completely -- a run at a steady 60
+// with one 90 ms hitch every second still averages 58 -- so what is recorded
+// here is the tail and where in the frame it happened.
+const census = { n: 0, over25: 0, over50: 0, worst: 0, hist: {},
+                 tSim: 0, tField: 0, tMeasure: 0, tRender: 0, tPanel: 0, tSeed: 0 };
+window.__census = () => {
+    const c = census;
+    const out = { frames: c.n, over25ms: c.over25, over50ms: c.over50,
+                  worstMs: +c.worst.toFixed(1),
+                  msPerFrame: {} };
+    for (const k of ['tSim', 'tField', 'tMeasure', 'tRender', 'tPanel', 'tSeed']) {
+        out.msPerFrame[k] = +(c[k] / Math.max(c.n, 1)).toFixed(2);
+    }
+    out.worstBy = c.hist;
+    return out;
+};
+window.__censusReset = () => {
+    for (const k of Object.keys(census)) census[k] = (k === 'hist') ? {} : 0;
+};
+const mark = () => performance.now();
+let viewColumnar = 0;
+const DEBUG_MODE = QS.has('dbg') ? parseInt(QS.get('dbg'), 10) : 0;
+const BAND_COUNT = 5;   // growth fronts drawn across the crystal's history
+
+function growingIsOver() {
+    if (GG_CHECK) return false;
+    if (world.altitude <= 0.5 && world.params.updraft <= 0) return true;
+    if (world.growTime > MAX_GROW_SECONDS) return true;
+    // No snow crystal grows for much longer than this. Past it the thing on
+    // screen would stop being a snowflake and start being an artefact of
+    // letting the simulation run.
+    if (world.ageSim > MAX_AGE_S) return true;
+    if (world.metrics.maxR > BOX_R * N * 0.74) return true;
+    if (world.melted && world.metrics.cells < 40) return true;
+    if (world.sublimating && world.metrics.cells < 30) return true;
+    // Air this dry never gets a crystal started at all; say so and move on
+    // rather than holding the wall on an empty frame.
+    if (world.metrics.cells < 1 && world.growTime > 7) return true;
+    return false;
+}
+
+function frame(nowMs) {
+    requestAnimationFrame(frame);
+    const dt = clamp((nowMs - lastFrame) / 1000, 0, 0.05);
+    fpsEstimate = fpsEstimate * 0.94 + (1 / Math.max(1e-3, (nowMs - lastFrame) / 1000)) * 0.06;
+    lastFrame = nowMs;
+    const tSec = nowMs / 1000;
+
+    if (mode === 'interactive' && nowMs - lastMessageAt > IDLE_TO_AUTO_MS) enterAuto();
+
+    if (dt > 0.025) {
+        census.over25++;
+        if (dt > 0.05) census.over50++;
+        census.worst = Math.max(census.worst, dt * 1000);
+        census.hist[lastCulprit] = (census.hist[lastCulprit] || 0) + 1;
+    }
+    census.n++;
+    lastCulprit = 'none';
+
+    let t0 = mark();
+    switch (world.phase) {
+        case 'growing':
+            advance(dt);
+            world.fade = Math.min(1, world.fade + dt * 1.7);
+            if (growingIsOver()) { world.phase = 'showing'; world.phaseTime = 0; }
+            break;
+        case 'showing':
+            world.phaseTime += dt;
+            if (world.phaseTime > SHOW_SECONDS) { world.phase = 'fading'; world.phaseTime = 0; }
+            break;
+        case 'fading':
+            world.phaseTime += dt;
+            world.fade = Math.max(0, 1 - world.phaseTime / FADE_SECONDS);
+            if (world.phaseTime >= FADE_SECONDS) nextCrystal();
+            break;
+    }
+
+    census.tSim += mark() - t0; t0 = mark();
+
+    // The outline changes by well under a cell per frame, so refreshing the
+    // distance field on alternate frames costs nothing visible and gives back
+    // eleven full-lattice passes.
+    if (frameNo % 2 === 0) computeDistance();
+    computePrep(Math.max(world.metrics.maxC, 1e-3),
+                (world.metrics.sumC || 0) / Math.max(world.metrics.cells, 1),
+                BAND_COUNT);
+    census.tField += mark() - t0; t0 = mark();
+
+    // The one GPU-to-CPU read in the whole program. Asynchronous, so this only
+    // collects whatever the driver has already finished with.
+    if (frameNo % 3 === 0) {
+        const m = measure();
+        if (m) absorbMeasurement(m);
+        lastCulprit = 'measure';
+    }
+    frameNo++;
+    census.tMeasure += mark() - t0; t0 = mark();
+
+    // Trails for the two charts, sampled sparsely so they stay readable.
+    if (world.phase === 'growing' && frameNo % 6 === 0) {
+        if (world.tc < 0 && world.sigmaInf > 0) {
+            world.trail.push({ t: world.tc, r: excessDensity(world.tc, world.sigmaInf) });
+            if (world.trail.length > 220) world.trail.shift();
+        }
+        world.profileTrail.push({ t: world.tc, z: world.altitude });
+        if (world.profileTrail.length > 260) world.profileTrail.shift();
+    }
+
+    adaptQuality(nowMs);
+    render(tSec, dt);
+    census.tRender += mark() - t0; t0 = mark();
+
+    if (nowMs > panelDue) {
+        panelDue = nowMs + 100;
+        lastCulprit = 'panel';
+        habitNameEl.textContent = world.habit[0];
+        habitNoteEl.textContent = world.habit[1];
+        updateStats();
+        updateParams();
+        // One chart per tick, alternating. Both together were the biggest
+        // single block of main-thread work in the frame, and neither of them
+        // needs to be redrawn ten times a second.
+        panelTick = (panelTick + 1) & 1;
+        if (panelTick) drawNakaya(); else drawProfile();
+    }
+    updateCaption(tSec);
+    census.tPanel += mark() - t0;
+
+    if (mode === 'interactive' && nowMs - lastStateSent > 1500) sendState();
+}
+
+/* ---------------------------------------------------------------------- *\
+ *  Start.
+\* ---------------------------------------------------------------------- */
+
+// Lets a message be delivered without a phone, from the browser console:
+//   __inject({ type: 'param', key: 'groundTemp', value: -18 })
+// Kept in the shipped page deliberately -- when something misbehaves on the
+// wall this is the only way to reproduce it without the router running.
+window.__inject = (msg) => handleMessage(msg);
+window.__row = () => heightRow();
+
+// Read by build/probe.mjs when checking the page in a headless browser.
+window.__probe = () => ({
+    phase: world.phase, habit: world.habit[0], mode,
+    cells: Math.round(world.metrics.cells), maxR: +world.metrics.maxR.toFixed(1),
+    radiusUm: +world.radiusUm.toFixed(1), halfThickUm: +world.halfThickUm.toFixed(2),
+    maxH: +world.metrics.maxH.toFixed(2), shellFrac: +(world.metrics.shellCells / Math.max(world.metrics.cells, 1)).toFixed(3),
+    cellUm: +world.cellUm.toFixed(3), rim: +world.rimThickUm.toFixed(2), altitude: Math.round(world.altitude),
+    tc: +world.tc.toFixed(1), sigma: +world.sigmaInf.toFixed(4),
+    timeScale: Math.round(world.timeScale), steps: stepCount,
+    ca: world.ca ? { rho: +world.ca.rho.toFixed(3), beta: +world.ca.beta.toFixed(3),
+                     kappa: +world.ca.kappa.toFixed(4), mu: +world.ca.mu.toFixed(4),
+                     plateT: +world.ca.plateT.toFixed(2), col: world.ca.columnar, screenLen: +world.ca.screen.toFixed(1) } : null,
+    fps: +fpsEstimate.toFixed(1), ss: +ss.toFixed(2),
+    touched: [...touched], sinceMsg: Math.round((performance.now() - lastMessageAt) / 1000)
+});
+
+window.addEventListener('resize', () => { resize(); });
+
+enterAuto();
+resize();
+
+messagingReady = true;
+while (pendingMessages.length) handleMessage(pendingMessages.shift());
+messaging.mount();
+
+requestAnimationFrame(frame);
+
+</script>
+</body>
+</html>
