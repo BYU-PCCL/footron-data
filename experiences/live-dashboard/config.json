@@ -1,0 +1,20 @@
+{
+    "id": "live-dashboard",
+    "type": "docker",
+    "title": "Everything Happening Right Now",
+    "description": "Nine live measurements taken from one spot on campus — the Talmage Building — drifting in and out. Scan the code and choose which nine, from 284.",
+    "long_description": "Every number on this wall is measured from one point: the James E. Talmage Math Sciences / Computer Building, 40.249515° N, 111.650793° W, 1,423 m. Every distance, altitude, bearing and horizon time is computed from there.<br><br>The astronomy is calculated on the wall itself, from published algorithms. Everything else streams in from open feeds while you watch: the air over Provo from Open-Meteo, every earthquake on Earth in the last day from the USGS, the aircraft transponding overhead from the OpenSky Network, the Great Salt Lake's elevation from its own gauge, the Sun's mood from NOAA, and Wikipedia being written, edit by edit.<br><br>Nine of them are up at a time and they change on their own. Scan the code to choose your own nine out of 284 — they will hold for a couple of minutes before the wall starts drifting again.",
+    "action_hints": [
+        "scan the code to choose what is on the wall",
+        "tap anything in the list and it goes straight up",
+        "search for a word — moon, earthquake, BYU, Provo",
+        "pick nine and they hold for two minutes",
+        "or let it drift and hand the wall back",
+        "slow the drift down, or speed it up"
+    ],
+    "layout": "full",
+    "image_id": "pccl/app_live-dashboard:0.1",
+    "load_time": 8,
+    "lifetime": 240,
+    "queueable": true
+}
