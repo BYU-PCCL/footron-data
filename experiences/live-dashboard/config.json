@@ -13,7 +13,7 @@
         "slow the drift down, or speed it up"
     ],
     "layout": "full",
-    "image_id": "pccl/app_live-dashboard:0.1",
+    "image_id": "isaacrallison/app_live-dashboard:0.1",
     "load_time": 8,
     "lifetime": 240,
     "queueable": true
