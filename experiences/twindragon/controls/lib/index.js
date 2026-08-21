@@ -1,4 +1,18 @@
 /** @jsxImportSource @emotion/react */
+/* eslint-disable react/prop-types */
+/*
+ * The panel is built inside footron-web, whose eslint config extends
+ * `plugin:react/recommended` -- so `react/prop-types` is an error, not a
+ * warning, and TrackPad's `onPan` trips it. TrackPad holds hooks, so it cannot
+ * be flattened into a plain call to dodge the rule.
+ *
+ * Satisfying it properly would mean `import PropTypes from "prop-types"`, and
+ * footron-web does not depend on prop-types -- it resolves today only as a
+ * transitive dependency of react-scripts and would break the day that stops
+ * being true. See gradient-descent/controls/lib/index.js, which hit this same
+ * wall first. Runtime prop checking earns little here anyway: TrackPad is
+ * private to this file and has exactly one caller.
+ */
 import { css } from "@emotion/react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useMessaging } from "@footron/controls-client";
