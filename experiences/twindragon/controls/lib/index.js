@@ -213,6 +213,7 @@ const TrackPad = ({ onPan }) => {
 const ControlsComponent = () => {
   const [zoomVal, setZoomVal] = useState(0);
   const [hueVal, setHueVal] = useState(0);
+  const [maxZoom, setMaxZoom] = useState(false);
 
   const { sendMessage } = useMessaging();
 
@@ -231,6 +232,14 @@ const ControlsComponent = () => {
     },
     [sendMessage]
   );
+
+  // Deliberately does NOT reset the zoom slider: the slider position still
+  // means the same fraction of the range, it's the range's deep end that moves.
+  const toggleMaxZoom = useCallback(async () => {
+    const next = !maxZoom;
+    setMaxZoom(next);
+    await sendMessage({ type: "maxzoom", value: next });
+  }, [maxZoom, sendMessage]);
 
   const jumpToPreset = useCallback(
     async (index) => {
@@ -274,6 +283,16 @@ const ControlsComponent = () => {
           <Slider min={0} max={1} step={0.001} value={hueVal} onChange={updateHue} />
         </div>
       </div>
+
+      <Box display="flex" justifyContent="center" mt={1}>
+        <Button
+          variant={maxZoom ? "contained" : "outlined"}
+          color="primary"
+          onClick={toggleMaxZoom}
+        >
+          {maxZoom ? "Max zoom: on" : "Max zoom: off"}
+        </Button>
+      </Box>
 
       <p style={{ marginTop: "15px" }}>
         <b>Or jump to a favorite spot:</b>
