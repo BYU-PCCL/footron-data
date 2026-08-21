@@ -125,7 +125,7 @@ window.addEventListener('unhandledrejection', (e) => {
 
 <div id="transition-veil"></div>
 
-<div id="build-marker">build: sapphire-1</div>
+<div id="build-marker">build: sapphire-2</div>
 
 <div id="error-overlay"></div>
 
@@ -299,30 +299,76 @@ vec3 sapphirePalette(float ramp, float tone) {
     return mix(c, hi, clamp(k - 1.0, 0.0, 1.0));
 }
 
-vec3 dragonColor(vec2 offset) {
-    float epsx = offset.x;
-    float epsy = offset.y;
+// ---- DIGIT DIVERGENCE, and why the offset is split in two ----
+// The map is z -> (1+i)z - d, where the digit d is 0 or 1 depending on which
+// side of Re = 0.5 the point lands on. Two points that straddle that threshold
+// take DIFFERENT digits, so their orbits separate by exactly 1 -- a real
+// discontinuity in the map, not a rounding artifact.
+//
+// This loop used to keep the pixel's whole offset from the reference orbit in
+// one float32 named eps. At a deep zoom eps starts around 1e-18, so the moment
+// pixel took a different digit than the reference, eps jumped to ~1 and
+// float32's 24-bit mantissa rounded every one of those deep-zoom digits away.
+// From that iteration on the pixel was effectively being computed at 1e-7
+// resolution, which is what made whole regions go flat and blocky.
+//
+// The threshold test at iteration i is a straight line in screen space whose
+// angle is 90 - 45*(i+1) degrees -- so it is always horizontal, vertical, or
+// one of the two diagonals, and the i=0 line is the +45 degree one parallel to
+// y = x. That is why the damage shows up as a clean diagonal split.
+//
+// The fix: the map is AFFINE, so a digit disagreement moves the orbit by a
+// whole unit -- and repeated multiplication by (1+i) keeps whole units whole.
+// The offset is therefore carried as u + c, where c is an exact Gaussian
+// integer holding all the digit disagreements and u is the small smooth part
+// that never has a unit added to it. Nothing large is ever stored in u, so its
+// float32 precision is never spent on a leading 1.
 
-    float prevLen = length(vec2(dsToFloat(uPanX) + epsx, dsToFloat(uPanY) + epsy));
+vec3 dragonColor(vec2 offset) {
+    float ux = offset.x;   // smooth part of the offset from the reference
+    float uy = offset.y;
+    float cx = 0.0;        // exact Gaussian-integer part (whole numbers only)
+    float cy = 0.0;
+
+    float prevLen = length(vec2(dsToFloat(uPanX) + ux, dsToFloat(uPanY) + uy));
     float smoothEscape = -1.0;
     vec2 Z = vec2(0.0);
 
     for (int i = 0; i < ITER; i++) {
         if (smoothEscape >= 0.0) break;
 
-        float epx_pre = epsx - epsy;
-        float epy_pre = epsx + epsy;
+        // z -> (1+i)z, applied to each piece on its own. The linear part maps
+        // Gaussian integers to Gaussian integers, so c stays exactly whole.
+        float upx = ux - uy;
+        float upy = ux + uy;
+        float cpx = cx - cy;
+        float cpy = cx + cy;
 
-        vec2 diff = dsAddFloat(dsAddFloat(uRPreX[i], -0.5), epx_pre);
+        // This pixel's own digit: the sign of Re((1+i)z) - 0.5, assembled
+        // largest term first so the tiny one still lands in the low word.
+        vec2 diff = dsAddFloat(dsAddFloat(dsAddFloat(uRPreX[i], -0.5), cpx), upx);
         bool dActual = (diff.x > 0.0) || (diff.x == 0.0 && diff.y > 0.0);
         float dActualF = dActual ? 1.0 : 0.0;
 
-        epsx = epx_pre - (dActualF - uDRef[i]);
-        epsy = epy_pre;
+        // A digit that disagrees with the reference's separates the orbits by
+        // exactly 1. That whole unit goes into c; u is left alone.
+        ux = upx;
+        uy = upy;
+        cx = cpx - (dActualF - uDRef[i]);
+        cy = cpy;
+
+        // Hand u's own integer part over to c as well. Both subtractions are
+        // exact (Sterbenz), and this pins |u| below 1 forever -- which keeps u
+        // from growing until its rounding error matters, and keeps c a small
+        // integer that float32 represents exactly.
+        float kx = floor(ux + 0.5);
+        float ky = floor(uy + 0.5);
+        ux -= kx; cx += kx;
+        uy -= ky; cy += ky;
 
         float rPostX = dsToFloat(uRPreX[i]) - uDRef[i];
         float rPostY = dsToFloat(uRPreY[i]);
-        Z = vec2(rPostX + epsx, rPostY + epsy);
+        Z = vec2((rPostX + cx) + ux, (rPostY + cy) + uy);
 
         float newLen = length(Z);
         if (newLen > 2.0) {
