@@ -125,7 +125,7 @@ window.addEventListener('unhandledrejection', (e) => {
 
 <div id="transition-veil"></div>
 
-<div id="build-marker">build: preset-veil-1</div>
+<div id="build-marker">build: sapphire-2</div>
 
 <div id="error-overlay"></div>
 
@@ -250,46 +250,125 @@ vec2 dsAddFloat(vec2 a, float b) {
 
 float dsToFloat(vec2 a) { return a.x + a.y; }
 
-// ---- color strategy ----
-// 1. Phase = mod(smoothEscape, PERIOD)/PERIOD: a fixed-period cycle so color
-//    bands repeat forever as escape counts grow with zoom depth, instead of
-//    washing out as smoothEscape/ITER would.
-// 2. Hue stays in a NARROW analogous arc (violet->magenta->rose) via HSV,
-//    shifted by uHueShift (phone color slider), rather than independent
-//    R/G/B frequencies, so nothing clashes.
-// 3. Brightness ramps off the RAW escape count (not a fraction of ITER) and
-//    is capped well under 1.0 to stay muted for a large-screen render.
-const float PERIOD = 14.0;
+// ---- color strategy: "sapphire" ----
+// 1. BANDS. Phase = fract(smoothEscape / BAND_PERIOD): a fixed-period sawtooth
+//    so bands keep repeating forever as escape counts grow with zoom depth,
+//    instead of washing out as smoothEscape/ITER would. Each band STARTS LIGHT
+//    at phase 0 and FADES TO DARK by phase 1, then snaps back -- that hard
+//    reset next to a bright crest is what gives the ribbed, sculpted look.
+// 2. TONE. A much slower cosine over the same escape count carries the palette
+//    from neutral silver-gray to saturated sapphire and back. Because escape
+//    counts climb steadily as you zoom in, this reads as the whole field
+//    morphing gray -> blue -> gray over time, while still showing gray regions
+//    and blue regions side by side in a single frame.
+// 3. Gray and blue are never blended as hues (that would swing through green).
+//    Each is a 3-stop dark/mid/light ramp, and TONE cross-fades the two ramps
+//    stop-for-stop in RGB.
+// Tuned for THIS fractal, not a Mandelbrot: the twindragon's orbit expands
+// geometrically, so nearly everything escapes by iteration ~25 no matter how
+// deep you zoom. The periods below are therefore small -- a Mandelbrot-scale
+// period of 50+ would put the whole screen inside a single band.
+const float BAND_PERIOD = 1.5;    // escape counts per light->dark band
+const float TONE_PERIOD = 13.5;   // escape counts per gray->blue->gray morph
+const float TONE_PHASE  = 0.15;   // start just off pure gray, so shallow
+                                  // (low-escape) areas read as pale blue-gray
+const float TAU = 6.28318;
 
-vec3 hsv2rgb(vec3 c) {
-    vec3 p = abs(fract(c.xxx + vec3(1.0, 2.0/3.0, 1.0/3.0)) * 6.0 - 3.0);
-    return c.z * mix(vec3(1.0), clamp(p - 1.0, 0.0, 1.0), c.y);
+// The far exterior escapes almost immediately, so without this it would all sit
+// on one band's light edge and bleach the screen white. Fade the first few
+// escape counts into deep water instead, which also keeps the dark surround the
+// page had before.
+const vec3 DEEP = vec3(0.030, 0.045, 0.110);
+
+// What one band averages out to, integrated over the whole light->dark ramp
+// (crest included). The banded colour is linear in tone, so its average is too
+// -- these two constants reproduce the average at any tone exactly, not
+// approximately. Used to antialias the bands; see the note in dragonColor.
+const vec3 AVG_GRAY = vec3(0.5290, 0.5155, 0.4987);
+const vec3 AVG_BLUE = vec3(0.1403, 0.4515, 0.8046);
+
+// Dark / mid / light stops for each end of the tone morph. Values sampled off
+// the reference render: sapphire sits near hue 218 at high saturation and
+// lightens toward sky blue; the "gray" is neutral with a faint warm tilt.
+vec3 sapphirePalette(float ramp, float tone) {
+    vec3 lo = mix(vec3(0.100, 0.095, 0.090), vec3(0.045, 0.075, 0.235), tone);
+    vec3 md = mix(vec3(0.440, 0.425, 0.410), vec3(0.070, 0.380, 0.850), tone);
+    vec3 hi = mix(vec3(0.870, 0.855, 0.830), vec3(0.280, 0.740, 1.000), tone);
+    float k = ramp * 2.0;
+    vec3 c = mix(lo, md, clamp(k, 0.0, 1.0));
+    return mix(c, hi, clamp(k - 1.0, 0.0, 1.0));
 }
 
-vec3 dragonColor(vec2 offset) {
-    float epsx = offset.x;
-    float epsy = offset.y;
+// ---- DIGIT DIVERGENCE, and why the offset is split in two ----
+// The map is z -> (1+i)z - d, where the digit d is 0 or 1 depending on which
+// side of Re = 0.5 the point lands on. Two points that straddle that threshold
+// take DIFFERENT digits, so their orbits separate by exactly 1 -- a real
+// discontinuity in the map, not a rounding artifact.
+//
+// This loop used to keep the pixel's whole offset from the reference orbit in
+// one float32 named eps. At a deep zoom eps starts around 1e-18, so the moment
+// pixel took a different digit than the reference, eps jumped to ~1 and
+// float32's 24-bit mantissa rounded every one of those deep-zoom digits away.
+// From that iteration on the pixel was effectively being computed at 1e-7
+// resolution, which is what made whole regions go flat and blocky.
+//
+// The threshold test at iteration i is a straight line in screen space whose
+// angle is 90 - 45*(i+1) degrees -- so it is always horizontal, vertical, or
+// one of the two diagonals, and the i=0 line is the +45 degree one parallel to
+// y = x. That is why the damage shows up as a clean diagonal split.
+//
+// The fix: the map is AFFINE, so a digit disagreement moves the orbit by a
+// whole unit -- and repeated multiplication by (1+i) keeps whole units whole.
+// The offset is therefore carried as u + c, where c is an exact Gaussian
+// integer holding all the digit disagreements and u is the small smooth part
+// that never has a unit added to it. Nothing large is ever stored in u, so its
+// float32 precision is never spent on a leading 1.
 
-    float prevLen = length(vec2(dsToFloat(uPanX) + epsx, dsToFloat(uPanY) + epsy));
+vec3 dragonColor(vec2 offset) {
+    float ux = offset.x;   // smooth part of the offset from the reference
+    float uy = offset.y;
+    float cx = 0.0;        // exact Gaussian-integer part (whole numbers only)
+    float cy = 0.0;
+
+    float prevLen = length(vec2(dsToFloat(uPanX) + ux, dsToFloat(uPanY) + uy));
     float smoothEscape = -1.0;
     vec2 Z = vec2(0.0);
 
     for (int i = 0; i < ITER; i++) {
         if (smoothEscape >= 0.0) break;
 
-        float epx_pre = epsx - epsy;
-        float epy_pre = epsx + epsy;
+        // z -> (1+i)z, applied to each piece on its own. The linear part maps
+        // Gaussian integers to Gaussian integers, so c stays exactly whole.
+        float upx = ux - uy;
+        float upy = ux + uy;
+        float cpx = cx - cy;
+        float cpy = cx + cy;
 
-        vec2 diff = dsAddFloat(dsAddFloat(uRPreX[i], -0.5), epx_pre);
+        // This pixel's own digit: the sign of Re((1+i)z) - 0.5, assembled
+        // largest term first so the tiny one still lands in the low word.
+        vec2 diff = dsAddFloat(dsAddFloat(dsAddFloat(uRPreX[i], -0.5), cpx), upx);
         bool dActual = (diff.x > 0.0) || (diff.x == 0.0 && diff.y > 0.0);
         float dActualF = dActual ? 1.0 : 0.0;
 
-        epsx = epx_pre - (dActualF - uDRef[i]);
-        epsy = epy_pre;
+        // A digit that disagrees with the reference's separates the orbits by
+        // exactly 1. That whole unit goes into c; u is left alone.
+        ux = upx;
+        uy = upy;
+        cx = cpx - (dActualF - uDRef[i]);
+        cy = cpy;
+
+        // Hand u's own integer part over to c as well. Both subtractions are
+        // exact (Sterbenz), and this pins |u| below 1 forever -- which keeps u
+        // from growing until its rounding error matters, and keeps c a small
+        // integer that float32 represents exactly.
+        float kx = floor(ux + 0.5);
+        float ky = floor(uy + 0.5);
+        ux -= kx; cx += kx;
+        uy -= ky; cy += ky;
 
         float rPostX = dsToFloat(uRPreX[i]) - uDRef[i];
         float rPostY = dsToFloat(uRPreY[i]);
-        Z = vec2(rPostX + epsx, rPostY + epsy);
+        Z = vec2((rPostX + cx) + ux, (rPostY + cy) + uy);
 
         float newLen = length(Z);
         if (newLen > 2.0) {
@@ -299,33 +378,66 @@ vec3 dragonColor(vec2 offset) {
         prevLen = newLen;
     }
 
+    // Interior of the set: near-black, with just enough structure to keep it
+    // from reading as a flat hole.
     if (smoothEscape < 0.0) {
-        // Restored to the original dragonpage_user.html brightness (the
-        // black-screen issue turned out to be the Decimal/mount ordering
-        // bug, not dimness) -- still hue-shiftable via uHueShift so the
-        // phone color slider keeps affecting the interior too.
         float n = 0.5 + 0.5 * sin(dot(Z, Z) * 6.0);
-        return hsv2rgb(vec3(0.80 + uHueShift, 0.35, 0.055 + 0.02 * n));
+        return vec3(0.018, 0.024, 0.052) + 0.020 * vec3(n * 0.5, n * 0.7, n);
     }
 
-    float tCycle = mod(smoothEscape, PERIOD) / PERIOD;
+    // --- how fine are the bands here, relative to one pixel? -----------------
+    // The bands are contours of log(distance to the twindragon). The map's
+    // linear part is multiplication by (1+i), so |z| grows by exactly sqrt(2)
+    // per step and |z_n| ~ dist * 2^(n/2); inverting at the escape radius gives
+    // dist = 2 * 2^(-smoothEscape/2). Because that is a LOG of distance, the
+    // contours pack together without limit as you approach the boundary: past
+    // ~18 escape counts more than one whole band lands inside a single pixel,
+    // the pixel centre samples an essentially arbitrary phase, and the result
+    // is TV static. It never resolves by zooming -- the boundary is
+    // self-similar, so there is always more of it inside the pixel.
+    float pixelSize = uZoom / iResolution.y;
+    float bandsPerPixel = pixelSize * exp2(min(0.5 * smoothEscape, 100.0))
+                        / (0.6931472 * BAND_PERIOD);
+    float tonesPerPixel = bandsPerPixel * BAND_PERIOD / TONE_PERIOD;
 
-    float hue = 0.80 + uHueShift + 0.09 * sin(6.28318 * tCycle);
-    float sat = clamp(0.45 + 0.15 * sin(6.28318 * tCycle * 1.5 + 1.0), 0.0, 1.0);
-    float val = clamp(0.16 + 0.10 * sin(6.28318 * tCycle + 0.6), 0.0, 1.0);
-    vec3 base = hsv2rgb(vec3(hue, sat, val));
+    // Where we are in the slow gray <-> sapphire morph: 0 = silver, 1 = blue.
+    // The tone cycle is 9x longer than the band cycle, but it has to fade out
+    // almost as early: near the boundary the escape count jumps by TENS between
+    // neighbouring pixels, so even a small fraction of a tone cycle per pixel
+    // still shows up as speckle. Measured against the smooth-band noise floor,
+    // it has to be gone by ~0.12 cycles per pixel.
+    //
+    // uHueShift is the phone's color slider (0..1). The sapphire palette has no
+    // hue to rotate -- gray and blue are cross-faded as RGB ramps, never as
+    // hues -- so the slider offsets where the frame sits in the gray <-> blue
+    // morph instead: one full trip from silver through sapphire and back.
+    float tone = 0.5 - 0.5 * cos(TAU * (smoothEscape / TONE_PERIOD + TONE_PHASE + uHueShift));
+    tone = mix(tone, 0.5, smoothstep(0.02, 0.12, tonesPerPixel));
 
-    float veinFreq = 1.0;
-    float veinSharp = 4.0;
-    float vein = pow(max(cos(6.28318 * veinFreq * tCycle + 1.2), 0.0), veinSharp);
-    vec3 sparkle = hsv2rgb(vec3(hue + 0.02, sat * 0.7, 0.5));
-    vec3 col = base + sparkle * vein * 0.35;
+    // Where we are inside the current band: 0 = its light leading edge,
+    // 1 = the dark trailing edge just before the snap back.
+    float t = fract(smoothEscape / BAND_PERIOD);
 
-    float glow = 0.8 * smoothstep(1.0, 5.0, smoothEscape)
-               * (1.0 - 0.35 * smoothstep(float(ITER) * 0.9, float(ITER), smoothEscape));
-    col *= glow;
+    // pow(..., 0.75) holds the band bright for a beat before falling away and
+    // then accelerating into the dark -- matches the falloff in the reference.
+    float ramp = pow(1.0 - t, 0.75);
+    vec3 col = sapphirePalette(ramp, tone);
 
-    return col;
+    // Specular crest on the first sixth of the band, so the light edge really
+    // catches instead of just being "the top of the ramp".
+    float crest = pow(max(1.0 - t * 6.0, 0.0), 2.0);
+    col += crest * 0.22 * mix(vec3(1.00, 0.99, 0.96), vec3(0.72, 0.88, 1.00), tone);
+
+    // Once the bands are finer than the screen can show, fade to what an
+    // infinitely supersampled pixel would converge to: the band average. This
+    // is below Nyquist and does nothing at all to the wide outer bands.
+    col = mix(col, mix(AVG_GRAY, AVG_BLUE, tone),
+              smoothstep(0.15, 0.45, bandsPerPixel));
+
+    // Sink the shallowest pixels into DEEP (see above).
+    col = mix(DEEP, col, smoothstep(0.0, 4.0, smoothEscape));
+
+    return clamp(col, 0.0, 1.0);
 }
 
 void main() {
