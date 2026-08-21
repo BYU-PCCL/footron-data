@@ -125,7 +125,7 @@ window.addEventListener('unhandledrejection', (e) => {
 
 <div id="transition-veil"></div>
 
-<div id="build-marker">build: sapphire-2</div>
+<div id="build-marker">build: sapphire-6</div>
 
 <div id="error-overlay"></div>
 
@@ -228,7 +228,16 @@ out vec4 fragColor;
 
 uniform vec3 iResolution;
 uniform float uZoom;
-uniform float uHueShift;
+// The accent end of the palette, rotated in hue by the phone's colour slider
+// and computed on the CPU (see accentPalette below) -- the rotation needs a
+// gamut search and a band integral, neither of which belongs in a per-pixel
+// shader. The gray end is fixed, so these are the only colours that move.
+uniform vec3 uAccentLo;      // dark stop of the accent ramp
+uniform vec3 uAccentMd;      // mid stop, the most saturated one
+uniform vec3 uAccentHi;      // light stop
+uniform vec3 uAccentCrest;   // cool end of the specular crest tint
+uniform vec3 uAccentAvg;     // one band's average at tone = 1 (antialiasing)
+uniform vec3 uDeep;          // far-exterior surround
 uniform vec2 uPanX;          // pan center x, as double-single (hi, lo)
 uniform vec2 uPanY;          // pan center y, as double-single (hi, lo)
 uniform vec2 uRPreX[ITER];   // reference orbit, x, post-rotation/pre-branch (double-single)
@@ -250,7 +259,7 @@ vec2 dsAddFloat(vec2 a, float b) {
 
 float dsToFloat(vec2 a) { return a.x + a.y; }
 
-// ---- color strategy: "sapphire" ----
+// ---- color strategy: "sapphire" (hue-rotatable) ----
 // 1. BANDS. Phase = fract(smoothEscape / BAND_PERIOD): a fixed-period sawtooth
 //    so bands keep repeating forever as escape counts grow with zoom depth,
 //    instead of washing out as smoothEscape/ITER would. Each band STARTS LIGHT
@@ -261,9 +270,16 @@ float dsToFloat(vec2 a) { return a.x + a.y; }
 //    counts climb steadily as you zoom in, this reads as the whole field
 //    morphing gray -> blue -> gray over time, while still showing gray regions
 //    and blue regions side by side in a single frame.
-// 3. Gray and blue are never blended as hues (that would swing through green).
-//    Each is a 3-stop dark/mid/light ramp, and TONE cross-fades the two ramps
-//    stop-for-stop in RGB.
+// 3. Gray and the accent are never blended as hues (that would swing through
+//    green). Each is a 3-stop dark/mid/light ramp, and TONE cross-fades the two
+//    ramps stop-for-stop in RGB.
+// 4. HUE. The accent's three stops are not one colour at three lightnesses --
+//    they run 270 -> 260 -> 238 in OkLCh hue, cooling toward cyan as they
+//    lighten, which is what keeps the ramp from looking like flat shaded
+//    plastic. The colour slider rotates all three by the same offset, so that
+//    32-degree internal spread is carried along intact: gray -> sapphire
+//    becomes gray -> pink, gray -> olive, and so on. Those rotated stops
+//    arrive as the uAccent* uniforms above.
 // Tuned for THIS fractal, not a Mandelbrot: the twindragon's orbit expands
 // geometrically, so nearly everything escapes by iteration ~25 no matter how
 // deep you zoom. The periods below are therefore small -- a Mandelbrot-scale
@@ -277,23 +293,25 @@ const float TAU = 6.28318;
 // The far exterior escapes almost immediately, so without this it would all sit
 // on one band's light edge and bleach the screen white. Fade the first few
 // escape counts into deep water instead, which also keeps the dark surround the
-// page had before.
-const vec3 DEEP = vec3(0.030, 0.045, 0.110);
+// page had before. Rotates with the accent (as uDeep) so a pink palette doesn't
+// sit inside a stubbornly blue surround.
 
 // What one band averages out to, integrated over the whole light->dark ramp
 // (crest included). The banded colour is linear in tone, so its average is too
-// -- these two constants reproduce the average at any tone exactly, not
-// approximately. Used to antialias the bands; see the note in dragonColor.
+// -- these two reproduce the average at any tone exactly, not approximately.
+// Used to antialias the bands; see the note in dragonColor. AVG_GRAY is a
+// constant because the gray end never moves; the accent's average is
+// re-integrated on the CPU whenever the hue rotates and arrives as uAccentAvg.
 const vec3 AVG_GRAY = vec3(0.5290, 0.5155, 0.4987);
-const vec3 AVG_BLUE = vec3(0.1403, 0.4515, 0.8046);
 
-// Dark / mid / light stops for each end of the tone morph. Values sampled off
-// the reference render: sapphire sits near hue 218 at high saturation and
-// lightens toward sky blue; the "gray" is neutral with a faint warm tilt.
-vec3 sapphirePalette(float ramp, float tone) {
-    vec3 lo = mix(vec3(0.100, 0.095, 0.090), vec3(0.045, 0.075, 0.235), tone);
-    vec3 md = mix(vec3(0.440, 0.425, 0.410), vec3(0.070, 0.380, 0.850), tone);
-    vec3 hi = mix(vec3(0.870, 0.855, 0.830), vec3(0.280, 0.740, 1.000), tone);
+// Dark / mid / light stops for each end of the tone morph. The gray stops are
+// neutral with a faint warm tilt, sampled off the reference render; the accent
+// stops arrive already hue-rotated from the CPU, and at slider 0 they are the
+// original sapphires (near hue 218, lightening toward sky blue).
+vec3 bandPalette(float ramp, float tone) {
+    vec3 lo = mix(vec3(0.100, 0.095, 0.090), uAccentLo, tone);
+    vec3 md = mix(vec3(0.440, 0.425, 0.410), uAccentMd, tone);
+    vec3 hi = mix(vec3(0.870, 0.855, 0.830), uAccentHi, tone);
     float k = ramp * 2.0;
     vec3 c = mix(lo, md, clamp(k, 0.0, 1.0));
     return mix(c, hi, clamp(k - 1.0, 0.0, 1.0));
@@ -407,11 +425,13 @@ vec3 dragonColor(vec2 offset) {
     // still shows up as speckle. Measured against the smooth-band noise floor,
     // it has to be gone by ~0.12 cycles per pixel.
     //
-    // uHueShift is the phone's color slider (0..1). The sapphire palette has no
-    // hue to rotate -- gray and blue are cross-faded as RGB ramps, never as
-    // hues -- so the slider offsets where the frame sits in the gray <-> blue
-    // morph instead: one full trip from silver through sapphire and back.
-    float tone = 0.5 - 0.5 * cos(TAU * (smoothEscape / TONE_PERIOD + TONE_PHASE + uHueShift));
+    // No slider term here on purpose. The colour slider used to be added to
+    // this phase, which meant it slid the whole gray <-> accent morph across
+    // the frame -- so it changed WHICH escape counts read as gray and which
+    // read as saturated, and the palette appeared to crawl as you zoomed.
+    // Tone is now a pure function of escape count, pinning the morph to zoom
+    // depth; the slider rotates the accent's hue instead (see uAccent* above).
+    float tone = 0.5 - 0.5 * cos(TAU * (smoothEscape / TONE_PERIOD + TONE_PHASE));
     tone = mix(tone, 0.5, smoothstep(0.02, 0.12, tonesPerPixel));
 
     // Where we are inside the current band: 0 = its light leading edge,
@@ -421,21 +441,21 @@ vec3 dragonColor(vec2 offset) {
     // pow(..., 0.75) holds the band bright for a beat before falling away and
     // then accelerating into the dark -- matches the falloff in the reference.
     float ramp = pow(1.0 - t, 0.75);
-    vec3 col = sapphirePalette(ramp, tone);
+    vec3 col = bandPalette(ramp, tone);
 
     // Specular crest on the first sixth of the band, so the light edge really
     // catches instead of just being "the top of the ramp".
     float crest = pow(max(1.0 - t * 6.0, 0.0), 2.0);
-    col += crest * 0.22 * mix(vec3(1.00, 0.99, 0.96), vec3(0.72, 0.88, 1.00), tone);
+    col += crest * 0.22 * mix(vec3(1.00, 0.99, 0.96), uAccentCrest, tone);
 
     // Once the bands are finer than the screen can show, fade to what an
     // infinitely supersampled pixel would converge to: the band average. This
     // is below Nyquist and does nothing at all to the wide outer bands.
-    col = mix(col, mix(AVG_GRAY, AVG_BLUE, tone),
+    col = mix(col, mix(AVG_GRAY, uAccentAvg, tone),
               smoothstep(0.15, 0.45, bandsPerPixel));
 
-    // Sink the shallowest pixels into DEEP (see above).
-    col = mix(DEEP, col, smoothstep(0.0, 4.0, smoothEscape));
+    // Sink the shallowest pixels into the surround (see uDeep above).
+    col = mix(uDeep, col, smoothstep(0.0, 4.0, smoothEscape));
 
     return clamp(col, 0.0, 1.0);
 }
@@ -488,12 +508,149 @@ gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
 
 const uResLoc = gl.getUniformLocation(imageProgram, 'iResolution');
 const uZoomLoc = gl.getUniformLocation(imageProgram, 'uZoom');
-const uHueShiftLoc = gl.getUniformLocation(imageProgram, 'uHueShift');
+const uAccentLoLoc = gl.getUniformLocation(imageProgram, 'uAccentLo');
+const uAccentMdLoc = gl.getUniformLocation(imageProgram, 'uAccentMd');
+const uAccentHiLoc = gl.getUniformLocation(imageProgram, 'uAccentHi');
+const uAccentCrestLoc = gl.getUniformLocation(imageProgram, 'uAccentCrest');
+const uAccentAvgLoc = gl.getUniformLocation(imageProgram, 'uAccentAvg');
+const uDeepLoc = gl.getUniformLocation(imageProgram, 'uDeep');
 const uPanXLoc = gl.getUniformLocation(imageProgram, 'uPanX');
 const uPanYLoc = gl.getUniformLocation(imageProgram, 'uPanY');
 const uRPreXLoc = gl.getUniformLocation(imageProgram, 'uRPreX[0]');
 const uRPreYLoc = gl.getUniformLocation(imageProgram, 'uRPreY[0]');
 const uDRefLoc = gl.getUniformLocation(imageProgram, 'uDRef[0]');
+
+// ---------- Accent hue rotation ----------
+// The colour slider rotates the accent end of the palette around the hue
+// circle. Doing that in HSV would wreck the careful band sculpting: HSV holds
+// "value", not brightness, so a rotation from sapphire to yellow arrives far
+// lighter than it left and the light/dark ramp stops reading as one surface.
+// OkLCh is perceptually uniform, so rotating there holds apparent lightness
+// and colourfulness fixed and every slider position looks like a sibling of
+// the original sapphire.
+
+const TAU_JS = 6.283185307179586;
+
+function srgbToLinear(c) {
+    return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+}
+
+function linearToSrgb(c) {
+    return c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+}
+
+function rgbToOklab([r0, g0, b0]) {
+    const r = srgbToLinear(r0), g = srgbToLinear(g0), b = srgbToLinear(b0);
+    const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+    const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+    const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+    return [
+        0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+        1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+        0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s,
+    ];
+}
+
+// Returns LINEAR rgb, so the gamut test below can see the out-of-range values
+// before the transfer function folds them back in.
+function oklabToLinearRgb([L, a, b]) {
+    const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+    const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+    const s_ = L - 0.0894841775 * a - 1.2914855480 * b;
+    const l = l_ * l_ * l_, m = m_ * m_ * m_, s = s_ * s_ * s_;
+    return [
+        4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+        -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+        -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s,
+    ];
+}
+
+function oklabToSrgb(lab) {
+    return oklabToLinearRgb(lab).map((v) => Math.min(1, Math.max(0, linearToSrgb(v))));
+}
+
+function labInGamut(lab) {
+    return oklabToLinearRgb(lab).every((v) => v >= -1e-4 && v <= 1 + 1e-4);
+}
+
+// The accent colours as authored, pre-converted to OkLCh once. Rotating these
+// by 0 and converting back reproduces the original sapphires to within 1e-7,
+// so the slider's home position is the palette that was tuned by hand.
+const ACCENT_SOURCE = {
+    lo:    [0.045, 0.075, 0.235],
+    md:    [0.070, 0.380, 0.850],
+    hi:    [0.280, 0.740, 1.000],
+    crest: [0.720, 0.880, 1.000],
+    deep:  [0.030, 0.045, 0.110],
+};
+const ACCENT_LCH = {};
+for (const [name, rgb] of Object.entries(ACCENT_SOURCE)) {
+    const [L, a, b] = rgbToOklab(rgb);
+    ACCENT_LCH[name] = { L, C: Math.hypot(a, b), h: Math.atan2(b, a) };
+}
+
+// One band's average, integrated the same way the two AVG_ constants in the
+// shader were. It has to be recomputed per hue because the shader uses it as
+// the below-Nyquist limit colour: if it drifts from the true average, deep
+// zooms visibly change brightness as the bands fade out under it.
+function bandAverage(lo, md, hi, crest) {
+    const N = 512;
+    const acc = [0, 0, 0];
+    for (let i = 0; i < N; i++) {
+        const t = (i + 0.5) / N;
+        const ramp = Math.pow(1 - t, 0.75);
+        const k = ramp * 2;
+        const kA = Math.min(1, Math.max(0, k));
+        const kB = Math.min(1, Math.max(0, k - 1));
+        const spec = Math.pow(Math.max(1 - t * 6, 0), 2) * 0.22;
+        for (let j = 0; j < 3; j++) {
+            const c = lo[j] + (md[j] - lo[j]) * kA;
+            acc[j] += c + (hi[j] - c) * kB + spec * crest[j];
+        }
+    }
+    return acc.map((v) => v / N);
+}
+
+// sRGB can't hold every hue at the accent's chroma -- cyan and green at these
+// lightnesses run out well before magenta does. Scale every stop by ONE shared
+// factor rather than clipping each independently: the ramp's internal chroma
+// progression is part of what makes it read as a lit surface, so it's better to
+// lose a little saturation across the whole ramp than to have the mid stop
+// desaturate while the light stop stays vivid.
+function sharedChromaFactor(dh) {
+    let keep = 1;
+    for (const { L, C, h } of Object.values(ACCENT_LCH)) {
+        const cos = Math.cos(h + dh), sin = Math.sin(h + dh);
+        if (labInGamut([L, C * cos, C * sin])) continue;
+        let lo = 0, hi = 1;
+        for (let i = 0; i < 24; i++) {          // binary search the largest fit
+            const mid = 0.5 * (lo + hi);
+            if (labInGamut([L, C * mid * cos, C * mid * sin])) lo = mid;
+            else hi = mid;
+        }
+        keep = Math.min(keep, lo);
+    }
+    return keep;
+}
+
+// Rebuilt only when the slider actually moves -- the gamut search and the band
+// integral are far too much work to redo every frame for an unchanged hue.
+let accent = null;
+let accentTurn = null;
+
+function updateAccent(turn) {
+    if (accentTurn === turn && accent !== null) return;
+    const dh = turn * TAU_JS;
+    const keep = sharedChromaFactor(dh);
+    const out = {};
+    for (const [name, { L, C, h }] of Object.entries(ACCENT_LCH)) {
+        const c = C * keep;
+        out[name] = oklabToSrgb([L, c * Math.cos(h + dh), c * Math.sin(h + dh)]);
+    }
+    out.avg = bandAverage(out.lo, out.md, out.hi, out.crest);
+    accent = out;
+    accentTurn = turn;
+}
 
 // ---------- Pan/zoom state ----------
 // panX/panY are ARBITRARY-PRECISION Decimals, recomputed via the reference
@@ -610,6 +767,7 @@ function enterAmbient() {
     targetPanY = new Decimal(0);
     baseZoom = zoom;
     targetZoom = baseZoom;
+    zoomSliderValue = 0;   // the phone zeroes its slider on Resume too
 }
 
 function enterInteractive() {
@@ -652,9 +810,90 @@ function applyPreset(index) {
         panY = targetPanY = new Decimal(preset.y);
         baseZoom = preset.zoom;
         zoom = targetZoom = baseZoom;
+        // The phone zeroes its zoom slider on a preset jump, so mirror that
+        // here or a later Max zoom toggle would re-apply a stale position.
+        zoomSliderValue = 0;
         transitionVeil.style.opacity = '0';
         presetTransitionTimer = null;
     }, PRESET_TRANSITION_MS);
+}
+
+// ---------- Zoom slider range ----------
+// The slider maps 0..1 onto a span of DECADES of magnification below baseZoom:
+// value 0 is baseZoom itself, value 1 is 10^-decades times it. "Max zoom" on
+// the phone triples that span, so the deep end reaches three times as far in
+// orders of magnitude while value 0 lands in exactly the same place either way.
+//
+// 12 decades is well inside what the perturbation math here can hold -- the
+// reference orbit is carried as 60-digit Decimals and the note above sizes the
+// scheme for offsets around 1e-18 -- but it is deep enough that the bands go
+// finer than a pixel across most of the frame, so the below-Nyquist fade in
+// dragonColor is doing most of the work at the bottom of the range.
+const ZOOM_DECADES_NORMAL = 4;
+const ZOOM_DECADES_MAX = 12;
+let zoomDecades = ZOOM_DECADES_NORMAL;
+
+// The slider position the phone last sent. Kept so that flipping the range can
+// re-apply it immediately: without this the toggle would appear to do nothing
+// until the slider was next touched, and the slider's position would be
+// misreporting the depth in the meantime.
+let zoomSliderValue = 0;
+
+function applyZoomSlider(value) {
+    if (!isFinite(value)) return;
+    zoomSliderValue = value;
+    targetZoom = baseZoom * Math.pow(10, -value * zoomDecades);
+}
+
+// ---------- Pan limits ----------
+// Measured from the same map this page iterates: the twindragon's interior
+// spans x in [-0.665, 0.665] and y in [-1.325, 0.295], so the shape is
+// centred at (0, -0.515) -- NOT at the origin, which is why the "Origin
+// overview" preset frames its upper half. Escape counts fall to zero outside
+// roughly |x| > 2 and y outside [-1.9, 1.5]; past that there is nothing to
+// look at but flat surround, forever.
+//
+// So the pan centre is clamped to a box built from the shape's own centre and
+// half-extents, plus a margin. The margin is what lets any part of the fractal
+// be dragged past the middle of the screen instead of stopping exactly at its
+// edge; the box is what stops the phone wandering off into empty surround and
+// getting lost with no landmark to navigate back by.
+//
+// The box is deliberately NOT square. An earlier symmetric +/-1.4 let the
+// centre reach y = -1.9, which at the start zoom (3 units tall) left the
+// fractal a sliver at the top of an otherwise black frame -- generous on x,
+// where the frame is 4.8 units wide and panning barely shows, and far too
+// generous on y, where it does. Deriving each axis from its own half-extent
+// keeps the worst case on both axes looking the same.
+const PAN_CENTER_X = new Decimal('0');
+const PAN_CENTER_Y = new Decimal('-0.515');
+const PAN_MARGIN = new Decimal('0.4');
+const PAN_LIMIT_X = new Decimal('0.665').plus(PAN_MARGIN);   // -> x in [-1.065, 1.065]
+const PAN_LIMIT_Y = new Decimal('0.81').plus(PAN_MARGIN);    // -> y in [-1.725, 0.695]
+
+function clampPanAxis(value, center, limit) {
+    const lo = center.minus(limit);
+    const hi = center.plus(limit);
+    if (value.lessThan(lo)) return lo;
+    if (value.greaterThan(hi)) return hi;
+    return value;
+}
+
+// dx/dy arrive from the phone's trackpad as fractions of ONE SCREEN HEIGHT,
+// matching the shader's /iResolution.y normalisation -- so a single unit is
+// uZoom world units on both axes, and the gesture keeps its on-screen scale
+// automatically however deep the zoom is.
+//
+// Scaled by the CURRENT zoom rather than targetZoom so the drag matches what
+// is on the wall right now, and accumulated on the Decimal targets rather
+// than on floats: at a deep zoom the step is around 1e-18, which a float pan
+// centre could not even represent, let alone add without losing the digits
+// the deep zoom depends on.
+function applyPan(dx, dy) {
+    if (!isFinite(dx) || !isFinite(dy)) return;
+    const step = new Decimal(zoom);
+    targetPanX = clampPanAxis(targetPanX.plus(step.times(dx)), PAN_CENTER_X, PAN_LIMIT_X);
+    targetPanY = clampPanAxis(targetPanY.plus(step.times(dy)), PAN_CENTER_Y, PAN_LIMIT_Y);
 }
 
 // ---------- Control messages from the phone ----------
@@ -663,16 +902,35 @@ function handleMessage(message) {
     switch (message.type) {
         case 'zoom':
             // value is 0..1 from the phone slider; 0 is baseZoom itself (as
-            // zoomed out as the slider goes), 1 is 4 orders of magnitude
-            // deeper in, at the current preset/origin.
+            // zoomed out as the slider goes), 1 is zoomDecades orders of
+            // magnitude deeper in, at the current preset/origin.
             enterInteractive();
-            targetZoom = baseZoom * Math.pow(10, -message.value * 4);
+            applyZoomSlider(message.value);
+            break;
+        case 'maxzoom':
+            // Widens the slider's deep end without moving its shallow end.
+            zoomDecades = message.value ? ZOOM_DECADES_MAX : ZOOM_DECADES_NORMAL;
+            // Only re-apply while the phone is actually driving. Toggling the
+            // range mid-ambient shouldn't seize control of the auto-zoom --
+            // and with the slider at 0 there would be nothing to re-apply
+            // anyway, since both ranges agree there.
+            if (mode === 'interactive') applyZoomSlider(zoomSliderValue);
             break;
         case 'hue':
             // value is 0..1 from the phone slider, one full trip around the
-            // color wheel.
+            // color wheel: 0 is the original sapphire, 0.25 lands on pink,
+            // and 1 comes back to sapphire. Where the palette sits relative
+            // to zoom depth is unaffected -- only the accent's hue moves.
             enterInteractive();
             hueShift = message.value;
+            break;
+        case 'pan':
+            // Relative drag from the phone's trackpad, in screen-height
+            // fractions. Panning counts as taking control, so this leaves
+            // ambient mode -- otherwise the render loop would pin the centre
+            // back to the origin on the very next frame.
+            enterInteractive();
+            applyPan(message.dx, message.dy);
             break;
         case 'preset':
             enterInteractive();
@@ -731,7 +989,13 @@ function render() {
 
     gl.uniform3f(uResLoc, canvas.width, canvas.height, 1.0);
     gl.uniform1f(uZoomLoc, zoom);
-    gl.uniform1f(uHueShiftLoc, hueShift);
+    updateAccent(hueShift);
+    gl.uniform3fv(uAccentLoLoc, accent.lo);
+    gl.uniform3fv(uAccentMdLoc, accent.md);
+    gl.uniform3fv(uAccentHiLoc, accent.hi);
+    gl.uniform3fv(uAccentCrestLoc, accent.crest);
+    gl.uniform3fv(uAccentAvgLoc, accent.avg);
+    gl.uniform3fv(uDeepLoc, accent.deep);
     gl.uniform2f(uPanXLoc, panXhi, panXlo);
     gl.uniform2f(uPanYLoc, panYhi, panYlo);
     gl.uniform2fv(uRPreXLoc, rPreXFlat);
