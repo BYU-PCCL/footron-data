@@ -117,7 +117,7 @@ html, body {
    what the visitor just changed. */
 #caption {
     position: fixed;
-    left: 8.2vw;
+    left: 3.2vw;
     bottom: 4.4vh;
     width: min(52vw, calc(100vw - var(--panel-w) - 8vw));
     z-index: 5;
@@ -137,7 +137,7 @@ html, body {
 
 #mode-badge {
     position: fixed;
-    left: 8.2vw;
+    left: 3.2vw;
     bottom: calc(4.4vh + clamp(74px, 8.2vh, 150px));
     z-index: 6;
     display: flex;
@@ -1707,7 +1707,9 @@ void main() {
         float fi = float(i);
         float t = uTime * (0.021 + 0.013 * fi);
         float band = fbm(vec2(p.x * 1.5 + t, p.y * 0.55 - t * 0.35) + fi * 13.0);
-        float ridge = 1.0 - abs(band * 2.0 - 1.0);
+        // Clamped for the same reason the crystal's riser term is: this feeds
+        // a fractional power, and a base a hair below zero there is NaN.
+        float ridge = max(0.0, 1.0 - abs(band * 2.0 - 1.0));
         float y0 = 0.16 + 0.13 * fi + 0.06 * sin(uTime * 0.07 + fi * 2.0);
         float mask = exp(-pow(abs(p.y - y0) * (3.4 - 0.9 * fi), 2.0));
         vec3 tint = mix(vec3(0.13, 0.42, 0.36), vec3(0.24, 0.20, 0.52), fi);
@@ -1808,6 +1810,14 @@ const vec3 RIM2 = vec3(-0.3011, -0.7226, 0.6223);
  *  always has at least one of them somewhere in its cone of refraction, and
  *  never goes dark as it turns.
  */
+// normalize() on a zero-length vector is 0/0. Nothing here should ever hand it
+// one, but on an unattended display the cost of being sure is a comparison and
+// the cost of being wrong is a black hole in the crystal.
+vec3 safeNormalize(vec3 v, vec3 fallback) {
+    float l2 = dot(v, v);
+    return l2 > 1e-12 ? v * inversesqrt(l2) : fallback;
+}
+
 vec3 envColor(vec3 d) {
     float up = clamp(d.y, -1.0, 1.0);
     // Darker overhead than it used to be, and deliberately so. A crystal is
@@ -2134,9 +2144,9 @@ void main() {
             vec3 dB = refract(inDir, -exitN, (IOR_G - disp) / IOR_G);
             dR = (dot(dR, dR) > 1e-6 ? dR : outDir) + entrySplitR * 1.6;
             dB = (dot(dB, dB) > 1e-6 ? dB : outDir) + entrySplitB * 1.6;
-            vec3 wR = uRot * normalize(dR);
+            vec3 wR = uRot * safeNormalize(dR, outDir);
             vec3 wG = uRot * outDir;
-            vec3 wB = uRot * normalize(dB);
+            vec3 wB = uRot * safeNormalize(dB, outDir);
             vec3 spectral = vec3(envColor(wR).r, envColor(wG).g, envColor(wB).b);
 
             /*  How far the ray was bent decides what it shows.
@@ -2176,6 +2186,13 @@ void main() {
         // grey glass.
         trans *= exp(-pathLen * vec3(0.62, 0.26, 0.15) * 0.55);
 
+        // uDebug 6 shows how far the ray travelled inside, and whether it ever
+        // found its way out: magenta means it never did.
+        if (uDebug == 6) {
+            if (!escaped) { fragColor = vec4(1.0, 0.0, 1.0, 1.0); return; }
+            fragColor = vec4(clamp(pathLen / 3.0, 0.0, 1.0), clamp(pathLen / 12.0, 0.0, 1.0), 0.0, 1.0);
+            return;
+        }
         if (uDebug == 1 || uDebug == 4) { fragColor = vec4(1.0, 0.0, 0.0, 1.0); return; }
         if (uDebug == 2) { fragColor = vec4(fract(abs(p.z) * 4.0), fract(length(p.xy) * 12.0), 0.0, 1.0); return; }
         vec3 shade = mix(trans, refl, fres);
@@ -2196,8 +2213,16 @@ void main() {
         // to be pointing. Both cases matter: the bright ones draw the ribs and
         // the dark ones draw the facet boundaries, and a real crystal is made
         // almost entirely of the two of them side by side.
-        float riser = 1.0 - abs(dot(n, vec3(0.0, 0.0, 1.0)));
-        vec3 riserDir = uRot * normalize(vec3(n.xy, 0.0) + vec3(0.0, 0.0, 1e-4));
+        // Clamped, and it matters. normalize() returns a vector whose length is
+        // one only to within floating point, so on a plateau lying exactly
+        // perpendicular to the c axis this dot product comes out a hair above
+        // one and the subtraction lands a hair below zero. Raising a negative
+        // number to a fractional power is undefined and returns NaN, which
+        // then poisons the whole pixel -- and since it happens precisely where
+        // the surface is flattest, it does it across whole plateaus at once.
+        // That was the field of solid black patches over the inner arms.
+        float riser = max(0.0, 1.0 - abs(dot(n, vec3(0.0, 0.0, 1.0))));
+        vec3 riserDir = uRot * safeNormalize(vec3(n.xy, 0.0), vec3(0.0, 0.0, 1.0));
         float riserLit = max(0.0, dot(riserDir, MOON));
         shade += vec3(0.85, 0.95, 1.00) * pow(riser, 1.6) * pow(riserLit, 2.0) * 1.10;
 
@@ -2211,6 +2236,28 @@ void main() {
         // light hard -- a glint off a facet, or a whole arm lit from behind --
         // and without this the crystal spends part of every turn as a solid
         // white silhouette with all of its structure burnt out.
+        // A net, not a fix. Anything non-finite that gets this far would be
+        // turned into pure black by the clamp below -- max(NaN, 0) is 0 -- so
+        // a single bad pixel becomes a hole in the crystal rather than
+        // something merely slightly wrong. Falling back to the background
+        // makes any future instance of this invisible instead of glaring.
+        // uDebug 5 hunts non-finite values, and has to sit here, after every
+        // term has been added: put it any earlier and it reports a clean
+        // frame while the shading terms below are the ones producing NaN.
+        // Red marks the transmitted colour, green the reflected one, yellow
+        // the total. Everything sound renders dim so the flags stand out.
+        if (uDebug == 5) {
+            bool badT = any(isnan(trans)) || any(isinf(trans));
+            bool badR = any(isnan(refl)) || any(isinf(refl));
+            bool badS = any(isnan(shade)) || any(isinf(shade));
+            if (badT) { fragColor = vec4(1.0, 0.0, 0.0, 1.0); return; }
+            if (badR) { fragColor = vec4(0.0, 1.0, 0.0, 1.0); return; }
+            if (badS) { fragColor = vec4(1.0, 1.0, 0.0, 1.0); return; }
+            fragColor = vec4(0.10, 0.12, 0.16, 1.0);
+            return;
+        }
+
+        if (any(isnan(shade)) || any(isinf(shade))) shade = bg;
         shade = vec3(1.0) - exp(-max(shade, vec3(0.0)) * 1.60);
 
         outCol = mix(outCol, shade, uFade);
