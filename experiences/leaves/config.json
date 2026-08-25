@@ -1,0 +1,17 @@
+{
+  "id": "leaves",
+  "type": "web",
+  "title": "Wasatch Fall",
+  "description": "A hillside of maple, oak and aspen turning colour, with every leaf simulated from real autumn phenology.",
+  "long_description": "Autumn colour is not the calendar running out. Shortening days and cool nights start a clock in each leaf; the green chlorophyll breaks down and uncovers the yellow that was there all summer, while red has to be built fresh from sugar, sunlight and cold &mdash; which is why a sunny, frost-free autumn is the brilliant one and a freeze ends the reds outright.<br><br>Every one of the ~9,600 leaves on this hillside is stepped one simulated day at a time through published phenology models, calibrated to the Wasatch at 2,100 m. Bigtooth maple, Gambel oak and quaking aspen turn on their own schedules, wind only hurries along leaves the tree has already cut loose, and snow arrives as a freezing level &mdash; rain in the meadow, white on the ridge by morning.<br><br>From your phone, change the weather the season is played against and watch the hillside answer.",
+  "artist": "Emeline MacJanet",
+  "action_hints": [
+    "make the autumn colder or warmer",
+    "clear the clouds for brighter reds",
+    "bring the wind up",
+    "grow a whole new hillside"
+  ],
+  "layout": "full",
+  "lifetime": 240,
+  "queueable": true
+}
