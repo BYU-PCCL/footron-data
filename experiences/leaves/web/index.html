@@ -1,0 +1,2253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wasatch Fall</title>
+
+<script>
+// Error surfacing, registered here in <head> before ANY other script so a
+// failure in model.js or in the scene script below is visible on the wall
+// itself -- there is no devtools access to the kiosk, so without this a
+// failure is just a black screen with no way to find out why. The overlay
+// element does not exist yet at this point, so it is looked up lazily.
+function showError(message) {
+    console.error(message);
+    var overlay = document.getElementById('error-overlay');
+    if (!overlay) {
+        // Failed before <body> parsed -- hold it until the DOM is ready.
+        document.addEventListener('DOMContentLoaded', function () { showError(message); });
+        return;
+    }
+    overlay.textContent = String(message);
+    overlay.style.display = 'block';
+}
+window.addEventListener('error', function (e) {
+    showError((e.error && e.error.stack) || e.message || String(e));
+});
+window.addEventListener('unhandledrejection', function (e) {
+    showError('Unhandled promise rejection: ' + ((e.reason && e.reason.stack) || e.reason));
+});
+</script>
+
+<script src="./footron-messaging.development.js"></script>
+
+<style>
+  :root {
+    --ink: #f2ece2;
+    --dim: #b3a795;
+    --glass: rgba(20, 17, 14, 0.58);
+    --line: rgba(242, 236, 226, 0.14);
+    --accent: #e0a251;
+
+    /* ------------------------------------------------------------------------
+     * WALL TYPOGRAPHY
+     *
+     * The standalone page was authored for a laptop at arm's length and its HUD
+     * runs at 11-12.5px. On the wall the same page is read from across a room,
+     * so every size here is viewport-relative with a floor (so it stays sane in
+     * a desktop browser during development) and a ceiling (so it does not grow
+     * into the scene on an oversized viewport). The ceilings sit roughly where
+     * twindragon's caption tops out, which is the one size on this wall that is
+     * already known to read well.
+     *
+     * The scene itself needs no equivalent treatment: it is authored in a fixed
+     * 1600x900 world and cover-fitted, so everything in it scales already.
+     * ----------------------------------------------------------------------*/
+    --f-label:   clamp(9.5px, 0.80vw, 16px);   /* uppercase panel headers */
+    --f-small:   clamp(10.5px, 0.92vw, 18px);  /* secondary readouts */
+    --f-body:    clamp(11.5px, 1.05vw, 21px);  /* the readout grid */
+    --f-h1:      clamp(14px, 1.30vw, 26px);
+    --f-date:    clamp(21px, 2.05vw, 41px);
+    --f-caption: clamp(16px, 1.65vw, 34px);
+
+    --pad:  clamp(11px, 0.85vw, 18px);
+    --edge: clamp(16px, 1.15vw, 26px);         /* inset from the screen edge */
+    --radius: clamp(10px, 0.7vw, 15px);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; overflow: hidden; background: #0d1014; color: var(--ink);
+    font: var(--f-body)/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    /* Nothing on the wall is clickable and there is no cursor to show. */
+    cursor: none;
+  }
+  #c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+  .hud { position: fixed; z-index: 2; pointer-events: none; }
+  .card {
+    background: var(--glass); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: var(--pad) calc(var(--pad) * 1.18);
+    backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px);
+    box-shadow: 0 6px 26px rgba(0,0,0,.30);
+  }
+
+  /* ---------- top-left: title + the day's weather ---------- */
+  #title { top: var(--edge); left: var(--edge); max-width: 27vw; }
+  #title h1 { margin: 0 0 .25em; font-size: var(--f-h1); font-weight: 650; letter-spacing: .2px; }
+  #title .who { color: var(--dim); font-size: var(--f-small); margin: 0 0 .8em; }
+  #date { display: flex; align-items: baseline; gap: .45em; margin-bottom: .55em; }
+  #date .d { font-size: var(--f-date); font-weight: 650; letter-spacing: .3px; line-height: 1.1; }
+  #date .n { color: var(--dim); font-size: var(--f-small); font-variant-numeric: tabular-nums; }
+  .env { display: grid; grid-template-columns: auto auto; gap: .2em 1.4em; font-size: var(--f-body); }
+  .env span:nth-child(odd) { color: var(--dim); }
+  .env span:nth-child(even) { text-align: right; font-variant-numeric: tabular-nums; }
+  .badge {
+    display: inline-block; padding: .1em .45em; border-radius: .3em;
+    font-size: var(--f-label); font-weight: 700; letter-spacing: .05em;
+  }
+  .badge.frost  { background: #2b4b6b; color: #d5e9ff; }
+  .badge.freeze { background: #6b2b33; color: #ffdde1; }
+  .badge.none   { background: rgba(255,255,255,.07); color: var(--dim); }
+
+  /* ---------- top-right: per-species canopy state ---------- */
+  #legend { top: var(--edge); right: var(--edge); min-width: 17vw; }
+  .panel-h {
+    margin: 0 0 .8em; font-size: var(--f-label); text-transform: uppercase;
+    letter-spacing: .1em; color: var(--dim); font-weight: 650;
+  }
+  .sp { display: grid; grid-template-columns: 1.1em 1fr auto; gap: .7em; align-items: center; }
+  .sp + .sp { margin-top: .55em; }
+  .sw {
+    width: 1.1em; height: 1.1em; border-radius: .25em;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.35);
+    transition: background-color .3s linear;
+  }
+  .sp .nm { font-size: var(--f-body); white-space: nowrap; }
+  .sp .st { font-size: var(--f-small); color: var(--dim); font-variant-numeric: tabular-nums; }
+
+  /* ---------- bottom centre: the season, and how far through it we are ----------
+     The standalone page had play / step / speed / controls buttons here. The
+     wall has no pointer, so all of that moved to the phone (see handleMessage
+     below) and what is left is the one thing a passer-by needs: where in the
+     season the picture they are looking at sits. */
+  #bar { bottom: var(--edge); left: 50%; transform: translateX(-50%); text-align: center; }
+  #bar .card { padding: calc(var(--pad) * 0.75) calc(var(--pad) * 1.3); }
+  #prog {
+    width: 26vw; height: clamp(4px, 0.32vw, 7px); border-radius: 99px;
+    background: rgba(255,255,255,.13); overflow: hidden;
+  }
+  #prog i { display: block; height: 100%; width: 0; background: var(--accent); }
+  #season {
+    font-size: var(--f-label); text-transform: uppercase; letter-spacing: .1em;
+    color: var(--dim); font-weight: 650; margin-bottom: .7em;
+  }
+
+  /* ---------- the rotating caption ----------
+     Sits in the lower third, over the meadow rather than over the canopy, and
+     is placed left of centre so it does not cover the foreground maple on the
+     right, which is the tree the eye is on and usually the one the caption is
+     talking about. */
+  #caption {
+    bottom: 11vh; left: 4vw; max-width: 31vw;
+    font-size: var(--f-caption); line-height: 1.42;
+    padding: calc(var(--pad) * 1.15) calc(var(--pad) * 1.35);
+    background: rgba(20, 17, 14, 0.52); border: 1px solid var(--line);
+    border-radius: var(--radius);
+    backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px);
+    box-shadow: 0 6px 26px rgba(0,0,0,.30);
+    opacity: 0; transition: opacity 1.1s ease;
+  }
+  #caption.visible { opacity: 1; }
+
+  /* Surfaces JS errors directly on the wall screen -- there is no devtools
+     access to the kiosk, so this is the only way to see why the display might
+     be black. */
+  #error-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 9999;
+    padding: 24px;
+    background: rgba(80,0,0,0.92); color: #fff;
+    font: 16px/1.5 ui-monospace, monospace;
+    white-space: pre-wrap; overflow: auto;
+  }
+
+  /* Always-visible build marker so we can tell, just by looking at the wall,
+     whether it is actually running the latest deployed code -- bump the string
+     any time this file changes meaningfully. */
+  #build-marker {
+    position: fixed; right: 6px; bottom: 6px; z-index: 9998;
+    color: rgba(255,255,255,0.30);
+    font: 11px ui-monospace, monospace;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<div class="hud" id="title">
+  <div class="card">
+    <h1>Wasatch Fall</h1>
+    <p class="who">Bigtooth maple &middot; Gambel oak &middot; Quaking aspen</p>
+    <div id="date"><span class="d" id="oDate">Aug 1</span><span class="n" id="oDay">day 0 / 120</span></div>
+    <div class="env">
+      <span>Night low</span><span id="oTmin">&mdash;</span>
+      <span>Daylength</span><span id="oLen">&mdash;</span>
+      <span>Sunlight</span><span id="oSun">&mdash;</span>
+      <span>Gust</span><span id="oGust">&mdash;</span>
+      <span>Overnight</span><span id="oFrost">&mdash;</span>
+      <span>Precip</span><span id="oPrecip">&mdash;</span>
+      <span>Snowpack</span><span id="oSnow">&mdash;</span>
+      <span>Canopy held</span><span id="oHeld">&mdash;</span>
+    </div>
+  </div>
+</div>
+
+<div class="hud" id="legend">
+  <div class="card">
+    <div class="panel-h">Canopy state</div>
+    <div id="spList"></div>
+  </div>
+</div>
+
+<div class="hud" id="caption"><span id="captionText"></span></div>
+
+<div class="hud" id="bar">
+  <div class="card">
+    <div id="season">Aug 1 &ndash; Nov 28 &middot; one season</div>
+    <div id="prog"><i id="progFill"></i></div>
+  </div>
+</div>
+
+<div id="build-marker">leaves: maple-1</div>
+<div id="error-overlay"></div>
+
+<script src="model.js"></script>
+<script>
+/* ============================================================================
+ * PHASE 4 — the real visualization. Rendering only.
+ *
+ * Everything biological comes from model.js and nothing is re-decided here:
+ * every leaf in the scene is a model leaf, advanced one simulated day at a time
+ * by M.stepLeaf() against a single shared M.makeEnvironment() day, and painted
+ * with M.leafColor(). This file owns geometry, wind, and light — the model owns
+ * colour, senescence and abscission.
+ *
+ * Deliberate deviation from plan.md Phase 4: plain canvas 2D instead of p5.js.
+ * The only thing p5 was wanted for was organic shapes and particle motion, both
+ * of which are a few dozen lines here, and dropping the CDN keeps the scene
+ * openable straight off the filesystem with no network.
+ * ==========================================================================*/
+(function () {
+  'use strict';
+
+  /* --------------------------------------------------------------------------
+   * PHONE CONNECTION -- opened before anything else in this script.
+   *
+   * Connecting first means a rendering failure below (a bad canvas context, a
+   * throw in buildScene, anything) cannot also take the phone connection down
+   * with it. Otherwise a display-only bug shows up on the phone as
+   * "disconnected", with nothing to indicate the problem is on the wall's side.
+   *
+   * handleMessage is a function declaration further down and so is hoisted, but
+   * the state it touches (sc, CTL, playing) is not initialised until this script
+   * finishes running -- and mount() can deliver a message as soon as it
+   * connects. So messages are queued here and flushed at the very bottom.
+   * ------------------------------------------------------------------------*/
+  var messagingReady = false;
+  var pendingMessages = [];
+  var client = new FootronMessaging.Messaging();
+  client.mount();
+  client.addMessageListener(function (message) {
+    if (!messagingReady) { pendingMessages.push(message); return; }
+    handleMessage(message);
+  });
+
+  var M = window.LeafModel;
+  if (!M) {
+    throw new Error('model.js did not define window.LeafModel -- the sibling ' +
+                    'script did not load.');
+  }
+  var clamp = M.clamp;
+  var TAU = Math.PI * 2;
+
+  /* ==========================================================================
+   * 0. WORLD SPACE
+   *
+   * The composition is authored in a fixed 1600x900 world and scaled to cover
+   * the window, anchored to the bottom so the leaf litter is never cropped.
+   * ========================================================================*/
+  var W = 1600, H = 900;
+  var HORIZON = 668;          // where the meadow meets the ridge
+  var cv = document.getElementById('c');
+  var ctx = cv.getContext('2d');
+  var S = 1, OX = 0, OY = 0;  // world -> device matrix (uniform scale + offset)
+
+  // Fallen leaves never move again, so the litter is its own layer: each leaf is
+  // stamped once when it lands and the whole carpet costs one blit per frame.
+  // Without this, a late-season ground covered in a few thousand leaves would be
+  // re-filling every one of them 60 times a second for no visible reason.
+  var litCv = document.createElement('canvas');
+  var litCtx = litCv.getContext('2d');
+
+  // Render scale. Index 0 is full resolution; the frame-rate watchdog in
+  // perfTick steps down through these rather than dropping leaves.
+  // Steps down to 16% of the pixel work at the bottom end. Leaf fills are
+  // small and high-frequency, so they lose far less to a reduced backing store
+  // than a page of text or a diagram would.
+  var QUALITY = [1, 0.75, 0.55, 0.40];
+  var qualityStep = 0;
+
+  function resize() {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2) * QUALITY[qualityStep];
+    var cw = window.innerWidth, ch = window.innerHeight;
+    cv.width = Math.round(cw * dpr);
+    cv.height = Math.round(ch * dpr);
+    S = Math.max(cw / W, ch / H) * dpr;
+    OX = (cw * dpr - W * S) / 2;
+    OY = ch * dpr - H * S;    // bottom-anchored: crop sky, never the ground
+    litCv.width = cv.width;
+    litCv.height = cv.height;
+    restampLitter();          // the layer is resolution-bound; rebuild it
+  }
+
+  function world() { ctx.setTransform(S, 0, 0, S, OX, OY); }
+
+  /* ==========================================================================
+   * 1. COLOUR HELPERS
+   * ========================================================================*/
+  function rgbOf(str) {                       // 'rgb(r,g,b)' -> [r,g,b]
+    var i = str.indexOf('(') + 1;
+    var p = str.slice(i, -1).split(',');
+    return [+p[0], +p[1], +p[2]];
+  }
+  function mix(a, b, t) {
+    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+  }
+  function css(c) {
+    return 'rgb(' + (c[0] | 0) + ',' + (c[1] | 0) + ',' + (c[2] | 0) + ')';
+  }
+  function cssA(c, a) {
+    return 'rgba(' + (c[0] | 0) + ',' + (c[1] | 0) + ',' + (c[2] | 0) + ',' + a + ')';
+  }
+  function shade(c, f) { return [c[0] * f, c[1] * f, c[2] * f]; }
+
+  /* ==========================================================================
+   * 2. LEAF SILHOUETTES
+   *
+   * One Path2D per species in unit space: petiole at the origin, tip at y = -1,
+   * so a leaf is drawn by putting its length into the transform. Reusing three
+   * Path2D objects for a few thousand leaves is what keeps the fill loop cheap.
+   * ========================================================================*/
+  function polyPath(pts) {
+    var p = new Path2D();
+    p.moveTo(pts[0][0], pts[0][1]);
+    for (var i = 1; i < pts.length; i++) p.lineTo(pts[i][0], pts[i][1]);
+    p.closePath();
+    return p;
+  }
+
+  /* Palmate, five lobes — Acer grandidentatum, and the species name is the
+   * shape: big-toothed. The lobes are blunt-tipped and carry a few coarse teeth
+   * each, the sinuses between them are deep, and the blade meets the petiole in
+   * a cordate notch. The outline this replaces was nine radial points — five
+   * spikes and four notches — which reads as a generic star rather than a maple.
+   *
+   * Half the margin is tabulated from apex to base and the other half is its
+   * mirror, so the leaf is symmetrical by construction. Angles are measured from
+   * the leaf axis, radii are fractions of leaf length. Held to thirteen control
+   * points on purpose: this path is filled a couple of thousand times a frame and
+   * every entry costs two more line segments.
+   */
+  function maplePath() {
+    var margin = [
+      { a: 0.00, r: 1.00 },   // central lobe — apex
+      { a: 0.12, r: 0.94 },   //   blunt shoulder, not a spike
+      { a: 0.21, r: 0.84 },   //   tooth notch
+      { a: 0.27, r: 0.89 },   //   tooth
+      { a: 0.36, r: 0.50 },   // sinus
+      { a: 0.50, r: 0.78 },   // second lobe — rising margin
+      { a: 0.64, r: 0.92 },   //   apex
+      { a: 0.78, r: 0.84 },   //   blunt shoulder
+      { a: 0.88, r: 0.71 },   //   tooth
+      { a: 1.00, r: 0.43 },   // sinus
+      { a: 1.17, r: 0.61 },   // basal lobe — much the shortest
+      { a: 1.45, r: 0.46 },   //   margin turning under
+      { a: 1.95, r: 0.27 }    // cordate base, dips past the petiole
+    ];
+    var WIDE = 0.92;          // about as wide as it is long, which a maple is
+    function edge(m, side) {
+      return [Math.sin(m.a) * m.r * WIDE * side, -Math.cos(m.a) * m.r - 0.06];
+    }
+    var pts = [[0, -0.06]];                                    // petiole
+    for (var i = margin.length - 1; i >= 0; i--) pts.push(edge(margin[i], 1));
+    for (var j = 1; j < margin.length; j++) pts.push(edge(margin[j], -1));
+    return polyPath(pts);
+  }
+
+  // Pinnately lobed oblong — Quercus gambelii, deep rounded sinuses.
+  // n is kept low on purpose: these are filled a few thousand times a frame, so
+  // outline resolution is a frame-budget decision, not a fidelity one.
+  function oakPath(n) {
+    var right = [], left = [];
+    for (var i = 0; i <= n; i++) {
+      var t = i / n;
+      var w = 0.40 * Math.pow(Math.sin(Math.PI * t), 0.45) *
+              (0.70 + 0.30 * Math.cos(7 * Math.PI * t));
+      right.push([w, -t]);
+      left.unshift([-w, -t]);
+    }
+    return polyPath(right.concat(left));
+  }
+
+  // Near-circular with a short point — Populus tremuloides.
+  function aspenPath(n) {
+    var right = [], left = [];
+    for (var i = 0; i <= n; i++) {
+      var t = i / n;
+      var w = 0.46 * Math.pow(Math.sin(Math.PI * Math.pow(t, 0.88)), 0.62);
+      right.push([w, -t]);
+      left.unshift([-w, -t]);
+    }
+    return polyPath(right.concat(left));
+  }
+
+  // A coarse lozenge, used for leaves too small to resolve a shape.
+  function stubPath(w) {
+    return polyPath([[0, -0.04], [w, -0.34], [w * 0.72, -0.80],
+                     [0, -1], [-w * 0.72, -0.80], [-w, -0.34]]);
+  }
+
+  /* The old maple outline, kept as the middle level of detail. Five radial
+   * spikes and four notches: too coarse to be the centre-stage tree's leaf, and
+   * indistinguishable from the toothed version once a leaf is under about
+   * 26 device pixels — which is every maple in the scene except the foreground
+   * one. Detail costs 16 extra line segments per leaf per frame, so it is spent
+   * where it can actually be seen. */
+  function mapleStarPath() {
+    var lobes = [
+      { a: -1.30, r: 0.62 }, { a: -0.95, r: 0.34 },
+      { a: -0.72, r: 0.92 }, { a: -0.38, r: 0.44 },
+      { a:  0.00, r: 1.00 },
+      { a:  0.38, r: 0.44 }, { a:  0.72, r: 0.92 },
+      { a:  0.95, r: 0.34 }, { a:  1.30, r: 0.62 }
+    ];
+    var pts = [[0, -0.06]];
+    for (var i = 0; i < lobes.length; i++) {
+      var a = lobes[i].a, r = lobes[i].r;
+      pts.push([Math.sin(a) * r * 0.82, -Math.cos(a) * r - 0.06]);
+    }
+    return polyPath(pts);
+  }
+
+  var LEAF_PATH = {
+    bigtoothMaple: maplePath(),
+    gambelOak: oakPath(14),
+    aspen: aspenPath(11)
+  };
+
+  // Middle detail. Only the maple has a distinct one; for the other two the
+  // full outline is already cheap enough that a third tier would buy nothing.
+  var LEAF_PATH_MID = {
+    bigtoothMaple: mapleStarPath(),
+    gambelOak: LEAF_PATH.gambelOak,
+    aspen: LEAF_PATH.aspen
+  };
+
+  // Reduced-detail variants for distant/small leaves. Same footprint, a third
+  // of the outline segments; at 9 px and under the difference is invisible and
+  // it is what makes a much denser canopy affordable.
+  var LEAF_PATH_LO = {
+    bigtoothMaple: stubPath(0.42),
+    gambelOak: oakPath(6),
+    aspen: aspenPath(6)
+  };
+
+  /* ==========================================================================
+   * 3. TREE ARCHITECTURE
+   *
+   * Recursive branching, one config block per species so the three read as three
+   * different trees at a glance and not as one tree at three scales. Same idea
+   * as the model's species table: parameters, not branching logic.
+   *   maple  — single bole, high fork, broad rounded crown
+   *   oak    — several crooked stems from the root crown, low and wide (Gambel
+   *            oak forms clonal thickets, so it is drawn as one)
+   *   aspen  — tall straight white bole, short upswept limbs on the top half
+   * ========================================================================*/
+  // `depth` x `kids` sets the tip count and therefore the leaf budget, which is
+  // the whole frame cost: tips ~ avg(kids)^(depth-1) per limb. These numbers are
+  // chosen to land the whole scene near 3.5k simulated leaves at density 1.
+  var TREE = {
+    bigtoothMaple: {
+      trunk: 168, trunkW: 19, forkAt: 0.60, stems: 1, limbs: [3, 4],
+      depth: 5, kids: [2, 3], spread: 0.60, lenF: 0.78, widF: 0.63,
+      crook: 0.16, up: 0.10, minW: 1.0,
+      leafLen: 19, perTip: 7, cluster: 0.74, along: 0.90,
+      bark: [66, 56, 50], barkLight: [96, 82, 72]
+    },
+    gambelOak: {
+      trunk: 96, trunkW: 15, forkAt: 0.42, stems: 3, limbs: [3, 3],
+      depth: 4, kids: [2, 3], spread: 0.80, lenF: 0.78, widF: 0.62,
+      crook: 0.40, up: 0.02, minW: 0.9,
+      leafLen: 17, perTip: 6, cluster: 0.74, along: 0.95,
+      bark: [63, 55, 48], barkLight: [92, 82, 71]
+    },
+    aspen: {
+      trunk: 300, trunkW: 13, forkAt: 0.98, stems: 1, limbs: [1, 1],
+      depth: 5, kids: [2, 2], spread: 0.46, lenF: 0.66, widF: 0.56,
+      crook: 0.10, up: 0.30, minW: 0.6,
+      leafLen: 13, perTip: 7, cluster: 0.86, along: 0.80,
+      bark: [214, 213, 200], barkLight: [238, 237, 226]
+    }
+  };
+
+  function jit(rng, v, f) { return v * (1 + (rng() * 2 - 1) * f); }
+
+  // Leaf sites: a cluster at the tip, plus a scatter along the last few twigs,
+  // so the crown has interior depth instead of a hollow shell.
+  function addSites(out, spec, rng, x1, y1, x2, y2, len, count) {
+    for (var i = 0; i < count; i++) {
+      var t = 0.35 + 0.65 * rng();
+      var bx = x1 + (x2 - x1) * t, by = y1 + (y2 - y1) * t;
+      var a = rng() * TAU, r = spec.cluster * len * Math.sqrt(rng());
+      out.sites.push({
+        x: bx + Math.cos(a) * r,
+        // Never below the root crown: a leaf at ground level looks like litter
+        // that forgot to fall.
+        y: Math.min(-6, by + Math.sin(a) * r * 0.85),
+        len: jit(rng, spec.leafLen * out.boost, 0.30),
+        // Leaves hang and face every which way; bias downward.
+        rot: Math.PI + (rng() * 2 - 1) * 1.5,
+        ph: rng() * TAU,
+        // Flutter frequency, rad/s. Deliberately low: 0.9-2.0 rad/s is 0.14-0.32
+        // Hz, a leaf turning over rather than vibrating. The old range topped out
+        // near 3.2 and then got multiplied again by the wind, which is what made
+        // a gale look like television static.
+        fr: 0.9 + rng() * 1.1,
+        tw: rng() * TAU,                // twist phase
+        fl: 0.5 + rng() * 0.9           // flutter gain
+      });
+    }
+  }
+
+  function branch(out, spec, rng, x, y, ang, len, wid, depth, dens) {
+    // A low limb aimed downward walks straight into the meadow, which reads as a
+    // stray stick lying on the grass. Mirror it about horizontal — same side of
+    // the tree, sweeping up instead of down. Limbs high in the crown keep their
+    // droop, because that is where droop belongs.
+    if (Math.sin(ang) > 0.05 && y > -0.42 * spec.trunk) ang = -ang;
+
+    var x2 = x + Math.cos(ang) * len, y2 = y + Math.sin(ang) * len;
+    out.branches.push({ x1: x, y1: y, x2: x2, y2: y2, w: wid, d: depth });
+
+    var tip = depth >= spec.depth || wid < spec.minW;
+    if (tip || depth >= spec.depth - 1) {
+      var n = Math.round(spec.perTip * dens * (tip ? 1 : spec.along) * (0.6 + 0.8 * rng()));
+      if (n > 0) addSites(out, spec, rng, x, y, x2, y2, len, n);
+    }
+    if (tip) return;
+
+    var kids = spec.kids[0] + ((rng() * (spec.kids[1] - spec.kids[0] + 1)) | 0);
+    for (var i = 0; i < kids; i++) {
+      // One child keeps the parent line; the rest peel off to alternating sides.
+      var off = i === 0
+        ? (rng() * 2 - 1) * spec.spread * 0.32
+        : (i % 2 ? 1 : -1) * spec.spread * (0.62 + 0.55 * rng());
+      var a = ang + off + (rng() * 2 - 1) * spec.crook;
+      // Phototropism: limbs bend back toward vertical as they thin out.
+      a += (-Math.PI / 2 - a) * spec.up * (1 - Math.cos(off));
+      branch(out, spec, rng, x2, y2, a,
+             len * jit(rng, spec.lenF, 0.20),
+             wid * spec.widF, depth + 1, dens);
+    }
+  }
+
+  // dens scales the leaf COUNT, boost scales each leaf's SIZE. A hazed tree on
+  // the far bench gets fewer, bigger leaves: the crown still reads as a solid
+  // mass at that distance, and nothing is spent simulating detail that lands
+  // inside one device pixel.
+  function buildTree(species, seed, dens, boost) {
+    var spec = TREE[species];
+    var rng = M.makeRng(seed);
+    var out = { branches: [], sites: [], spec: spec, species: species, boost: boost || 1 };
+
+    var stems = spec.stems;
+    for (var s = 0; s < stems; s++) {
+      // Multi-stem species lean their stems apart from the root crown.
+      var lean = stems === 1 ? 0 : ((s / (stems - 1)) * 2 - 1) * 0.30 + (rng() * 2 - 1) * 0.07;
+      var x0 = stems === 1 ? 0 : lean * 22;
+      var len = jit(rng, spec.trunk * (stems === 1 ? 1 : 0.82 + 0.3 * rng()), 0.08);
+      var wid = spec.trunkW * (stems === 1 ? 1 : 0.72);
+
+      if (species === 'aspen') {
+        // Straight bole in segments, short upswept limbs off the top half only.
+        var segs = 7, x = x0, y = 0, ang = -Math.PI / 2 + lean * 0.5;
+        for (var i = 0; i < segs; i++) {
+          var sl = len / segs;
+          var nx = x + Math.cos(ang) * sl, ny = y + Math.sin(ang) * sl;
+          out.branches.push({ x1: x, y1: y, x2: nx, y2: ny,
+                              w: wid * (1 - 0.55 * (i / segs)), d: 0 });
+          if (i >= 2) {
+            var limbs = i >= 4 ? 2 : 1;
+            for (var k = 0; k < limbs; k++) {
+              var side = (i + k) % 2 ? 1 : -1;
+              var la = ang + side * (0.85 - 0.32 * (i / segs)) + (rng() * 2 - 1) * 0.12;
+              branch(out, spec, rng, nx, ny, la,
+                     len * (0.20 + 0.13 * rng()) * (1 - 0.35 * (i / segs)),
+                     wid * 0.34, 1, dens);
+            }
+          }
+          ang += (rng() * 2 - 1) * 0.045;
+          x = nx; y = ny;
+        }
+      } else {
+        // Bole up to the fork, then a scaffold of limbs.
+        var bx = x0, by = 0, ba = -Math.PI / 2 + lean * 0.55;
+        var boleSegs = 3, boleLen = len * spec.forkAt;
+        for (var b = 0; b < boleSegs; b++) {
+          var nx2 = bx + Math.cos(ba) * (boleLen / boleSegs);
+          var ny2 = by + Math.sin(ba) * (boleLen / boleSegs);
+          out.branches.push({ x1: bx, y1: by, x2: nx2, y2: ny2,
+                              w: wid * (1 - 0.22 * (b / boleSegs)), d: 0 });
+          ba += (rng() * 2 - 1) * spec.crook * 0.5;
+          bx = nx2; by = ny2;
+        }
+        var limbN = spec.limbs[0] + ((rng() * (spec.limbs[1] - spec.limbs[0] + 1)) | 0);
+        for (var m = 0; m < limbN; m++) {
+          var frac = limbN === 1 ? 0.5 : m / (limbN - 1);
+          var a2 = ba + (frac * 2 - 1) * spec.spread * 1.25 + (rng() * 2 - 1) * 0.12;
+          branch(out, spec, rng, bx, by, a2,
+                 len * (1 - spec.forkAt) * (1.5 + 0.5 * rng()),
+                 wid * 0.72, 1, dens);
+        }
+      }
+    }
+
+    // Bark blotches: aspen scarring, and a hint of texture on the others.
+    out.marks = [];
+    var mk = species === 'aspen' ? 9 : 4;
+    for (var q = 0; q < mk; q++) {
+      out.marks.push({
+        x: (rng() * 2 - 1) * spec.trunkW * 0.30,
+        y: -rng() * spec.trunk * (species === 'aspen' ? 0.85 : spec.forkAt),
+        rx: spec.trunkW * (0.10 + 0.20 * rng()),
+        ry: spec.trunkW * (0.05 + 0.22 * rng()),
+        a: rng() * 0.6 - 0.3
+      });
+    }
+
+    var top = 0;
+    for (var t2 = 0; t2 < out.sites.length; t2++) top = Math.min(top, out.sites[t2].y);
+    out.height = -top || 1;
+    return out;
+  }
+
+  /* ==========================================================================
+   * 4. THE COMPOSITION
+   *
+   * Nine trees. Aspens clumped in the left third (they are clonal — a lone
+   * aspen is the unusual case), the focal bigtooth maple on the right third
+   * where the crown can fill the upper corner, Gambel oak thickets low and
+   * wide in between, and hazed miniatures of each on the far bench for depth.
+   * `haze` is atmospheric perspective: how far the tree's colours get pulled
+   * toward the sky before they are drawn.
+   * ========================================================================*/
+  var LAYOUT = [
+    // --- far bench, strongly hazed -----------------------------------------
+    { sp: 'aspen',         x: 1298, y: 688, k: 0.36, haze: 0.46, seed: 91 },
+    { sp: 'aspen',         x: 1352, y: 692, k: 0.32, haze: 0.50, seed: 92 },
+    { sp: 'gambelOak',     x: 1470, y: 700, k: 0.42, haze: 0.44, seed: 93 },
+    { sp: 'bigtoothMaple', x: 132,  y: 702, k: 0.40, haze: 0.42, seed: 94 },
+    // --- mid ground ---------------------------------------------------------
+    { sp: 'aspen',         x: 250,  y: 742, k: 0.72, haze: 0.30, seed: 21 },
+    { sp: 'aspen',         x: 336,  y: 754, k: 0.86, haze: 0.22, seed: 22 },
+    { sp: 'aspen',         x: 424,  y: 736, k: 0.64, haze: 0.34, seed: 23 },
+    { sp: 'gambelOak',     x: 736,  y: 762, k: 0.60, haze: 0.24, seed: 31 },
+    { sp: 'bigtoothMaple', x: 872,  y: 748, k: 0.50, haze: 0.30, seed: 41 },
+    // --- foreground ---------------------------------------------------------
+    { sp: 'aspen',         x: 372,  y: 812, k: 1.02, haze: 0.06, seed: 24 },
+    { sp: 'gambelOak',     x: 648,  y: 858, k: 1.00, haze: 0.00, seed: 32 },
+    { sp: 'bigtoothMaple', x: 1046, y: 868, k: 1.14, haze: 0.00, seed: 42 }
+  ];
+
+  /* ==========================================================================
+   * 5. SCENE STATE
+   * ========================================================================*/
+  var sc = {
+    controls: Object.assign({}, M.DEFAULT_CONTROLS),
+    dens: 1,
+    seed: 7,
+    day: 0,
+    doy: M.START_DOY,
+    env: null,
+    trees: [],
+    leaves: 0,
+    falling: [],
+    litter: [],
+    // Leaves the model has dropped that have not let go on screen yet. See the
+    // note in stepDay.
+    pending: [],
+    frostFlash: 0,     // decays over the day after a freeze night
+    frostDays: 0,      // how much the meadow has cured
+    weatherRng: null,
+    leafRng: null,
+    endHold: 0,
+
+    /* ------------------------------------------------------------------------
+     * The SMOOTHED weather the picture is actually painted from.
+     *
+     * The model hands over one discrete day at a time, and its day-to-day
+     * weather noise is real (sd ~1.6 C on the night low, gusts drawn fresh every
+     * day). Painting straight from it makes the scene flicker: at 1x a day is
+     * 0.75 s, so a season of independent daily draws reads as strobing rather
+     * than as weather.
+     *
+     * So `vis` chases `tgt` with a time constant measured in SIMULATED DAYS, not
+     * seconds. Consistency at any playback speed is the point — 1.5 days of lag
+     * looks the same at 1x and at 6x, where a fixed number of seconds would be
+     * a third of the season.
+     * ----------------------------------------------------------------------*/
+    vis: null,         // what is drawn
+    tgt: null,         // what the current model day says
+    dayT: 1,           // 0..1 progress of the current day's colour transition
+    windPhase: 0,      // slow gust envelope, keeps wind from being a flat number
+
+    /* Snow, tracked as a freezing-level problem rather than a decoration.
+     * `line` is the elevation (m) above which precipitation is falling as snow;
+     * `pack` is 0..1 accumulated snowpack; `lineDrawn` is the eased version the
+     * ridges are actually clipped against. */
+    snow: null
+  };
+
+  // Smoothing time constants, in simulated days.
+  var TAU_LIGHT = 1.6, TAU_WIND = 2.2, TAU_RAIN = 0.9, TAU_TEMP = 2.0, TAU_SNOW = 3.0;
+
+  var SKY = {
+    clearTop:  [ 74, 138, 196], clearHz: [204, 226, 234],
+    cloudTop:  [116, 126, 136], cloudHz: [182, 184, 186],
+    warmHz:    [236, 192, 142]
+  };
+  var MAX_FALLING = 1600, MAX_LITTER = 9000;
+
+  function buildScene() {
+    var rng = M.makeRng(sc.seed ^ 0x5bf03635);
+    sc.trees = [];
+    sc.leaves = 0;
+    sc.falling = [];
+    sc.pending = [];
+    sc.litter = [];
+
+    for (var i = 0; i < LAYOUT.length; i++) {
+      var L = LAYOUT[i];
+      var d = sc.dens * (L.k < 0.5 ? 0.30 : L.k < 0.9 ? 0.62 : 1);
+      // The size boost is for the far bench only. Applied to the mid-ground it
+      // flattens the perspective: a tree half the height should not be carrying
+      // leaves the same size as the one in front of it.
+      var t = buildTree(L.sp, sc.seed * 977 + L.seed, d, 1 + 0.50 * L.haze);
+      t.x = L.x; t.y = L.y; t.k = L.k; t.haze = L.haze;
+      t.swayPh = rng() * TAU;
+      t.swayFr = 0.42 + rng() * 0.30;
+      t.sway = 0;
+      t.z = i;                     // draw index = depth plane, back to front
+      t.leaves = [];
+      for (var s = 0; s < t.sites.length; s++) {
+        var leaf = M.makeLeaf(L.sp, rng);
+        leaf.site = t.sites[s];
+        leaf.rgb = rgbOf(M.leafColor(leaf));
+        t.leaves.push(leaf);
+      }
+      sc.leaves += t.leaves.length;
+      sc.trees.push(t);
+    }
+
+    // One bucket per depth plane, plus one for "in front of everything". Reused
+    // every frame rather than reallocated.
+    sc.zbuckets = [];
+    for (var zb = 0; zb <= sc.trees.length; zb++) sc.zbuckets.push([]);
+
+    // Meadow dressing, seeded so a replay of the same season looks identical.
+    sc.tufts = [];
+    for (var g = 0; g < 900; g++) {
+      var ty = HORIZON + Math.pow(rng(), 0.55) * (H - HORIZON + 40);
+      sc.tufts.push({
+        x: rng() * (W + 80) - 40, y: ty,
+        h: 4 + (ty - HORIZON) / (H - HORIZON) * 20 * (0.5 + rng()),
+        lean: (rng() * 2 - 1) * 0.5, ph: rng() * TAU
+      });
+    }
+    // Three ranges, highest and palest at the back. Each is generated once per
+    // seed, so "New woods" re-cuts the skyline too.
+    sc.ranges = [
+      makeRange(M.makeRng(sc.seed ^ 0x1f83d9ab),
+                { base: 612, amp: 212, rough: 0.215, peaks: 4, tint: 0.66,
+                  envSpan: 0.80, envPhase: 0.34, snowMax: 1.00, rough2: 1.22 }),
+      makeRange(M.makeRng(sc.seed ^ 0x2c1b3a77),
+                { base: 646, amp: 154, rough: 0.255, peaks: 5, tint: 0.40,
+                  envSpan: 1.35, envPhase: 1.90, snowMax: 0.82, rough2: 1.00 }),
+      makeRange(M.makeRng(sc.seed ^ 0x3d5a7f11),
+                { base: 668, amp: 82,  rough: 0.300, peaks: 7, tint: 0.16,
+                  envSpan: 2.10, envPhase: 3.60, snowMax: 0.58, rough2: 1.00 })
+    ];
+    sc.conifers = [];
+    for (var cf = 0; cf < 110; cf++) {
+      var cx = rng() * (W + 60) - 30;
+      sc.conifers.push({ x: cx, y: HORIZON - 2 + rng() * 14, h: 30 + rng() * 52 });
+    }
+    resetSeason();
+  }
+
+  /* ==========================================================================
+   * 5b. THE RANGE
+   *
+   * Midpoint displacement rather than a sum of sines. A sine skyline has one
+   * characteristic wavelength and reads as a hill; real ridgelines are
+   * self-similar — the same jaggedness at every scale — which is exactly what
+   * halving the displacement with the segment length gives you.
+   * ========================================================================*/
+  // Fractional Brownian motion in one dimension: midpoint displacement where
+  // the amplitude falls off by 2^-H per level. H is the whole point — at H = 1
+  // (amplitude proportional to segment length) the fine detail vanishes and you
+  // get a dome. Around 0.7 you get a ridgeline.
+  var FBM_H = 0.70;
+  var FBM_DECAY = Math.pow(0.5, FBM_H);           // ~0.616
+
+  function makeRange(rng, o) {
+    var pts = [];
+    for (var i = 0; i <= o.peaks; i++) {
+      var t = i / o.peaks;
+      // A broad envelope so the range has a shape, not just noise: highest
+      // around a third of the way across, falling off to both sides.
+      var env = Math.sin(t * Math.PI * o.envSpan + o.envPhase);
+      pts.push([-60 + t * (W + 120), o.base - env * o.amp * (0.55 + 0.70 * rng())]);
+    }
+    var amp = o.amp * o.rough * (o.rough2 || 1);
+    for (var s = 0; s < 6; s++) {                 // 6 subdivisions: 256 segments
+      var out = [pts[0]];
+      for (var j = 1; j < pts.length; j++) {
+        var a = pts[j - 1], b = pts[j];
+        out.push([(a[0] + b[0]) / 2,
+                  (a[1] + b[1]) / 2 - (rng() * 2 - 1) * amp]);
+        out.push(b);
+      }
+      pts = out;
+      amp *= FBM_DECAY;
+    }
+
+    // The high point, which the snow gradient is anchored to.
+    var crest = 1e9, crestX = 0;
+    for (var k = 0; k < pts.length; k++) {
+      if (pts[k][1] < crest) { crest = pts[k][1]; crestX = pts[k][0]; }
+    }
+    return { pts: pts, crest: crest, crestX: crestX,
+             base: o.base, tint: o.tint, snowMax: o.snowMax };
+  }
+
+  /* ==========================================================================
+   * 5c. ELEVATION AND SNOW
+   *
+   * The site is Park City montane, ~2100 m, and the skyline behind it runs to
+   * roughly Timpanogos height. Mapping world y onto real metres is what lets
+   * the snow follow from the weather instead of being painted on: precipitation
+   * falls as snow above the freezing level, the freezing level comes from the
+   * day's mean temperature and the standard lapse rate, and the valley the
+   * trees are standing in is 1300 m below the peaks.
+   *
+   * This is the "rain down here, snow up there" case, and it is the normal
+   * autumn case in the Wasatch — an October storm is rain at the trailhead and
+   * white on the ridge by morning.
+   * ========================================================================*/
+  var SITE_ELEV = 2100;      // m, the meadow. plan.md's site elevation.
+  var PEAK_ELEV = 3450;      // m, the back range's crest
+  var PEAK_Y = 318;          // world y the back range's crest sits at
+  var LAPSE = 6.5;           // [V] C per km, standard environmental lapse rate
+  var SNOW_T = 1.0;          // [P] C, rain/snow changeover, wet-bulb-ish
+  var M_PER_Y = (PEAK_ELEV - SITE_ELEV) / (HORIZON - PEAK_Y);
+
+  function elevOfY(y) { return SITE_ELEV + (HORIZON - y) * M_PER_Y; }
+  function yOfElev(e) { return HORIZON - (e - SITE_ELEV) / M_PER_Y; }
+
+  // The freezing level implied by a valley temperature.
+  function snowLineOf(tMean) {
+    return SITE_ELEV + ((tMean - SNOW_T) / LAPSE) * 1000;
+  }
+
+  function resetSnow() {
+    sc.snow = {
+      line: snowLineOf(20),        // where snow would be falling today
+      elev: PEAK_ELEV + 400,       // bottom of the lying snow; off-screen = none
+      elevDrawn: PEAK_ELEV + 400,  // eased, this is what gets clipped against
+      pack: 0                      // 0..1 depth, drives how opaque it reads
+    };
+  }
+
+  // Once per simulated day.
+  function stepSnow(env) {
+    var s = sc.snow;
+    s.line = snowLineOf(env.tMean);
+
+    // Falling snow: precipitation covers everything above the freezing level.
+    if (env.rain > 0.8 && s.line < PEAK_ELEV) {
+      var reach = clamp(s.line, SITE_ELEV + 130, PEAK_ELEV + 400);
+      if (reach < s.elev) s.elev += (reach - s.elev) * 0.80;   // fresh snow spreads down
+      // How much of the range is above the snow line at all. A storm topping out
+      // 100 m under the summit dusts the tips; one with the line at valley level
+      // whitens everything. Without this a warm rainstorm banked snowpack that
+      // had nowhere to lie.
+      var frac = clamp((PEAK_ELEV - s.line) / 650, 0, 1);
+      s.pack = clamp(s.pack + frac * clamp(env.rain / 12, 0.08, 0.46), 0, 1);
+    }
+
+    // Ablation: warm sunny days eat it from the bottom up and thin what is left.
+    // Snow at 3000 m does not care much about a mild afternoon at 2100 m, which
+    // is why melt is driven by the temperature at the snow's own elevation.
+    var tAtSnow = env.tMean - LAPSE * (s.elev - SITE_ELEV) / 1000;
+    var warm = Math.max(0, tAtSnow - 0.5);
+    s.elev = Math.min(PEAK_ELEV + 400, s.elev + warm * 26 * (0.35 + 0.65 * env.sun));
+    s.pack = clamp(s.pack - 0.030 * warm * (0.4 + 0.6 * env.sun) - 0.004, 0, 1);
+    if (s.pack <= 0) s.elev = PEAK_ELEV + 400;
+  }
+
+  /* ==========================================================================
+   * 5d. SMOOTHED WEATHER
+   *
+   * See the note on sc.vis. Everything the picture is painted from eases toward
+   * the model's day, on time constants measured in simulated days so that the
+   * result looks the same at 1x and at 6x.
+   * ========================================================================*/
+  function resetVis() {
+    var e = sc.env;
+    sc.tgt = { sun: e.sun, gust: e.gust, rain: e.rain, tMean: e.tMean };
+    sc.vis = { sun: e.sun, gust: e.gust, rain: e.rain, tMean: e.tMean };
+    sc.windNow = e.gust;
+    sc.windPhase = 0;
+  }
+
+  function setTargets(e) {
+    sc.tgt.sun = e.sun;
+    sc.tgt.gust = e.gust;
+    sc.tgt.rain = e.rain;
+    sc.tgt.tMean = e.tMean;
+  }
+
+  function ease(cur, tgt, days, tau) {
+    return cur + (tgt - cur) * (1 - Math.exp(-days / tau));
+  }
+
+  function advanceVis(days, dtReal) {
+    // Keep easing while paused or single-stepping, otherwise a stepped day
+    // would freeze half-way through its own transition.
+    var d = Math.max(days, dtReal * 0.7);
+    var v = sc.vis, t = sc.tgt;
+    v.sun = ease(v.sun, t.sun, d, TAU_LIGHT);
+    v.gust = ease(v.gust, t.gust, d, TAU_WIND);
+    v.rain = ease(v.rain, t.rain, d, TAU_RAIN);
+    v.tMean = ease(v.tMean, t.tMean, d, TAU_TEMP);
+    // Colour easing runs on simulated days directly, not on a time constant:
+    // one day of playback should land exactly on that day's colours.
+    sc.dayT = Math.min(1, sc.dayT + days);
+    sc.snow.elevDrawn = ease(sc.snow.elevDrawn, sc.snow.elev, d, TAU_SNOW);
+    releasePending(d);
+    sc.frostFlash = Math.max(0, sc.frostFlash - d * 0.42);
+
+    // Wind breathes on top of the smoothed daily mean. A single eased number is
+    // steady to the point of looking dead; a slow envelope on top of it gives
+    // lulls and gusts without touching the frequency the leaves move at.
+    sc.windPhase += dtReal * 0.34;
+    var breathe = 0.74 + 0.26 * Math.sin(sc.windPhase) *
+                                Math.sin(sc.windPhase * 0.41 + 1.1);
+    sc.windNow = v.gust * breathe;
+  }
+
+  function resetSeason() {
+    sc.day = 0;
+    sc.doy = M.START_DOY;
+    sc.frostDays = 0;
+    sc.frostFlash = 0;
+    sc.endHold = 0;
+    sc.falling = [];
+    sc.pending = [];
+    sc.litter = [];
+    restampLitter();
+    sc.weatherRng = M.makeRng(sc.seed ^ 0x9E3779B9);
+    sc.leafRng = M.makeRng(sc.seed ^ 0x85EBCA6B);
+    var lrng = M.makeRng(sc.seed ^ 0x27d4eb2d);
+    for (var i = 0; i < sc.trees.length; i++) {
+      var t = sc.trees[i];
+      for (var j = 0; j < t.leaves.length; j++) {
+        var site = t.leaves[j].site;
+        var fresh = M.makeLeaf(t.species, lrng);
+        fresh.site = site;
+        fresh.rgb = rgbOf(M.leafColor(fresh));
+        fresh.rgbPrev = fresh.rgb;
+        fresh.pending = false;
+        t.leaves[j] = fresh;
+      }
+    }
+    sc.env = M.makeEnvironment(sc.doy, sc.controls, M.makeRng(sc.seed ^ 0xC2B2AE35));
+    resetSnow();
+    resetVis();
+    sc.dayT = 1;
+    computeLight();
+    maybeRefreshColors(true, -1e9);
+    refreshHud();
+  }
+
+  /* ==========================================================================
+   * 6. ONE SIMULATED DAY
+   *
+   * One environment for the whole scene — the trees share a sky, which is the
+   * point of putting them in the same picture. Then every leaf is stepped, and
+   * any leaf the model detached this day becomes a falling particle carrying
+   * the colour it had when it let go.
+   * ========================================================================*/
+  function stepDay() {
+    if (sc.day >= M.SEASON_DAYS) return false;
+    sc.doy = M.START_DOY + sc.day;
+    var env = sc.env = M.makeEnvironment(sc.doy, sc.controls, sc.weatherRng);
+
+    for (var i = 0; i < sc.trees.length; i++) {
+      var t = sc.trees[i], k = t.k;
+      var ct = Math.cos(t.sway), st = Math.sin(t.sway);
+      for (var j = 0; j < t.leaves.length; j++) {
+        var leaf = t.leaves[j];
+        if (!leaf.attached) continue;
+        M.stepLeaf(leaf, env, sc.leafRng);
+        leaf.rgbPrev = leaf.rgb;
+        leaf.rgb = rgbOf(M.leafColor(leaf));
+        if (!leaf.attached) {
+          /* The model has decided this leaf falls TODAY. It has not said when
+           * during the day, and a simulated day is 0.75 s of wall clock at 1x,
+           * so releasing every one of them on the frame the day ticks over made
+           * leaves arrive in a pulse — unnoticeable on an average day of forty,
+           * obvious on a peak day of five hundred.
+           *
+           * So the leaf is queued with a release time spread uniformly across
+           * the coming day, and — this is the part that matters — it stays drawn
+           * on its branch until that moment arrives. Hiding it at detach time and
+           * spawning the particle later would make the leaf wink out and reappear
+           * mid-air up to a day later, which is a worse artefact than the pulse.
+           * It has left the model's canopy but not the picture's. */
+          leaf.pending = true;
+          sc.pending.push({ leaf: leaf, tree: t, wait: sc.leafRng() });
+        }
+      }
+    }
+
+    if (env.hardFreeze) { sc.frostFlash = 1; sc.frostDays += 1.6; }
+    else if (env.lightFrost) { sc.frostFlash = 0.5; sc.frostDays += 0.7; }
+
+    stepSnow(env);
+    setTargets(env);
+    sc.dayT = 0;                 // start easing toward this day's colours
+
+    sc.day++;
+    refreshHud();
+    return true;
+  }
+
+  /* --------------------------------------------------------------------------
+   * Release one queued leaf into the air. Position is recomputed here rather
+   * than remembered from detach time, so the leaf leaves from wherever its
+   * branch has swayed to by now, not from where it was a fraction of a day ago.
+   * ------------------------------------------------------------------------*/
+  function spawnFalling(t, leaf) {
+    var k = t.k, s2 = leaf.site;
+    var ct = Math.cos(t.sway), st = Math.sin(t.sway);
+    var wx = t.x + k * (s2.x * ct - s2.y * st);
+    var wy = t.y + k * (s2.x * st + s2.y * ct);
+
+    if (sc.falling.length >= MAX_FALLING) {
+      // Cap reached — hundreds of leaves in the air at once. Put this one on the
+      // ground directly rather than dropping it: the model says it fell, so it
+      // has to be in the litter either way.
+      var quick = {
+        x: wx + (sc.leafRng() * 2 - 1) * 60,
+        y: t.y + (sc.leafRng() * 2 - 1) * 52 + 12 * k,
+        rot: s2.rot, len: s2.len * k,
+        col: css(shade(mix(leaf.rgb, skyHz, t.haze * 0.7), 0.76)),
+        sp: t.species, squash: 0.30 + 0.22 * sc.leafRng()
+      };
+      if (sc.litter.length >= MAX_LITTER) sc.litter.shift();
+      sc.litter.push(quick);
+      stampLitter(quick);
+      return;
+    }
+
+    /* Which depth plane this leaf falls in.
+     *
+     * Most of them stay in their own tree's plane, so a leaf shed by a hazed
+     * tree on the far bench passes BEHIND the foreground maple instead of over
+     * the front of it. A minority get blown toward the viewer and cross in front
+     * of nearer trees, which is the thing that actually happens in a gust and the
+     * reason this is a distribution rather than a constant. `advance` counts
+     * planes crossed; landing on sc.trees.length means in front of everything.
+     */
+    var r = sc.leafRng();
+    var advance = r < 0.60 ? 0 : r < 0.84 ? 1 : r < 0.95 ? 2 : 3;
+    var zPlane = Math.min(t.z + advance, sc.trees.length);
+    // Coming forward means coming closer: a little larger, a little more
+    // parallax, and a little less of the haze its tree was sitting in.
+    var near = 1 + 0.11 * advance;
+    var hz = Math.max(0, t.haze * (1 - 0.45 * advance));
+    sc.falling.push({
+      x: wx, y: wy, z: zPlane,
+      vx: 0, vy: 6 + sc.leafRng() * 10,
+      rot: s2.rot, spin: (sc.leafRng() * 2 - 1) * 1.7,
+      ph: sc.leafRng() * TAU, fr: 0.8 + sc.leafRng() * 1.0,
+      len: s2.len * k * near, sp: t.species,
+      col: css(mix(leaf.rgb, skyHz, hz * 0.7)),
+      // Once it is lying in the litter a leaf is out of the light and damp, so
+      // it reads darker than it did on the branch.
+      litCol: css(shade(mix(leaf.rgb, skyHz, hz * 0.7), 0.76)),
+      // Spread the landing depth: a tight band of identical y is what makes a
+      // leaf drop look like a stripe painted under the tree.
+      land: t.y + (sc.leafRng() * 2 - 1) * 52 + 12 * k + 26 * advance,
+      drift: (0.6 + sc.leafRng() * 0.9) * near,
+      // A standing lateral bias per leaf. Without it every leaf takes the same
+      // average path down and the carpet comes out as a bar painted under the
+      // crown instead of a drift.
+      bias: (sc.leafRng() * 2 - 1) * 42 * near
+    });
+  }
+
+  // Let go of every queued leaf whose moment has come. `days` is simulated days
+  // elapsed, so the spread holds at any playback speed.
+  function releasePending(days) {
+    var q = sc.pending;
+    for (var i = q.length - 1; i >= 0; i--) {
+      var it = q[i];
+      it.wait -= days;
+      if (it.wait > 0) continue;
+      it.leaf.pending = false;
+      spawnFalling(it.tree, it.leaf);
+      q.splice(i, 1);
+    }
+  }
+
+  /* ==========================================================================
+   * 7. PARTICLES — flutter down, then lie in the litter
+   * ========================================================================*/
+  function stepFalling(dt) {
+    var wind = sc.windNow;
+    for (var i = sc.falling.length - 1; i >= 0; i--) {
+      var p = sc.falling[i];
+      // Terminal velocity, not free fall: a leaf is mostly drag.
+      p.vy += (74 - p.vy) * Math.min(1, dt * 1.6);
+      p.ph += dt * p.fr;
+      // Aerodynamic tumble: sideways sweep in phase with the flutter, plus the
+      // day's wind pushing downwind.
+      p.vx = Math.sin(p.ph) * 34 * p.drift + wind * 5.2 + p.bias;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.rot += p.spin * dt * (0.5 + 0.5 * Math.cos(p.ph));
+
+      if (p.y >= p.land) {
+        var lay = {
+          x: p.x, y: p.land, rot: p.rot, len: p.len, col: p.litCol, sp: p.sp,
+          squash: 0.30 + 0.22 * (0.5 + 0.5 * Math.sin(p.ph * 7.7))
+        };
+        // Past the cap the oldest leaves are forgotten, but they stay on the
+        // layer — nobody can tell, and it keeps the carpet from thinning out.
+        if (sc.litter.length >= MAX_LITTER) sc.litter.shift();
+        sc.litter.push(lay);
+        stampLitter(lay);
+        sc.falling.splice(i, 1);
+      } else if (p.x < -120 || p.x > W + 120) {
+        sc.falling.splice(i, 1);
+      }
+    }
+  }
+
+  /* ==========================================================================
+   * 8. LIGHT — sky, ridge, meadow
+   *
+   * The light is the model's, not a hand-drawn ramp: env.sun is the clear-sky
+   * insolation index (1.0 at the solstice, ~0.45 by early November) attenuated
+   * by the cloud slider, so the scene genuinely dims as the season runs out.
+   * ========================================================================*/
+  var skyTop = SKY.clearTop.slice(), skyHz = SKY.clearHz.slice(), sunF = 1;
+
+  function computeLight() {
+    var e = sc.vis;                     // smoothed, not the raw model day
+    var cloud = clamp(sc.controls.cloudCover / 100, 0, 1);
+    sunF = clamp(e.sun, 0, 1);
+    // env.sun runs ~0.90 in August down to ~0.35 by late November, and it is
+    // relative insolation, not brightness: a November afternoon is dimmer and
+    // lower-contrast than an August one, not four times darker. So the light
+    // multiplier only spans 0.80-1.0 and the seasonal signal is carried mostly
+    // by the warm low-sun horizon and the vignette.
+    var bright = 0.80 + 0.20 * sunF;
+    var wet = clamp(e.rain / 20, 0, 1);
+
+    skyTop = shade(mix(SKY.clearTop, SKY.cloudTop, Math.pow(cloud, 0.8)), bright * (1 - 0.22 * wet));
+    skyHz = shade(mix(SKY.clearHz, SKY.cloudHz, Math.pow(cloud, 0.7)), bright * (1 - 0.18 * wet));
+    // Low sun runs warm along the horizon; overcast kills it.
+    var warm = (1 - sunF) * 1.05 * (1 - cloud * 0.85);
+    skyHz = mix(skyHz, SKY.warmHz, clamp(warm, 0, 0.62));
+  }
+
+  function drawSky() {
+    var g = ctx.createLinearGradient(0, -OY / S, 0, HORIZON);
+    g.addColorStop(0, css(shade(skyTop, 0.88)));
+    g.addColorStop(0.62, css(skyTop));
+    g.addColorStop(1, css(skyHz));
+    ctx.fillStyle = g;
+    ctx.fillRect(-40, -OY / S - 10, W + 80, HORIZON + OY / S + 12);
+
+    // Sun: sinks toward the ridge as the daylength collapses.
+    var cloud = clamp(sc.controls.cloudCover / 100, 0, 1);
+    var sy = 150 + (1 - sunF) * 360;
+    var glow = ctx.createRadialGradient(1180, sy, 6, 1180, sy, 300);
+    var gi = (1 - cloud * 0.82) * (0.30 + 0.34 * sunF);
+    glow.addColorStop(0, 'rgba(255,246,222,' + (gi * 1.5).toFixed(3) + ')');
+    glow.addColorStop(0.18, 'rgba(255,232,186,' + (gi * 0.55).toFixed(3) + ')');
+    glow.addColorStop(1, 'rgba(255,226,180,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(860, sy - 320, 640, 640);
+    // The disc itself, once the overcast is thin enough to show it.
+    if (cloud < 0.72) {
+      var di = (1 - cloud / 0.72) * (0.55 + 0.45 * sunF);
+      ctx.fillStyle = 'rgba(255,251,238,' + (0.90 * di).toFixed(3) + ')';
+      ctx.beginPath();
+      ctx.arc(1180, sy, 19, 0, TAU);
+      ctx.fill();
+    }
+
+    // Cloud banks: count, opacity and colour all come off the cloud slider, so
+    // 0% is an empty desert sky and 100% is a solid overcast.
+    var n = Math.round(cloud * 11);
+    if (n) {
+      ctx.save();
+      var rng = M.makeRng(sc.seed ^ 0x517cc1b7);
+      // Drift downwind at a rate the wind slider actually sets.
+      var drift = tNow * sc.controls.windMean * 2.6;
+      var span = W + 700;
+      for (var i = 0; i < n; i++) {
+        var cx = rng() * span;
+        var cy = 40 + rng() * 330;
+        var cw = 150 + rng() * 320, chh = 20 + rng() * 30;
+        var puffs = 7 + ((rng() * 5) | 0);
+        var seedA = rng() * 10, base = ((cx + drift) % span) - 300;
+        // Each puff is a radial gradient rather than a hard ellipse: a stack of
+        // flat discs reads as a cartoon, a stack of soft ones reads as vapour.
+        var tone = mix(skyHz, [255, 255, 255], 0.62 - 0.42 * cloud);
+        var peak = 0.12 + 0.20 * cloud;
+        for (var b = 0; b < puffs; b++) {
+          var u = puffs > 1 ? b / (puffs - 1) : 0.5;   // 0..1 along the bank
+          var taper = Math.sin(Math.PI * u) * 0.85 + 0.15;
+          var px = base + (u - 0.5) * cw;
+          var py = cy + Math.sin(seedA + b * 1.7) * chh * 0.30 + (1 - taper) * chh * 0.55;
+          var rx = cw * 0.15 * (0.5 + taper), ry = chh * (0.40 + 0.60 * taper);
+          var g2 = ctx.createRadialGradient(px, py, 0, px, py, rx);
+          g2.addColorStop(0, cssA(tone, peak));
+          g2.addColorStop(0.55, cssA(tone, peak * 0.62));
+          g2.addColorStop(1, cssA(tone, 0));
+          ctx.save();
+          ctx.translate(px, py);
+          ctx.scale(1, ry / rx);                       // squash into a flat bank
+          ctx.translate(-px, -py);
+          ctx.fillStyle = g2;
+          ctx.fillRect(px - rx, py - rx, rx * 2, rx * 2);
+          ctx.restore();
+        }
+      }
+      ctx.restore();
+    }
+  }
+
+  // tint is aerial perspective: the further range is pulled harder toward the
+  // horizon colour, which is what makes it read as further away and not just as
+  // a lighter mountain.
+  function drawRange(R, coniferBand) {
+    var pts = R.pts, tint = R.tint;
+    var rock = mix(mix([52, 60, 74], skyHz, tint), skyTop, 0.10);
+    var lit = 0.80 + 0.20 * sunF;
+
+    function silhouette() {
+      ctx.beginPath();
+      ctx.moveTo(pts[0][0], pts[0][1]);
+      for (var i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+      ctx.lineTo(W + 60, HORIZON + 12);
+      ctx.lineTo(-60, HORIZON + 12);
+      ctx.closePath();
+    }
+
+    // Body: a vertical gradient, bright along the tops and sinking into haze at
+    // the foot. Flat fills are what made these read as cardboard cut-outs.
+    var g = ctx.createLinearGradient(0, R.crest - 20, 0, HORIZON + 12);
+    g.addColorStop(0, css(shade(mix(rock, [255, 246, 232], 0.16), lit)));
+    g.addColorStop(0.45, css(shade(rock, lit)));
+    g.addColorStop(1, css(mix(shade(rock, lit * 0.92), skyHz, 0.18)));
+    ctx.fillStyle = g;
+    silhouette();
+    ctx.fill();
+
+    ctx.save();
+    silhouette();
+    ctx.clip();
+
+    // Across-slope light: lit on the sun side, shaded away from it.
+    var hg = ctx.createLinearGradient(-60, 0, W + 60, 0);
+    var shadeA = (0.16 - tint * 0.07) * (0.55 + 0.45 * sunF);
+    hg.addColorStop(0, 'rgba(18,24,44,' + shadeA.toFixed(3) + ')');
+    hg.addColorStop(0.52, 'rgba(18,24,44,0)');
+    hg.addColorStop(1, 'rgba(255,244,222,' + (shadeA * 1.15).toFixed(3) + ')');
+    ctx.fillStyle = hg;
+    ctx.fillRect(-60, R.crest - 300, W + 120, HORIZON + 320 - R.crest);
+
+    /* Snow, as a dusting anchored to this range's own crest.
+     *
+     * The previous version filled everything above the freezing-level contour
+     * with solid white, using a fractal curve for the lower edge. Two things
+     * were wrong with it. The curve was generated independently of the ridge, so
+     * its shape had no relationship to the mountain underneath and it read as a
+     * white band painted across the backdrop. And because the contour is one
+     * elevation shared by the whole scene, when it dropped past a nearer, lower
+     * range that range went white too — over the top of a different haze tint,
+     * which is what made the foothills discolour.
+     *
+     * Both problems come from the same mistake: drawing a boundary at all. Snow
+     * cover on a hillside is not a line, it is a gradient with elevation — thick
+     * on the summits, thinning downslope, gone below the freezing level. So this
+     * fades from the ridge down instead, and the only edge it has is the
+     * silhouette itself, which is why it now looks like snow on THIS mountain.
+     *
+     * Each range is measured against its own crest, so a range that barely pokes
+     * above the snow line gets a faint veil while the high one behind it goes
+     * white. That is both what the physics says and what keeps the ranges
+     * reading as separate distances.
+     */
+    var s = sc.snow;
+    if (s.pack > 0.01) {
+      var sy = yOfElev(s.elevDrawn);
+      var over = sy - R.crest;              // px of this range above the snow line
+      if (over > 8) {
+        // Snow is the brightest thing in the picture and has to stay brighter
+        // than the rock it lies on even after aerial perspective takes its cut,
+        // so it is hazed at about half the rate the rock is.
+        var snowCol = mix([253, 254, 255], skyHz, tint * 0.34);
+        var amount = clamp(over / 200, 0, 1) *
+                     Math.pow(s.pack, 0.60) * R.snowMax;
+        var bottom = Math.min(sy, HORIZON + 12);
+        var sg = ctx.createLinearGradient(0, R.crest - 4, 0, bottom);
+        sg.addColorStop(0.00, cssA(mix(snowCol, [255, 250, 238], 0.10 * sunF), 0.93 * amount));
+        sg.addColorStop(0.30, cssA(snowCol, 0.74 * amount));
+        sg.addColorStop(0.60, cssA(snowCol, 0.36 * amount));
+        sg.addColorStop(0.85, cssA(snowCol, 0.11 * amount));
+        sg.addColorStop(1.00, cssA(snowCol, 0));
+        ctx.fillStyle = sg;
+        ctx.fillRect(-60, R.crest - 8, W + 120, bottom - R.crest + 12);
+
+        // A thin line of rime along the skyline. Stroking the ridge path itself
+        // is the trick: the outer half falls outside the clip, so the white stops
+        // exactly on the silhouette. Kept narrow on purpose — wide enough to see
+        // and it stops being snow near the ridge and becomes white piping traced
+        // around the mountain. The gradient above is what carries the cover; this
+        // only sharpens the skyline it hangs from.
+        ctx.strokeStyle = cssA(mix(snowCol, [255, 252, 246], 0.5), 0.34 * amount);
+        ctx.lineWidth = 1.2 + 3.5 * amount;
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(pts[0][0], pts[0][1]);
+        for (var x = 1; x < pts.length; x++) ctx.lineTo(pts[x][0], pts[x][1]);
+        ctx.stroke();
+      }
+    }
+
+    // Relief is carried by the two gradients above — down-slope and across-slope
+    // — and nothing else. There were drawn gully and spur strokes here, painted
+    // over the snow so rock ribs showed through it. On a photograph of a real
+    // peak that is what you see; at this scale, on flat-shaded stylised rock,
+    // they read as scratches on the backdrop rather than as terrain.
+    ctx.restore();
+
+    // Lit crest line: one pale stroke along the skyline. Cheap, and it is what
+    // separates one range from the one behind it when both are hazed.
+    ctx.strokeStyle = cssA(mix(mix(rock, [255, 250, 240], 0.55), skyHz, tint * 0.5),
+                           0.5 - tint * 0.22);
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (var j = 1; j < pts.length; j++) ctx.lineTo(pts[j][0], pts[j][1]);
+    ctx.stroke();
+
+    if (coniferBand) {
+      // A dark conifer belt along the bench — the evergreen counterpoint that
+      // makes the deciduous colour read as colour.
+      var conif = mix([32, 50, 43], skyHz, 0.22);
+      // Snow loads the evergreens once the cover reaches the bench.
+      var cDust = clamp((elevOfY(HORIZON - 40) + 190 - sc.snow.elevDrawn) / 260, 0, 1) *
+                  sc.snow.pack;
+      if (cDust > 0.01) conif = mix(conif, mix([240, 244, 250], skyHz, 0.25), 0.62 * cDust);
+      ctx.fillStyle = css(conif);
+      for (var c = 0; c < sc.conifers.length; c++) {
+        var t = sc.conifers[c];
+        ctx.beginPath();
+        ctx.moveTo(t.x, t.y - t.h);
+        ctx.lineTo(t.x + t.h * 0.20, t.y);
+        ctx.lineTo(t.x - t.h * 0.20, t.y);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+  }
+
+  function drawMeadow() {
+    // Cure the grass with accumulated frost, not with the calendar.
+    var cure = clamp(sc.frostDays / 9, 0, 1);
+    var near = mix([78, 100, 50], [150, 126, 72], cure);
+    var far = mix([100, 120, 72], [164, 144, 95], cure);
+    var lit = 0.62 + 0.38 * sunF;
+    near = shade(near, lit); far = shade(far, lit);
+
+    // Valley snow: the same snowpack, when its lower edge reaches the meadow.
+    // A November storm here is snow, not rain, and the model's own freezing
+    // level is what says so.
+    var vSnow = clamp((SITE_ELEV + 250 - sc.snow.elevDrawn) / 250, 0, 1) * sc.snow.pack;
+    if (vSnow > 0.01) {
+      var lay = mix([236, 240, 248], skyHz, 0.18);
+      near = mix(near, lay, 0.72 * vSnow);
+      far = mix(far, mix(lay, skyHz, 0.2), 0.80 * vSnow);
+    }
+
+    var g = ctx.createLinearGradient(0, HORIZON - 6, 0, H + 40);
+    g.addColorStop(0, css(mix(far, skyHz, 0.26)));
+    g.addColorStop(0.10, css(far));
+    g.addColorStop(1, css(shade(near, 0.86)));
+    ctx.fillStyle = g;
+    ctx.fillRect(-40, HORIZON - 8, W + 80, H - HORIZON + 60);
+
+    var sway = Math.sin(tNow * 0.9) * clamp(sc.windNow / 9, 0, 1);
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = 'round';
+    for (var i = 0; i < sc.tufts.length; i++) {
+      var t = sc.tufts[i];
+      var dep = clamp((t.y - HORIZON) / (H - HORIZON), 0, 1);
+      ctx.strokeStyle = cssA(shade(mix(far, near, dep), 0.72), 0.32 + 0.3 * dep);
+      var lean = t.lean + sway * (1.4 + Math.sin(t.ph)) * (0.4 + dep);
+      ctx.beginPath();
+      ctx.moveTo(t.x, t.y);
+      ctx.quadraticCurveTo(t.x + lean * t.h * 0.4, t.y - t.h * 0.6,
+                           t.x + lean * t.h, t.y - t.h);
+      ctx.stroke();
+    }
+  }
+
+  /* ==========================================================================
+   * 9. TREES AND LEAVES
+   *
+   * Leaves are filled with setTransform rather than save/translate/rotate/
+   * restore: the tree transform is folded into each leaf matrix by hand, which
+   * is what makes a few thousand independently-simulated leaves affordable at
+   * 60 fps.
+   * ========================================================================*/
+  /* --------------------------------------------------------------------------
+   * COLOUR CACHE
+   *
+   * `M.leafColor` returns a string, and the haze mix and the sky tint have to be
+   * folded in on top of it. Doing that per leaf per frame meant building several
+   * thousand short strings sixty times a second, purely to re-derive a value
+   * that only changes when the simulated day does.
+   *
+   * So colours are resolved into `leaf.c` on a schedule instead, and while we
+   * are there the day-to-day change is EASED across the day rather than applied
+   * in one step: a whole canopy shifting colour at once, 1.3 times a second, is
+   * a visible pulse. Eight sub-steps per day, rate-limited so fast playback does
+   * not spend the frame budget rebuilding strings nobody will look at.
+   * ------------------------------------------------------------------------*/
+  var COLOR_STEPS = 8, colorBucket = -1, colorAt = -1e9;
+
+  function refreshLeafColors(mixT) {
+    var lit2 = 0.68 + 0.32 * sunF;
+    for (var i = 0; i < sc.trees.length; i++) {
+      var t = sc.trees[i], hz = t.haze, lv = t.leaves;
+      var hr = skyHz[0], hg = skyHz[1], hb = skyHz[2];
+      for (var j = 0; j < lv.length; j++) {
+        var lf = lv[j];
+        if (!lf.attached && !lf.pending) continue;
+        var a = lf.rgbPrev, b = lf.rgb;
+        var r = a[0] + (b[0] - a[0]) * mixT;
+        var g = a[1] + (b[1] - a[1]) * mixT;
+        var bl = a[2] + (b[2] - a[2]) * mixT;
+        if (hz) { r += (hr - r) * hz; g += (hg - g) * hz; bl += (hb - bl) * hz; }
+        lf.c = 'rgb(' + (r | 0) + ',' + (g | 0) + ',' + (bl | 0) + ')';
+      }
+      // Bark, resolved per depth rather than per branch — same reasoning.
+      var dark = mix(t.spec.bark, skyHz, hz);
+      var light = mix(t.spec.barkLight, skyHz, hz);
+      t.barkCols = [];
+      for (var d = 0; d <= 7; d++) {
+        t.barkCols.push(css(shade(mix(dark, light, clamp(1 - d / 4, 0, 1) * 0.55), lit2)));
+      }
+      t.markCol = cssA(shade(mix([58, 58, 52], skyHz, hz), lit2), 0.55);
+    }
+  }
+
+  function maybeRefreshColors(force, msNow) {
+    if (force) {
+      colorBucket = -1; colorAt = msNow;
+      refreshLeafColors(sc.dayT);
+      return;
+    }
+    var b = Math.min(COLOR_STEPS, Math.round(sc.dayT * COLOR_STEPS));
+    // Refresh on a sub-step boundary, or at least now and then so the slow sky
+    // drift reaches the hazed trees.
+    var due = b !== colorBucket || msNow - colorAt > 700;
+    if (!due || msNow - colorAt < 45) return;
+    colorBucket = b; colorAt = msNow;
+    refreshLeafColors(b / COLOR_STEPS);
+  }
+
+  function drawTree(t) {
+    var k = t.k, sw = t.sway;
+    var ct = Math.cos(sw), st = Math.sin(sw);
+    var A = S * k;
+
+    // --- branches, in tree-local space ------------------------------------
+    ctx.setTransform(A * ct, A * st, -A * st, A * ct, OX + S * t.x, OY + S * t.y);
+    ctx.lineCap = 'round';
+    for (var i = 0; i < t.branches.length; i++) {
+      var b = t.branches[i];
+      ctx.strokeStyle = t.barkCols[b.d];
+      ctx.lineWidth = Math.max(0.35, b.w);
+      ctx.beginPath();
+      ctx.moveTo(b.x1, b.y1);
+      ctx.lineTo(b.x2, b.y2);
+      ctx.stroke();
+    }
+    // Aspen scars / bark texture.
+    ctx.fillStyle = t.markCol;
+    for (var m = 0; m < t.marks.length; m++) {
+      var mk = t.marks[m];
+      ctx.beginPath();
+      ctx.ellipse(mk.x, mk.y, mk.rx, mk.ry, mk.a, 0, TAU);
+      ctx.fill();
+    }
+
+    // --- leaves ------------------------------------------------------------
+    // Three silhouettes per species and a per-leaf choice between them, by
+    // on-screen size. Below about 9 device pixels the lobes of a maple leaf are
+    // not resolvable at all, and below 26 the teeth are not, so paying for the
+    // full outline at those sizes is buying nothing.
+    var path = LEAF_PATH[t.species];
+    var pathMid = LEAF_PATH_MID[t.species];
+    var pathLo = LEAF_PATH_LO[t.species];
+    var windF = clamp(sc.windNow / 10, 0, 1);
+    // Quaking aspen earns its name: flattened petiole, so its leaves twist far
+    // more than the other two in the same breeze.
+    var twistGain = t.species === 'aspen' ? 0.62 : 0.34;
+    var leaves = t.leaves;
+
+    /* Wind motion, rewritten to stop the canopy buzzing.
+     *
+     * Three things were making a windy day look like static rather than like
+     * wind, and all three are about frequency, not amplitude:
+     *
+     *  1. Flutter FREQUENCY scaled with wind, so hard wind meant fast wobble.
+     *     Real foliage in a gale swings further, not quicker — the leaf's
+     *     natural period is set by its own size and stiffness. Frequency is now
+     *     nearly wind-independent (a 15% rise, not a doubling) and the base
+     *     rates are lower; wind buys amplitude instead.
+     *  2. Every leaf ran on its own phase, so 4000 leaves each did their own
+     *     thing and the eye read the sum as noise. A gust now travels through
+     *     the canopy as a wave — leaves upwind of a leaf lead it — so the
+     *     motion is CORRELATED and reads as a single moving airmass.
+     *  3. The twist ran at 1.7x the flutter rate, adding a second, faster
+     *     flicker on top. It is now slower than the flutter, not faster.
+     */
+    var gustWave = tNow * (1.05 + 0.45 * windF);      // gust travel, radians
+    var swing = 0.05 + windF * 0.52;                  // amplitude, not rate
+    for (var j = 0; j < leaves.length; j++) {
+      var leaf = leaves[j];
+      // `pending` leaves have been dropped by the model but have not let go on
+      // screen yet, so they are still hanging there.
+      if (!leaf.attached && !leaf.pending) continue;
+      var s2 = leaf.site;
+      // Position along the wind, in world units, so the wave crosses the whole
+      // scene coherently rather than each tree flapping independently.
+      var wpos = (t.x + k * s2.x) * 0.0042 + (t.y + k * s2.y) * 0.0015;
+      var gust = Math.sin(gustWave - wpos);
+      var flut = swing * s2.fl *
+                 Math.sin(tNow * s2.fr * (1 + 0.15 * windF) + s2.ph + gust * 0.9);
+      var phi = s2.rot + flut + gust * windF * 0.16;
+      var cp = Math.cos(sw + phi), sp = Math.sin(sw + phi);
+      // Twist about the petiole, seen edge-on as a horizontal squeeze. Slower
+      // than the flutter it rides on.
+      var tw = 1 - twistGain * windF *
+               (0.5 + 0.5 * Math.sin(tNow * s2.fr * 0.62 + s2.tw + gust * 0.6));
+      var wl = s2.len * tw, hl = s2.len;
+      ctx.setTransform(A * cp * wl, A * sp * wl, -A * sp * hl, A * cp * hl,
+                       OX + S * (t.x + k * (s2.x * ct - s2.y * st)),
+                       OY + S * (t.y + k * (s2.x * st + s2.y * ct)));
+      ctx.fillStyle = leaf.c;
+      var px = s2.len * k * S;
+      ctx.fill(px > 26 ? path : px > 9 ? pathMid : pathLo);
+    }
+  }
+
+  function drawFalling(list) {
+    for (var i = 0; i < list.length; i++) {
+      var p = list[i];
+      var tw = 0.35 + 0.65 * Math.abs(Math.cos(p.ph * 1.1));
+      var cp = Math.cos(p.rot), sp = Math.sin(p.rot);
+      var wl = p.len * tw, hl = p.len;
+      ctx.setTransform(S * cp * wl, S * sp * wl, -S * sp * hl, S * cp * hl,
+                       OX + S * p.x, OY + S * p.y);
+      ctx.fillStyle = p.col;
+      ctx.fill(LEAF_PATH[p.sp]);
+    }
+  }
+
+  /* Tree shadows on the meadow.
+   *
+   * Nothing in the scene said the trees were standing ON the ground rather than
+   * pasted in front of it. One soft ellipse per tree fixes that. It leans away
+   * from the sun and stretches as the sun drops through the season, and it fades
+   * out under overcast, because a shadow is a statement about the light and the
+   * light here is the model's. */
+  function drawShadows() {
+    var cloud = clamp(sc.controls.cloudCover / 100, 0, 1);
+    var strength = (0.30 - 0.24 * cloud) * (0.45 + 0.55 * sunF);
+    if (strength < 0.02) return;
+    // Low sun, long shadow.
+    var stretch = 1.5 + 2.4 * (1 - sunF);
+    for (var i = 0; i < sc.trees.length; i++) {
+      var t = sc.trees[i];
+      var spread = 150 * t.k;
+      var lean = -stretch * 24 * t.k;          // sun is on the right
+      var g = ctx.createRadialGradient(t.x + lean * 0.5, t.y, 0,
+                                       t.x + lean * 0.5, t.y, spread);
+      g.addColorStop(0, 'rgba(28,30,26,' + (strength * (1 - t.haze * 0.7)).toFixed(3) + ')');
+      g.addColorStop(0.55, 'rgba(28,30,26,' + (strength * 0.45 * (1 - t.haze * 0.7)).toFixed(3) + ')');
+      g.addColorStop(1, 'rgba(28,30,26,0)');
+      ctx.save();
+      ctx.translate(t.x + lean * 0.5, t.y);
+      ctx.scale(1 + stretch * 0.22, 0.19);     // flattened onto the ground plane
+      ctx.translate(-(t.x + lean * 0.5), -t.y);
+      ctx.fillStyle = g;
+      ctx.fillRect(t.x + lean * 0.5 - spread, t.y - spread, spread * 2, spread * 2);
+      ctx.restore();
+    }
+  }
+
+  function stampLitter(p) {
+    var cp = Math.cos(p.rot), sp = Math.sin(p.rot);
+    var wl = p.len, hl = p.len * p.squash;     // lying flat, seen at a glance
+    litCtx.setTransform(S * cp * wl, S * sp * wl, -S * sp * hl, S * cp * hl,
+                        OX + S * p.x, OY + S * p.y);
+    litCtx.fillStyle = p.col;
+    litCtx.fill(LEAF_PATH[p.sp]);
+  }
+
+  function restampLitter() {
+    litCtx.setTransform(1, 0, 0, 1, 0, 0);
+    litCtx.clearRect(0, 0, litCv.width, litCv.height);
+    if (!sc.litter) return;
+    for (var i = 0; i < sc.litter.length; i++) stampLitter(sc.litter[i]);
+  }
+
+  function drawWeather() {
+    // Smoothed rain, so a shower arrives and clears over a day instead of
+    // switching on and off between frames.
+    var rain = sc.vis.rain;
+    world();
+    if (rain > 0.4) {
+      var wet = clamp(rain / 16, 0, 1);
+      var n = Math.min(300, Math.round(rain * 14));
+      // Below the freezing level it is rain; at the valley floor on a cold day
+      // it is not, and it should not fall like it.
+      var frozen = sc.snow.line < SITE_ELEV + 60;
+      var fall = frozen ? 260 : 1250;
+      var lean = sc.windNow * (frozen ? 4.2 : 1.6);
+      ctx.strokeStyle = frozen ? 'rgba(240,246,255,' + (0.42 * wet).toFixed(3) + ')'
+                               : 'rgba(214,228,240,' + (0.20 * wet).toFixed(3) + ')';
+      ctx.lineWidth = frozen ? 1.7 : 0.9;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (var i = 0; i < n; i++) {
+        // Deterministic per-frame streaks: cheap, and no per-drop bookkeeping.
+        var sx = ((i * 137.13 + tNow * 90) % (W + 200)) - 100;
+        var sy = ((i * 311.7 + tNow * fall) % (H + 200)) - 100;
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(sx + lean, sy + (frozen ? 6 : 26));
+      }
+      ctx.stroke();
+    }
+    if (sc.frostFlash > 0.01) {
+      var a = sc.frostFlash * 0.16;
+      var g = ctx.createLinearGradient(0, H, 0, HORIZON - 120);
+      g.addColorStop(0, 'rgba(198,224,255,' + a.toFixed(3) + ')');
+      g.addColorStop(1, 'rgba(198,224,255,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(-40, HORIZON - 130, W + 80, H - HORIZON + 180);
+    }
+    // Warm-cool vignette, keyed to the seasonal light.
+    var vg = ctx.createRadialGradient(W * 0.5, H * 0.42, H * 0.30, W * 0.5, H * 0.45, H * 0.95);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(12,14,20,' + (0.08 + 0.13 * (1 - sunF)).toFixed(3) + ')');
+    ctx.fillStyle = vg;
+    ctx.fillRect(-40, -OY / S - 10, W + 80, H + 80);
+  }
+
+  /* ==========================================================================
+   * 10. FRAME
+   * ========================================================================*/
+  var tNow = 0, lastT = 0, acc = 0, playing = true, still = false;
+  var DAYS_PER_SEC_AT_1X = M.SEASON_DAYS / 90;   // a season in 90 s at 1x
+
+  function frame(ms) {
+    var real = lastT ? Math.min((ms - lastT) / 1000, 0.1) : 0;
+    lastT = ms;
+    // ?still freezes the clock but keeps repainting, so a headless capture has
+    // a committed frame to grab and nothing moves between attempts.
+    var dt = still ? 0 : real;
+    tNow += dt;
+    perfTick(real);
+
+    var days = 0;
+    if (playing) {
+      var adv = dt * DAYS_PER_SEC_AT_1X * CTL.speed;
+      days = adv;
+      acc += adv;
+      var guard = 0;
+      while (acc >= 1 && guard++ < 8) {
+        acc -= 1;
+        if (!stepDay()) break;
+      }
+      if (sc.day >= M.SEASON_DAYS) {
+        sc.endHold += dt;
+        // The wall is unattended, so the season always rolls into a new one --
+        // the standalone page's opt-out checkbox has nothing to click it here.
+        if (sc.endHold > 4) {
+          sc.seed = (sc.seed * 1664525 + 1013904223) >>> 0;
+          buildScene();
+        }
+      }
+    }
+    advanceVis(days, dt);
+    maybeRefreshColors(false, ms);
+    stepFalling(dt);
+
+    // --- paint, back to front ---------------------------------------------
+    computeLight();
+    // Whole-tree sway: slower and softer than the leaf flutter it carries, with
+    // a long period underneath so the crowns lean rather than vibrate.
+    var swayAmp = clamp(sc.windNow / 11, 0, 1);
+    for (var i = 0; i < sc.trees.length; i++) {
+      var t = sc.trees[i];
+      t.sway = (0.004 + 0.024 * swayAmp) *
+               (Math.sin(tNow * t.swayFr + t.swayPh) +
+                0.30 * Math.sin(tNow * t.swayFr * 1.9 + t.swayPh * 1.7) +
+                0.45 * Math.sin(tNow * t.swayFr * 0.37 + t.swayPh * 0.6));
+    }
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    world();
+    drawSky();
+    for (var r = 0; r < sc.ranges.length; r++) {
+      drawRange(sc.ranges[r], r === sc.ranges.length - 1);
+    }
+    drawMeadow();
+    drawShadows();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(litCv, 0, 0);              // the accumulated leaf carpet
+
+    // Falling leaves are interleaved with the trees by depth plane. Drawing them
+    // all afterwards put every airborne leaf in front of every trunk, so a leaf
+    // shed by a hazed tree on the far bench crossed the front of the foreground
+    // maple — which reads as the background tree being nearer than the tree it
+    // is behind.
+    var zb = sc.zbuckets;
+    for (var b = 0; b < zb.length; b++) zb[b].length = 0;
+    for (var f = 0; f < sc.falling.length; f++) {
+      var pf = sc.falling[f];
+      zb[pf.z < zb.length ? pf.z : zb.length - 1].push(pf);
+    }
+    for (var j = 0; j < sc.trees.length; j++) {
+      drawTree(sc.trees[j]);
+      if (zb[j].length) drawFalling(zb[j]);   // in front of this tree, behind the next
+    }
+    if (zb[zb.length - 1].length) drawFalling(zb[zb.length - 1]);
+    drawWeather();
+
+    requestAnimationFrame(frame);
+  }
+
+  /* Frame cost, reported in the controls panel: the leaf density slider buys
+   * canopy at a measurable price and it should be visible what that price is.
+   *
+   * When the frame rate will not hold, RESOLUTION is what gets sacrificed — not
+   * leaves. An earlier version of this thinned the canopy instead, by skipping
+   * every second leaf when the frame rate dropped. That was the wrong trade
+   * twice over: leaves are the thing this whole page exists to show, and the
+   * thinning was invisible in its cause and visible in its effect, so it read
+   * as leaves silently disappearing mid-season rather than as a quality
+   * setting. It was also sticky across seasons, so once it fired the canopy
+   * never came back.
+   *
+   * Render scale is the honest version of the same trade. Halving it quarters
+   * the pixels being shaded — which is where the time actually goes, since
+   * thousands of overlapping leaf fills are bounded by fill area and not by
+   * call count — while every leaf stays exactly where the model put it. The
+   * hysteresis is wide and the windows are long, because a backing store that
+   * resizes whenever the frame rate wobbles is its own kind of ugly.
+   */
+  var perfAcc = 0, perfN = 0, slowRuns = 0, fastRuns = 0;
+
+  function perfTick(real) {
+    if (!real) return;
+    perfAcc += real; perfN++;
+    if (perfN < 45) return;
+    var fps = perfN / perfAcc;
+    perfAcc = 0; perfN = 0;
+
+    // Respond before the stutter is unpleasant rather than after, but keep the
+    // band between the two thresholds wide enough that a machine sitting near
+    // the boundary does not resize its backing store back and forth.
+    if (fps < 40) {
+      fastRuns = 0;
+      if (++slowRuns >= 3 && qualityStep < QUALITY.length - 1) {
+        qualityStep++; slowRuns = 0; resize();
+      }
+    } else if (fps > 56) {
+      slowRuns = 0;
+      if (++fastRuns >= 8 && qualityStep > 0) { qualityStep--; fastRuns = 0; resize(); }
+    } else { slowRuns = 0; fastRuns = 0; }
+    var held = 0;
+    for (var i = 0; i < sc.trees.length; i++) {
+      var lv = sc.trees[i].leaves;
+      for (var j = 0; j < lv.length; j++) if (lv[j].attached) held++;
+    }
+    // The standalone page printed this into the controls panel. There is no
+    // panel on the wall, so it goes on `window` instead: reachable from a
+    // headless capture or a remote debug session, invisible to a passer-by.
+    window.__leaves = {
+      leaves: sc.leaves, held: held, falling: sc.falling.length,
+      litter: sc.litter.length, fps: Math.round(fps),
+      renderScale: QUALITY[qualityStep]
+    };
+  }
+
+  /* ==========================================================================
+   * 11. HUD
+   * ========================================================================*/
+  function el(id) { return document.getElementById(id); }
+
+  function speciesStats() {
+    var acc2 = {};
+    for (var i = 0; i < sc.trees.length; i++) {
+      var t = sc.trees[i];
+      var a = acc2[t.species] || (acc2[t.species] = { n: 0, held: 0, r: 0, g: 0, b: 0, sen: 0 });
+      for (var j = 0; j < t.leaves.length; j++) {
+        var leaf = t.leaves[j];
+        a.n++;
+        if (leaf.attached) {
+          a.held++;
+          a.r += leaf.rgb[0]; a.g += leaf.rgb[1]; a.b += leaf.rgb[2];
+          a.sen += leaf.senescence;
+        }
+      }
+    }
+    return acc2;
+  }
+
+  // Mean senescence of the leaves still on the branch, as a phase name. The
+  // boundaries are where the picture visibly changes rather than round numbers:
+  // colour is barely moving below ~0.15, chlorophyll is mostly gone by ~0.5, and
+  // past ~0.8 the canopy is browning and shedding hard.
+  function turnStage(sen) {
+    return sen < 0.15 ? 'still green'
+         : sen < 0.50 ? 'turning'
+         : sen < 0.80 ? 'full colour'
+                      : 'past peak';
+  }
+
+  function refreshHud() {
+    var e = sc.env;
+    el('oDate').textContent = M.doyToLabel(sc.doy);
+    el('oDay').textContent = 'day ' + sc.day + ' / ' + M.SEASON_DAYS;
+    el('oTmin').textContent = e.tMin.toFixed(1) + ' °C';
+    el('oLen').textContent = e.dayLength.toFixed(2) + ' h';
+    el('oSun').textContent = e.swMeanWm2 + ' W/m²';
+    el('oGust').textContent = e.gust.toFixed(1) + ' m/s';
+    el('oFrost').innerHTML = e.hardFreeze
+      ? '<span class="badge freeze">HARD FREEZE</span>'
+      : e.lightFrost ? '<span class="badge frost">frost</span>'
+                     : '<span class="badge none">clear</span>';
+
+    // Precipitation, and what form it is taking at this elevation.
+    var sn = sc.snow;
+    el('oPrecip').textContent = e.rain < 0.05
+      ? 'none'
+      : e.rain.toFixed(1) + ' mm ' + (sn.line < SITE_ELEV + 60 ? 'snow' : 'rain');
+    // Report the cover you can actually see — the bottom edge of the lying
+    // snow — not today's freezing level, which is often above the whole range
+    // on a clear day while the peaks are still white from last week's storm.
+    el('oSnow').textContent = sn.pack < 0.02 || sn.elev > PEAK_ELEV + 150
+      ? 'none'
+      : (Math.round(sn.elev / 10) * 10).toLocaleString('en-US') + ' m up · ' +
+        Math.round(sn.pack * 100) + '%';
+
+    var st = speciesStats(), html = '', held = 0, tot = 0;
+    var order = ['aspen', 'bigtoothMaple', 'gambelOak'];
+    for (var i = 0; i < order.length; i++) {
+      var k = order[i], a = st[k];
+      if (!a) continue;
+      held += a.held; tot += a.n;
+      var d = a.held || 1;
+      var sw = a.held
+        ? 'rgb(' + Math.round(a.r / d) + ',' + Math.round(a.g / d) + ',' + Math.round(a.b / d) + ')'
+        : 'rgba(255,255,255,.10)';
+      // The standalone page printed mean senescence here as a number, which is
+      // the right readout for debugging the model and the wrong one for a wall:
+      // "sen 0.43" tells a passer-by nothing. Same value, said in words.
+      var stage = !a.held ? 'bare' : turnStage(a.sen / d);
+      html += '<div class="sp"><span class="sw" style="background:' + sw + '"></span>' +
+              '<span class="nm">' + M.SPECIES[k].name + '</span>' +
+              '<span class="st">' + Math.round(100 * a.held / a.n) + '% held · ' +
+              stage + '</span></div>';
+    }
+    el('spList').innerHTML = html;
+    el('oHeld').textContent = tot ? Math.round(100 * held / tot) + ' %' : '—';
+    el('progFill').style.width = (100 * sc.day / M.SEASON_DAYS).toFixed(1) + '%';
+    updateCaptions();
+  }
+
+  /* ==========================================================================
+   * 11b. CONTROL STATE
+   *
+   * The standalone page kept the environment settings in DOM sliders and read
+   * them back out of the inputs. On the wall there are no inputs -- there is no
+   * pointer and nothing on screen is touchable -- so the same values live in
+   * this plain object instead, written by phone messages (handleMessage) and by
+   * the query string, and pushed into sc.controls the same way as before.
+   *
+   * Keeping them here rather than reading sc.controls directly matters for two
+   * of them: `speed` and `dens` are renderer/clock settings that the model does
+   * not have fields for, and `dens` needs a scene rebuild rather than just a
+   * write. Holding all eight in one place means the phone, the query string and
+   * the defaults all go through one path.
+   * ========================================================================*/
+  var CTL = {
+    tempOffset:   M.DEFAULT_CONTROLS.tempOffset,
+    cloudCover:   M.DEFAULT_CONTROLS.cloudCover,
+    windMean:     M.DEFAULT_CONTROLS.windMean,
+    precipMult:   M.DEFAULT_CONTROLS.precipMult,
+    winterPrecip: M.DEFAULT_CONTROLS.winterPrecip,
+    latitude:     M.DEFAULT_CONTROLS.latitude,
+    speed:        1,      // x, playback multiplier
+    dens:         1       // x, leaf density
+  };
+
+  // Ranges, so a phone message cannot push the model somewhere it was never
+  // calibrated for. These are the min/max the standalone page's sliders carried.
+  var CTL_RANGE = {
+    tempOffset:   [-6, 6],
+    cloudCover:   [0, 100],
+    windMean:     [0, 12],
+    precipMult:   [0, 3],
+    winterPrecip: [0.3, 1.8],
+    latitude:     [30, 46],
+    speed:        [0.25, 6],
+    dens:         [0.3, 1.6]
+  };
+
+  function setCtl(key, value) {
+    var r = CTL_RANGE[key];
+    if (!r) return false;
+    var v = parseFloat(value);
+    if (!isFinite(v)) return false;
+    CTL[key] = clamp(v, r[0], r[1]);
+    return true;
+  }
+
+  function pushControls() {
+    sc.controls.tempOffset   = CTL.tempOffset;
+    sc.controls.cloudCover   = CTL.cloudCover;
+    sc.controls.windMean     = CTL.windMean;
+    sc.controls.precipMult   = CTL.precipMult;
+    sc.controls.winterPrecip = CTL.winterPrecip;
+    sc.controls.latitude     = CTL.latitude;
+  }
+
+  // Applied after any environment change. Before the season opens, re-seed day 0
+  // so the readouts (daylength in particular) answer the new settings straight
+  // away instead of waiting for the first tick.
+  function applyEnvChange() {
+    pushControls();
+    if (sc.day === 0) {
+      sc.env = M.makeEnvironment(sc.doy, sc.controls, M.makeRng(sc.seed ^ 0xC2B2AE35));
+      refreshHud();
+    }
+  }
+
+  // One day, by hand. Snapping the transition to done is the point: a stepped
+  // day should show its own colours, not sit half-way out of yesterday's.
+  function stepOne() {
+    if (!stepDay()) return;
+    sc.dayT = 1;
+    advanceVis(1, 0);
+    maybeRefreshColors(true, -1e9);
+  }
+
+  function setPlaying(v) { playing = v; }
+
+  function replaySeason() { acc = 0; resetSeason(); setPlaying(true); }
+
+  function newWoods() {
+    acc = 0;
+    sc.seed = (sc.seed * 1664525 + 1013904223) >>> 0;
+    buildScene();
+    setPlaying(true);
+  }
+
+  // Kept for local development in a desktop browser -- the wall delivers no
+  // keyboard events. The standalone page's `C` binding is gone with the slider
+  // panel it opened.
+  document.addEventListener('keydown', function (ev) {
+    if (ev.code === 'Space') { ev.preventDefault(); setPlaying(!playing); }
+    else if (ev.code === 'ArrowRight') { ev.preventDefault(); setPlaying(false); stepOne(); }
+  });
+
+  window.addEventListener('resize', resize);
+
+  /* ==========================================================================
+   * 11c. CAPTIONS
+   *
+   * Narration for a passer-by who has not touched their phone and will watch for
+   * maybe thirty seconds. Each caption is keyed to a SEASON DAY WINDOW rather
+   * than to wall-clock time, so it appears alongside the thing it describes at
+   * any playback speed -- and several carry a `when` predicate so they only fire
+   * if the model actually did that this season. A frost caption on a season that
+   * never froze would be worse than no caption.
+   *
+   * One shows at a time, and each is held for a fixed fraction of its window so
+   * a fast playback speed does not leave text on screen after the moment passed.
+   * ========================================================================*/
+  var capEl = el('caption'), capTextEl = el('captionText');
+
+  var CAPTIONS = [
+    { from: 2, to: 14,
+      text: 'Every leaf here is simulated. Cool nights and shortening days, not the calendar, decide when each one turns.' },
+    { from: 14, to: 26,
+      text: 'The green is chlorophyll. The yellow is already there underneath it all summer, waiting to be uncovered.' },
+    { from: 26, to: 40,
+      text: 'Quaking aspen goes first. It reads temperature alone and ignores day length, so it turns while the others are still green.',
+      when: function (st) { return st.aspen && st.aspen.turning; } },
+    { from: 40, to: 55,
+      text: 'Red is different: the tree has to build it. Anthocyanin is made fresh in autumn from sugar, sunlight, and cold nights.' },
+    { from: 55, to: 70,
+      text: 'That is why a sunny, frost-free autumn is the brilliant one. Cloud means less sugar, and less sugar means duller reds.' },
+    { from: 62, to: 78,
+      text: 'Bigtooth maple carries most of the colour on a Wasatch hillside. It makes the most red of the three.' },
+    { from: 70, to: 86,
+      text: 'A freeze does not just slow the red down, it ends it. The machinery that makes anthocyanin is destroyed outright.',
+      when: function (st) { return st.frosted; } },
+    { from: 78, to: 94,
+      text: 'Wind never makes a leaf fall on its own. It only hurries along one the tree has already cut loose.' },
+    { from: 86, to: 104,
+      text: 'Some Gambel oak leaves never form an abscission layer at all, and hang on brown all winter. That is marcescence.' },
+    { from: 100, to: 120,
+      text: 'Snow arrives as a freezing level, not as weather: rain in the meadow is white on the ridge by morning.' }
+  ];
+
+  var capIdx = -1, capShownAt = -1;
+
+  function seasonState() {
+    var st = { frosted: sc.frostDays > 0.5 };
+    var counts = {};
+    for (var i = 0; i < sc.trees.length; i++) {
+      var t = sc.trees[i];
+      var a = counts[t.species] || (counts[t.species] = { n: 0, sen: 0 });
+      for (var j = 0; j < t.leaves.length; j++) {
+        a.n++;
+        a.sen += t.leaves[j].senescence;
+      }
+    }
+    Object.keys(counts).forEach(function (k) {
+      var a = counts[k];
+      st[k === 'bigtoothMaple' ? 'maple' : k === 'gambelOak' ? 'oak' : 'aspen'] =
+        { turning: a.n ? a.sen / a.n > 0.35 : false };
+    });
+    return st;
+  }
+
+  function updateCaptions() {
+    var day = sc.day, st = null;
+    var pick = -1;
+    for (var i = 0; i < CAPTIONS.length; i++) {
+      var c = CAPTIONS[i];
+      if (day < c.from || day >= c.to) continue;
+      if (c.when) {
+        if (!st) st = seasonState();
+        if (!c.when(st)) continue;
+      }
+      // Hold the one already showing if it is still inside its window, so an
+      // overlapping pair does not swap back and forth on adjacent days.
+      if (i === capIdx) { pick = i; break; }
+      if (pick < 0) pick = i;
+    }
+
+    if (pick === capIdx) return;
+
+    if (pick < 0) {
+      capEl.classList.remove('visible');
+      capIdx = -1;
+      return;
+    }
+    // Fade the old one out before the new text lands, so the swap is never a
+    // visible re-flow of a caption that is still fully opaque.
+    capEl.classList.remove('visible');
+    capIdx = pick;
+    capShownAt = day;
+    var text = CAPTIONS[pick].text;
+    setTimeout(function () {
+      if (capIdx !== pick) return;
+      capTextEl.textContent = text;
+      capEl.classList.add('visible');
+    }, 300);
+  }
+
+  /* ==========================================================================
+   * 11d. CONTROL MESSAGES FROM THE PHONE
+   *
+   * The client is mounted at the top of this script so a rendering failure
+   * cannot also take the phone connection down with it -- otherwise a display
+   * bug shows up on the phone as "disconnected", with nothing to say the problem
+   * is on the wall's side. Messages that arrive before this script finishes
+   * initialising are queued there and flushed at the bottom.
+   * ========================================================================*/
+  function handleMessage(message) {
+    if (!message || typeof message !== 'object') return;
+    switch (message.type) {
+      // --- the six environment settings, all `{type, value}` -------------
+      case 'temp':         if (setCtl('tempOffset', message.value))   applyEnvChange(); break;
+      case 'cloud':        if (setCtl('cloudCover', message.value))   applyEnvChange(); break;
+      case 'wind':         if (setCtl('windMean', message.value))     applyEnvChange(); break;
+      case 'precip':       if (setCtl('precipMult', message.value))   applyEnvChange(); break;
+      case 'winterPrecip': if (setCtl('winterPrecip', message.value)) applyEnvChange(); break;
+      case 'latitude':     if (setCtl('latitude', message.value))     applyEnvChange(); break;
+
+      case 'speed':
+        setCtl('speed', message.value);
+        break;
+
+      case 'density':
+        // Geometry changed, so the woods have to be rebuilt -- this is the one
+        // control that cannot just be written and left.
+        if (setCtl('dens', message.value)) {
+          sc.dens = CTL.dens;
+          pushControls();
+          buildScene();
+        }
+        break;
+
+      case 'play':
+        setPlaying(message.value === undefined ? !playing : !!message.value);
+        break;
+
+      case 'step':
+        setPlaying(false);
+        stepOne();
+        break;
+
+      case 'replay':
+        replaySeason();
+        break;
+
+      case 'newWoods':
+        newWoods();
+        break;
+
+      case 'resume':
+        // Nobody is driving any more: back to defaults and an unattended season,
+        // the way the wall should look when it is left alone.
+        Object.keys(M.DEFAULT_CONTROLS).forEach(function (k) { CTL[k] = M.DEFAULT_CONTROLS[k]; });
+        CTL.speed = 1;
+        if (CTL.dens !== 1) { CTL.dens = 1; sc.dens = 1; pushControls(); buildScene(); }
+        else applyEnvChange();
+        setPlaying(true);
+        break;
+
+      default:
+        console.warn('Unrecognized message type', message.type);
+    }
+  }
+
+  window.messageHandler = handleMessage;   // purely for local testing
+
+  /* ==========================================================================
+   * 12. QUERY STRING
+   *
+   * ?day=62&seed=9&paused=1&temp=-2&cloud=70 ... — a specific day of a specific
+   * season is reproducible from a URL, which is how a still gets captured and
+   * how two settings get compared side by side.
+   * ========================================================================*/
+  // Returns true if it took over scene construction.
+  function applyQuery() {
+    var q = window.location.search;
+    if (!q || q.length < 2) return false;
+    var p = {};
+    q.slice(1).split('&').forEach(function (kv) {
+      var i = kv.indexOf('=');
+      p[decodeURIComponent(i < 0 ? kv : kv.slice(0, i))] = i < 0 ? '1' : decodeURIComponent(kv.slice(i + 1));
+    });
+    // Query keys map onto CTL keys. `lat` keeps its short spelling because the
+    // standalone page's URLs use it and those URLs are in plan.md.
+    var keys = { temp: 'tempOffset', winterPrecip: 'winterPrecip', cloud: 'cloudCover',
+                 wind: 'windMean', precip: 'precipMult', lat: 'latitude',
+                 dens: 'dens', speed: 'speed' };
+    Object.keys(keys).forEach(function (k) {
+      if (p[k] != null) setCtl(keys[k], p[k]);
+    });
+    if (p.seed != null && isFinite(parseFloat(p.seed))) sc.seed = parseFloat(p.seed) >>> 0;
+    sc.dens = CTL.dens;
+    pushControls();
+    buildScene();
+    if (p.day != null) {
+      // Fast-forward the model, not the clock: every intervening day is really
+      // simulated, so the leaves arrive with the history they should have.
+      var target = clamp(parseInt(p.day, 10) || 0, 0, M.SEASON_DAYS);
+      // Release each day's leaves as that day passes. stepDay only QUEUES them
+      // now, and the queue is normally drained from advanceVis, which the frame
+      // loop drives — nothing is driving it here, so without this the whole
+      // season's worth of dropped leaves would still be hanging on the branches.
+      while (sc.day < target && stepDay()) releasePending(1);
+      // Settle the leaves that fell on the way, so the litter is on the ground
+      // rather than raining down all at once. `air` settles only briefly instead,
+      // leaving a drift of leaves spread through the air at mixed heights —
+      // which is what a still of a real leaf-fall day looks like, and the only
+      // way to inspect how airborne leaves are ordered against the trees.
+      var settle = p.air ? 55 : 400;
+      for (var g = 0; g < settle && sc.falling.length; g++) stepFalling(1 / 30);
+      // The smoothed weather has to catch up too. Easing from day 0 would paint
+      // August light and a bare skyline over an October canopy.
+      resetVis();
+      sc.snow.elevDrawn = sc.snow.elev;
+      sc.dayT = 1;
+      computeLight();
+      maybeRefreshColors(true, -1e9);
+    }
+    if (p.paused) setPlaying(false);
+    if (p.still) { setPlaying(false); still = true; }
+    // ?nohud hides the overlays entirely -- that is how config.json's wide.jpg
+    // and thumb.jpg get captured as a clean picture of the scene.
+    if (p.nohud) {
+      var huds = document.querySelectorAll('.hud');
+      for (var h = 0; h < huds.length; h++) huds[h].style.display = 'none';
+      document.getElementById('build-marker').style.display = 'none';
+    }
+    return true;
+  }
+
+  /* ------------------------------------------------------------------ start */
+  resize();
+  pushControls();
+  if (!applyQuery()) buildScene();
+  computeLight();
+  requestAnimationFrame(frame);
+
+  // Everything handleMessage touches now exists, so it is safe to run anything
+  // that arrived from the phone while this script was still initialising.
+  messagingReady = true;
+  for (var pm = 0; pm < pendingMessages.length; pm++) handleMessage(pendingMessages[pm]);
+  pendingMessages.length = 0;
+})();
+</script>
+</body>
+</html>
