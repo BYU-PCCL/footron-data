@@ -15,6 +15,7 @@ experiences = [
   "huffman",
   "gradient-descent",
   "twindragon",
+  "leaves,"
   "live-dashboard",
   "snowflake"
 ]
