@@ -21,7 +21,8 @@ experiences = [
   "planes",
   "huffman",
   "gradient-descent",
-  "twindragon"
+  "twindragon",
+  "leaves"
 ]
 
 [game]
