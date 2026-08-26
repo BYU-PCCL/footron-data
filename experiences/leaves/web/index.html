@@ -216,7 +216,11 @@ window.addEventListener('unhandledrejection', function (e) {
 <div id="build-marker">leaves: maple-1</div>
 <div id="error-overlay"></div>
 
-<script src="model.js"></script>
+<!-- onerror distinguishes the two ways the guard below can trip: the file not
+     arriving at all, versus arriving and running but not publishing its global.
+     They present identically from the page's side and have completely different
+     fixes, and there is no devtools on the kiosk to tell them apart. -->
+<script src="model.js" onerror="window.__leafModelLoadFailed = true"></script>
 <script>
 /* ============================================================================
  * PHASE 4 — the real visualization. Rendering only.
@@ -259,8 +263,12 @@ window.addEventListener('unhandledrejection', function (e) {
 
   var M = window.LeafModel;
   if (!M) {
-    throw new Error('model.js did not define window.LeafModel -- the sibling ' +
-                    'script did not load.');
+    throw new Error(window.__leafModelLoadFailed
+      ? 'model.js failed to load -- the request errored, so the file is not ' +
+        'in the deployed bundle at this path.'
+      : 'model.js loaded and ran but did not publish window.LeafModel -- ' +
+        'something in this page defines `module`, so its UMD wrapper exported ' +
+        'to module.exports instead of the global.');
   }
   var clamp = M.clamp;
   var TAU = Math.PI * 2;

@@ -24,10 +24,32 @@
  *           full constant set mirrored as JSON in §11.5.
  * ==========================================================================*/
 
+/*
+ * The global is published UNCONDITIONALLY, and module.exports only as well.
+ *
+ * This used to be an either/or -- CommonJS if `module` was around, the global
+ * otherwise -- and on the wall that silently picked the wrong one. The shell
+ * the kiosk runs the page in leaves a `module` object in the page's global
+ * scope, so the CommonJS branch won and window.LeafModel was never set, which
+ * index.html reports as "the sibling script did not load" even though the
+ * script had loaded and run perfectly. In a plain browser there is no `module`
+ * and it worked, which is why it only ever failed on the wall.
+ *
+ * There is no reason these have to be exclusive: index.html reads the global
+ * and never looks at module.exports, test-model.js / check-docs.js /
+ * calibrate-species.js require() this file and never look at the global. Doing
+ * both means neither can be starved by an environment guess going wrong.
+ *
+ * `root` resolves through globalThis first so it is always a real object --
+ * under `self` alone it would have been `this`, which is undefined in an ES
+ * module and would throw here now that root is always dereferenced.
+ */
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory();
-  else root.LeafModel = factory();
-})(typeof self !== 'undefined' ? self : this, function () {
+  var api = factory();
+  root.LeafModel = api;
+  if (typeof module === 'object' && module.exports) module.exports = api;
+})(typeof globalThis !== 'undefined' ? globalThis
+   : typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
   var D2R = Math.PI / 180;
