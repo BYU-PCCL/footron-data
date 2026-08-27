@@ -17,7 +17,8 @@ experiences = [
   "twindragon",
   "leaves",
   "live-dashboard",
-  "snowflake"
+  "snowflake",
+  "wave-lab"
 ]
 
 [game]
