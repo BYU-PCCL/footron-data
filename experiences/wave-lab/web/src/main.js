@@ -1,4 +1,4 @@
-import { Sim, NX, NY, SCALE } from './sim.js';
+import { Sim, NX, NY, SCALE, VIEW_X0, VIEW_NX } from './sim.js';
 import { Renderer, THEMES } from './render.js';
 import { World, FLOATER_KINDS, PROP_KINDS } from './entities.js';
 import { Surf } from './sound.js';
@@ -50,8 +50,10 @@ const pointers = new Map();
 
 function toGrid(ev) {
   const rect = canvas.getBoundingClientRect();
+  // The picture starts at VIEW_X0, not at column 0: the wave generator is
+  // simulated off the left edge of the frame.
   return [
-    ((ev.clientX - rect.left) / rect.width) * NX,
+    VIEW_X0 + ((ev.clientX - rect.left) / rect.width) * VIEW_NX,
     ((ev.clientY - rect.top) / rect.height) * NY,
   ];
 }
@@ -515,7 +517,9 @@ function updateAttract(dt, now) {
   p.wind = Math.random() * 0.8;
   syncSliders();
   if (Math.random() < 0.35) {
-    world.addFloater((20 + Math.random() * 40) * SCALE, Math.random() * NY,
+    // Just inside the frame, so a toy drifts in from the deep rather than
+    // popping into existence somewhere the camera cannot see.
+    world.addFloater(VIEW_X0 + (4 + Math.random() * 40) * SCALE, Math.random() * NY,
       FLOATER_KINDS[(Math.random() * FLOATER_KINDS.length) | 0]);
   }
   if (Math.random() < 0.25) {
@@ -542,7 +546,7 @@ function drawCursor(sx, sy) {
   ctx.lineWidth = 1.2;
   ctx.setLineDash([5, 5]);
   ctx.beginPath();
-  ctx.ellipse(hover[0] * sx, hover[1] * sy, brush * sx, brush * sy, 0, 0, Math.PI * 2);
+  ctx.ellipse((hover[0] - VIEW_X0) * sx, hover[1] * sy, brush * sx, brush * sy, 0, 0, Math.PI * 2);
   ctx.stroke();
   ctx.restore();
 }
@@ -555,7 +559,7 @@ function drawFlow(sx, sy) {
   ctx.lineWidth = 1.1;
   ctx.lineCap = 'round';
   for (let j = step >> 1; j < NY; j += step) {
-    for (let i = step >> 1; i < NX; i += step) {
+    for (let i = VIEW_X0 + (step >> 1); i < NX; i += step) {
       const k = j * NX + i;
       if (sim.eta[k] - sim.bed[k] < 0.15) continue;
       const u = sim.u[k], v = sim.v[k];
@@ -564,8 +568,8 @@ function drawFlow(sx, sy) {
       const a = Math.min(0.72, (sp / SCALE) * 0.34);
       const len = Math.min(step * 0.9, (sp / SCALE) * 2.2);
       const nx = u / sp, ny = v / sp;
-      const x0 = i * sx, y0 = j * sy;
-      const x1 = (i + nx * len) * sx, y1 = (j + ny * len) * sy;
+      const x0 = (i - VIEW_X0) * sx, y0 = j * sy;
+      const x1 = (i - VIEW_X0 + nx * len) * sx, y1 = (j + ny * len) * sy;
       ctx.strokeStyle = `rgba(255,255,255,${a})`;
       ctx.beginPath();
       ctx.moveTo(x0, y0);
@@ -599,7 +603,7 @@ function updateReport() {
   for (let j = 2; j < NY; j += rowStep) {
     const row = j * NX;
     let shore = 0, wettest = 0, firstFoam = -1;
-    for (let i = Math.round(20 * SCALE); i < NX; i++) {
+    for (let i = VIEW_X0; i < NX; i++) {
       const k = row + i;
       const still = sim.sea - sim.bed[k];
       if (still > 0.1 && still < 3.0) {
@@ -709,8 +713,12 @@ function frame(now) {
   const theme = THEMES[themeName];
   renderer.blit(ctx, W, H, theme, sim.time);
 
-  const sx = W / NX, sy = H / NY;
+  // sx is pixels per cell across the VISIBLE window, and the translate slides
+  // the hidden offshore columns off the left of the screen. Everything drawn in
+  // grid units goes inside this transform.
+  const sx = W / VIEW_NX, sy = H / NY;
   ctx.save();
+  ctx.translate(-VIEW_X0 * sx, 0);
   ctx.scale(sx / sy, 1);          // entities are drawn in grid units, y-scaled
   world.draw(ctx, sy, themeName, sim.time);
   // Structures last: a pier deck is above the water and above everything on it.
@@ -739,7 +747,9 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 // A couple of toys and umbrellas so the beach never opens empty.
-for (let i = 0; i < 3; i++) world.addFloater(30 + Math.random() * 60, Math.random() * NY);
+for (let i = 0; i < 3; i++) {
+  world.addFloater(VIEW_X0 + (6 + Math.random() * 55) * SCALE, Math.random() * NY);
+}
 for (let i = 0; i < 4; i++) world.addProp(NX * (0.84 + Math.random() * 0.1), Math.random() * NY);
 
 // A handle for the headless scripts. The page is otherwise entirely
@@ -780,9 +790,11 @@ connectFootron({
   onRogue: rogueWave,
   onLesson: runLesson,
   onTouch: (fx, fy, which) => {
-    // Fractions of the wall, so the phone need not know the grid — which is
-    // picked at load from the display and differs between machines.
-    const gx = fx * NX, gy = fy * NY;
+    // Fractions of the VISIBLE wall, so the phone need not know the grid — which
+    // is picked at load from the display and differs between machines — and a
+    // finger at the left edge of the pad lands at the left edge of the picture,
+    // not in the hidden offshore strip.
+    const gx = VIEW_X0 + fx * VIEW_NX, gy = fy * NY;
     const previous = tool;
     tool = which;
     applyOnce(gx, gy);

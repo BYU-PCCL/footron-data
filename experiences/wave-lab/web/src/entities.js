@@ -2,7 +2,7 @@
 // crabs that bolt from the swash, gulls overhead, and beach furniture that the
 // tide will eventually steal.
 
-import { NX, NY, SCALE } from './sim.js';
+import { NX, NY, SCALE, VIEW_X0 } from './sim.js';
 
 const TAU = Math.PI * 2;
 // The solver advances ~12 sim-time units per wall-clock second at speed 1.
@@ -96,7 +96,7 @@ export class World {
   //  * It loses height into a dive and climbs back out flapping hard.
   addGull() {
     this.gulls.push({
-      x: rand(0, NX), y: rand(0, NY), a: rand(0, TAU),
+      x: rand(VIEW_X0, NX), y: rand(0, NY), a: rand(0, TAU),
       sp: rand(11, 15) * S,
       turn: 0, turnGoal: 0, turnT: rand(0, 3), bank: 0,
       wing: rand(0, TAU), flap: 1, burst: 0, glide: rand(0.4, 2.6),
@@ -271,7 +271,7 @@ export class World {
       const vmax = 16 * S;
       if (spd > vmax) { dph.vx *= vmax / spd; dph.vy *= vmax / spd; }
       dph.x += dph.vx * rs; dph.y = wrapY(dph.y + dph.vy * rs);
-      if (dph.x < NX * 0.06) { dph.x = NX * 0.06; dph.vx = Math.abs(dph.vx); }
+      if (dph.x < VIEW_X0 + 4 * S) { dph.x = VIEW_X0 + 4 * S; dph.vx = Math.abs(dph.vx); }
       dph.phase += rs * (1.6 + spd / (7 * S));
       const wasUp = dph.up;
       dph.up = Math.sin(dph.phase) > 0.55 ? 1 : 0;   // surfacing arc
@@ -288,7 +288,7 @@ export class World {
     if (this.surfT <= 0) {
       this.surfT = 0.4;
       const step = Math.max(4, Math.round(NY / 24));
-      const from = Math.round(NX * 0.2);
+      const from = VIEW_X0;
       let sum = 0, n = 0;
       for (let j = 0; j < NY; j += step) {
         const row = j * NX;
@@ -361,8 +361,12 @@ export class World {
 
       g.x += Math.cos(g.a) * g.sp * rs;
       g.y = wrapY(g.y + Math.sin(g.a) * g.sp * rs);
-      if (g.x < -6 * S) g.x = NX + 6 * S;
-      if (g.x > NX + 6 * S) g.x = -6 * S;
+      // Wrap at the edges of the PICTURE, not of the basin. Wrapping at the
+      // basin meant a bird left the frame and reappeared several seconds later
+      // after crossing the hidden offshore strip, which reads as one having
+      // been lost rather than as one having flown past.
+      if (g.x < VIEW_X0 - 6 * S) g.x = NX + 6 * S;
+      if (g.x > NX + 6 * S) g.x = VIEW_X0 - 6 * S;
       if (g.dive > 0 && g.dive < 0.12 && sim.depthAt(g.x, g.y) > 0.3) {
         this.addSplash(g.x, g.y, 8, 0.8);
         sim.splash(g.x, g.y, 0.35, 3 * S);

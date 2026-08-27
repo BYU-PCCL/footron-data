@@ -17,6 +17,8 @@
 //   { type: "lesson", value: "shoal"|"rip"|…  }        a demonstration
 //   { type: "touch", x: <0…1>, y: <0…1>, tool: "splash"|"toy"|"prop"|"river"
 //                                              |"raise"|"dig"|"smooth" }
+//                     x and y are fractions of the VISIBLE wall, not of the
+//                     simulated basin — the basin extends off the left edge.
 //   { type: "view",  key: "flow"|"depth"|"section"|"pause", value: <bool> }
 //   { type: "reset" }                                  rebuild the beach
 //   { type: "calm" }                                   flatten the sea

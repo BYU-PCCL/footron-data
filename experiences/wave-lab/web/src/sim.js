@@ -120,6 +120,26 @@ const DISP_C = SCALE / H_PER_CELL;            // height units -> cells
 const DISP_CAP = 0.30;
 const SPONGE = Math.round(16 * (NX / 320));   // absorbing band at the ocean edge
 const SRCX = Math.round(24 * (NX / 320));     // internal wave generator column
+const SRC_HALF = Math.max(3, Math.round(5 * SCALE));   // half-width of the generator
+
+// --- the visible window ---------------------------------------------------
+//
+// The wave generator and the sponge that absorbs its seaward half are
+// machinery, not scenery. They used to sit inside the frame, which put a hard
+// vertical seam about a tenth of the way across the screen with strangely flat
+// water outboard of it — the swell appeared to START at a line rather than to
+// arrive from somewhere, which is the one thing a beach must never look like.
+//
+// So the basin is wider than the picture. Everything left of VIEW_X0 is
+// simulated exactly as before and simply never drawn: the generator radiates
+// both ways as an internal source should, the seaward half dies in the sponge,
+// and on screen the swell enters from off the left edge already formed.
+//
+// This is the ONE place that knows the offset. Everything that maps between the
+// screen and the grid — the tools, the flow arrows, the cross-section, the
+// entity layer, the phone's touch pad — goes through VIEW_X0 and VIEW_NX.
+export const VIEW_X0 = SRCX + SRC_HALF + Math.max(4, Math.round(5 * SCALE));
+export const VIEW_NX = NX - VIEW_X0;
 export const PRESETS = ['classic', 'sandbar', 'coves', 'reef', 'pier', 'jetty', 'flat'];
 
 export class Sim {
@@ -223,7 +243,7 @@ export class Sim {
     })();
     this.srcW = new Float32Array(NX);   // wave-generator column weights
     let sw = 0;
-    const srcHalf = Math.max(3, Math.round(5 * SCALE));
+    const srcHalf = SRC_HALF;
     const srcSigma = 3.0 * SCALE;
     for (let i = SRCX - srcHalf; i <= SRCX + srcHalf; i++) {
       const w = Math.exp(-Math.pow((i - SRCX) / srcSigma, 2));
