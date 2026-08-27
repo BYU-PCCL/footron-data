@@ -1,0 +1,14 @@
+{
+  "id": "neural-net-vis",
+  "type": "web",
+  "title": "Inside a Neural Network",
+  "description": "Draw a digit and watch a real neural network think — every glowing pulse is real math.",
+  "action_hints": [
+    "finger-draw a digit on your phone",
+    "watch the network think on the wall",
+    "swap brains to see a bigger network think"
+  ],
+  "layout": "full",
+  "lifetime": 600,
+  "queueable": true
+}
