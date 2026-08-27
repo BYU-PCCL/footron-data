@@ -329,8 +329,8 @@ const FernControls = () => {
       </Button>
 
       <Typography variant="body2" css={hintStyle}>
-        Leave it alone for 45 seconds and the wall puts Barnsley's own numbers
-        back, so there is nothing here you can leave it stuck in.
+        Leave it alone for 45 seconds and the wall puts Barnsley&rsquo;s own
+        numbers back, so there is nothing here you can leave it stuck in.
       </Typography>
     </div>
   );
