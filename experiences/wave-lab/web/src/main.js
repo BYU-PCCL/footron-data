@@ -4,7 +4,7 @@ import { World, FLOATER_KINDS, PROP_KINDS } from './entities.js';
 import { Surf } from './sound.js';
 import { Section } from './section.js';
 import { drawStructures } from './structures.js';
-import { connectFootron, footronEnabled } from './footron.js';
+import { connectFootron, footronEnabled, dispatchControlMessage } from './footron.js';
 
 const sim = new Sim();
 const renderer = new Renderer(sim);
@@ -39,7 +39,11 @@ function resize() {
   canvas.style.width = W + 'px';
   canvas.style.height = H + 'px';
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  section.resize(340, 128, dpr);
+  // Proportional to the display, within limits. A fixed 340 px is right on a
+  // laptop and a postage stamp on a wall, where this is the panel that explains
+  // what the water is doing.
+  const secW = Math.max(340, Math.min(820, Math.round(W * 0.26)));
+  section.resize(secW, Math.round(secW * 0.376), dpr);
 }
 window.addEventListener('resize', resize);
 resize();
@@ -100,8 +104,7 @@ function applyOnce(gx, gy) {
       // mouth settles, and whether the sea bars it over, is up to the water.
       if (sim.river.discharge < 0.05) sim.river.discharge = 0.5;
       sim.setRiver(true, gy);
-      riverTool.classList.add('has');
-      syncSliders();
+      syncRiverUI();
       surf.splash(0.7);
       break;
     }
@@ -180,8 +183,11 @@ for (const el of sliders) {
     if (key === 'tide') sim.setTide(v);
     else if (key === 'river') {
       sim.river.discharge = v;
-      if (v > 0.01 && !sim.river.on) sim.setRiver(true);
-      else if (v <= 0.01) sim.river.on = false;
+      // Turning the slider to zero is turning the river off, which now means
+      // the valley and the silt go too rather than the flow quietly stopping
+      // and leaving its scenery behind.
+      if (v > 0.01) { if (!sim.river.on) sim.setRiver(true); }
+      else sim.setRiver(false);
       riverTool.classList.toggle('has', sim.river.on);
     } else sim.params[key] = v;
     el.nextElementSibling.textContent = fmt[key](v);
@@ -202,9 +208,19 @@ function selectIn(container, el) {
 const presetsEl = document.getElementById('presets');
 const themesEl = document.getElementById('themes');
 
+// sim.preset() clears the river along with the bed it was cut into, so every
+// path that rebuilds the scene has to put the panel back in step with it.
+// Forgetting is what left the tool lit up and the slider reading 0.85 next to a
+// coastline with no river in it.
+function syncRiverUI() {
+  riverTool.classList.toggle('has', sim.river.on);
+  syncSliders();
+}
+
 function setCoast(name) {
   sim.preset(name);
   world.reset();
+  syncRiverUI();
   selectIn(presetsEl, presetsEl.querySelector(`[data-preset="${name}"]`));
 }
 presetsEl.addEventListener('click', ev => {
@@ -360,9 +376,7 @@ function runLesson(name) {
   Object.assign(sim.params, L.params);
   sim.setTide(L.tide || 0);
   if (L.river) { sim.river.discharge = L.river; sim.setRiver(true); }
-  else { sim.river.on = false; }
-  riverTool.classList.toggle('has', sim.river.on);
-  syncSliders();
+  syncRiverUI();
   if (L.build) L.build(sim);
   if (L.props) {
     for (let i = 0; i < 6; i++) {
@@ -432,6 +446,7 @@ document.getElementById('btn-calm').addEventListener('click', () => {
 document.getElementById('btn-reset').addEventListener('click', () => {
   sim.preset(currentPreset());
   world.reset();
+  syncRiverUI();
   markInput();
 });
 let showFlow = false;
@@ -487,7 +502,7 @@ addEventListener('keydown', ev => {
   }
   switch (ev.key.toLowerCase()) {
     case ' ': ev.preventDefault(); togglePause(); break;
-    case 'r': sim.preset(currentPreset()); world.reset(); break;
+    case 'r': sim.preset(currentPreset()); world.reset(); syncRiverUI(); break;
     case 't': sim.tsunami(2.6); surf.rumble(); break;
     case 'd': depthBtn.click(); break;
     case 'f': flowBtn.click(); break;
@@ -556,7 +571,10 @@ function drawCursor(sx, sy) {
 function drawFlow(sx, sy) {
   const step = Math.max(5, Math.round(7 * SCALE));
   ctx.save();
-  ctx.lineWidth = 1.1;
+  // Line width is in CSS pixels, so a constant is a hairline on a wall and the
+  // overlay reads as not having come on at all. Scale it with the display.
+  const weight = Math.max(1.1, W / 1000);
+  ctx.lineWidth = weight;
   ctx.lineCap = 'round';
   for (let j = step >> 1; j < NY; j += step) {
     for (let i = VIEW_X0 + (step >> 1); i < NX; i += step) {
@@ -576,7 +594,7 @@ function drawFlow(sx, sy) {
       ctx.lineTo(x1, y1);
       ctx.stroke();
       ctx.beginPath();          // arrowhead
-      ctx.arc(x1, y1, 1.3, 0, Math.PI * 2);
+      ctx.arc(x1, y1, weight * 1.2, 0, Math.PI * 2);
       ctx.fillStyle = `rgba(255,255,255,${a})`;
       ctx.fill();
     }
@@ -760,6 +778,11 @@ window.__wavelab = {
   sim, world, renderer,
   get theme() { return themeName; },
   setCoast, setTheme, setMood, rogueWave, runLesson,
+  get showFlow() { return showFlow; },
+  get section() { return section; },
+  // Set below, once the handlers exist: lets the checks send a phone message
+  // into the live page.
+  control: null,
   ready: true,
 };
 
@@ -777,7 +800,11 @@ if (footronEnabled()) {
   document.body.classList.add('kiosk');
 }
 
-connectFootron({
+// Named rather than inline so the headless checks can drive the exact path a
+// phone drives, without a socket. This is the whole of the wall's input on the
+// wall, and it was previously reachable only through a WebSocket, which meant
+// the one code path that matters most was the one nothing could test.
+const controlHandlers = {
   onActivity: () => { lastInput = performance.now(); attract = false; },
   onSwell: (key, value) => {
     if (key === 'tide') sim.setTide(value);
@@ -810,9 +837,10 @@ connectFootron({
     const btn = { flow: flowBtn, depth: depthBtn, section: sectionBtn }[key];
     if (btn && btn.classList.contains('on') !== on) btn.click();
   },
-  onReset: () => { sim.preset(currentPreset()); world.reset(); },
+  onReset: () => { sim.preset(currentPreset()); world.reset(); syncRiverUI(); },
   onCalm: () => flattenSea(),
-  onRelease: () => { lastInput = 0; attract = true; },
-});
+};
+connectFootron(controlHandlers);
+window.__wavelab.control = (msg) => dispatchControlMessage(msg, controlHandlers);
 
 

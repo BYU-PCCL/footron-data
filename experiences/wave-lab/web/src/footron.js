@@ -22,7 +22,10 @@
 //   { type: "view",  key: "flow"|"depth"|"section"|"pause", value: <bool> }
 //   { type: "reset" }                                  rebuild the beach
 //   { type: "calm" }                                   flatten the sea
-//   { type: "release" }                                hand back to the attract loop
+//
+// There is deliberately no "hand back" message. The wall returns to its attract
+// loop 45 seconds after the last touch whatever happens, so a control for it
+// was a second way to do a thing that already happens by itself.
 //
 // Anything unrecognised, out of range, or the wrong type is ignored: a controls
 // UI newer than the deployed build should degrade rather than throw, and no
@@ -130,11 +133,6 @@ export function dispatchControlMessage(body, h) {
     case 'calm':
       h.onActivity();
       h.onCalm();
-      return true;
-    case 'release':
-      // Deliberately does *not* poke the idle timer: this is someone saying they
-      // are done, so the attract loop should be allowed to take over.
-      h.onRelease();
       return true;
     default:
       return false;
