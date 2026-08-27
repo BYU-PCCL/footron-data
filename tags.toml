@@ -18,7 +18,8 @@ experiences = [
   "leaves",
   "live-dashboard",
   "snowflake",
-  "wave-lab"
+  "wave-lab",
+  "barnsley-fern"
 ]
 
 [game]

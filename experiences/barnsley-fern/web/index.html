@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+<title>Barnsley's Fern</title>
+<style>
+  /* paper palette: the fern is drawn as ink on a warm sheet */
+  :root {
+    --bg: #fbfaf6;
+    --ink: #1d2b23;
+    --dim: #6f8a76;
+    --accent: #1a5e3c;
+    --stem: #59452a;
+    --left: #116a80;
+    --right: #a9761f;
+
+    /* The bottom-left corner is not ours on the wall. Footron's launcher paints
+       its "Scan to" QR card there, over the top of whatever the experience is
+       drawing, along with the action messages from config.json that tell a
+       visitor what their phone can do. It is a little over 250px wide and
+       taller than a row of text, and it lands squarely on the knobs, so
+       everything anchored bottom-left is pushed clear by this much.
+
+       Zero off the wall, where there is no QR card and an off-centre bottom row
+       would just look like a mistake — `body.footron` is set by initFootron()
+       in app.js, and only when the wall is actually talking to us. */
+    --left-reserve: 0px;
+  }
+  body.footron { --left-reserve: clamp(200px, 12vw, 340px); }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: var(--bg); }
+  body {
+    color: var(--ink);
+    font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+    cursor: default;
+  }
+  #c { position: fixed; inset: 0; display: block; }
+
+  .hud { position: fixed; pointer-events: none; }
+  #legend, #hint, #caption { pointer-events: none; }
+
+  /* The fern lies sideways across the middle of the sheet, so the writing is
+     banded above and below it: title top-left, count top-right, and the maps,
+     knobs and buttons in one row along the bottom. The band fractions here
+     mirror BAND in app.js. */
+  #panel {
+    position: fixed;
+    left: clamp(20px, 3vw, 64px);
+    top: clamp(20px, 3.2vh, 56px);
+    width: min(34vw, 560px);
+    max-height: 25vh;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(8px, 1.2vh, 20px);
+  }
+
+  /* the bottom row: the four maps on the left, the buttons in the middle,
+     the knobs on the right */
+  #foot {
+    position: fixed;
+    left: calc(clamp(20px, 3vw, 64px) + var(--left-reserve));
+    right: clamp(20px, 3vw, 64px);
+    bottom: clamp(18px, 3vh, 48px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: clamp(14px, 2.5vw, 64px);
+    max-height: 27vh;
+  }
+  #foot > * { min-width: 0; }
+  #leftcol {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: clamp(6px, 1vh, 14px);
+    width: min(32vw, 460px);
+  }
+  #rightcol {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: clamp(6px, 1vh, 14px);
+  }
+
+  #title h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(24px, 2.6vw, 54px);
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    line-height: 1.05;
+    color: var(--accent);
+  }
+  #title .rule {
+    margin-top: 0.55em;
+    font-size: clamp(12px, 1.05vw, 22px);
+    color: var(--dim);
+    line-height: 1.5;
+    max-width: 33ch;
+  }
+  #title .rule b { color: var(--accent); font-weight: 500; }
+
+  /* the four maps, with their dice odds and the share of points they own */
+  #legend {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(9px, 1.1vh, 20px);
+    font-variant-numeric: tabular-nums;
+  }
+  .card {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    gap: clamp(9px, 1vw, 20px);
+    max-width: 40ch;
+  }
+  .card .swatch {
+    width: clamp(7px, 0.55vw, 12px);
+    height: clamp(7px, 0.55vw, 12px);
+    border-radius: 50%;
+  }
+  .card .mat {
+    font-family: "SF Mono", ui-monospace, Menlo, monospace;
+    font-size: clamp(8.5px, 0.72vw, 15px);
+    line-height: 1.35;
+    color: var(--dim);
+    display: grid;
+    grid-template-columns: repeat(3, auto);
+    gap: 0 0.7em;
+    text-align: right;
+  }
+  .card .mat .plus { color: rgba(111, 138, 118, 0.55); }
+  .card .meta { line-height: 1.4; }
+  .card .name {
+    font-size: clamp(11px, 0.95vw, 20px);
+    color: var(--ink);
+  }
+  .card .odds {
+    font-size: clamp(9.5px, 0.78vw, 16px);
+    color: var(--dim);
+  }
+  .card .odds i { font-style: normal; color: var(--ink); }
+
+  /* knobs: the only pointer-interactive part of the left column */
+  #knobs {
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(4px, 0.7vh, 12px);
+  }
+  .knob-head {
+    font-size: clamp(10px, 0.82vw, 17px);
+    color: rgba(111, 138, 118, 0.85);
+    margin-bottom: clamp(1px, 0.3vh, 6px);
+  }
+  .ktop {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1em;
+    font-size: clamp(10.5px, 0.88vw, 18px);
+  }
+  .klabel { color: var(--ink); }
+  .kval {
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .knote {
+    font-size: clamp(9px, 0.72vw, 15px);
+    color: rgba(111, 138, 118, 0.7);
+    margin-top: -0.15em;
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: clamp(16px, 1.7vh, 30px);
+    background: transparent;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 2px;
+    border-radius: 2px;
+    background: rgba(29, 43, 35, 0.16);
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: clamp(12px, 1.05vw, 22px);
+    height: clamp(12px, 1.05vw, 22px);
+    margin-top: calc(1px - clamp(12px, 1.05vw, 22px) / 2);
+    border: 0;
+    border-radius: 50%;
+    background: var(--accent);
+    transition: transform 0.12s ease;
+  }
+  input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.25); }
+  /* the wall's read-only twin of a slider: same row, same width, no handle */
+  .kmeter {
+    height: clamp(16px, 1.7vh, 30px);
+    display: none;
+    align-items: center;
+    /* the track, painted as a background rather than a second element */
+    background: linear-gradient(rgba(29, 43, 35, 0.16), rgba(29, 43, 35, 0.16))
+      no-repeat 0 50% / 100% 2px;
+  }
+  .kmeter i {
+    position: relative;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--accent);
+    transition: width 0.12s linear;
+  }
+  .kmeter i::after {
+    content: "";
+    position: absolute;
+    right: calc(clamp(12px, 1.05vw, 22px) / -2);
+    top: calc(1px - clamp(12px, 1.05vw, 22px) / 2);
+    width: clamp(12px, 1.05vw, 22px);
+    height: clamp(12px, 1.05vw, 22px);
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  /* On the wall the knobs are a readout and the buttons are on the phone. */
+  body.footron #knobs { pointer-events: none; }
+  body.footron input[type="range"] { display: none; }
+  body.footron .kmeter { display: flex; }
+  body.footron #bar { display: none; }
+  input[type="range"]::-moz-range-track {
+    height: 2px;
+    border-radius: 2px;
+    background: rgba(29, 43, 35, 0.16);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: clamp(12px, 1.05vw, 22px);
+    height: clamp(12px, 1.05vw, 22px);
+    border: 0;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  #readout {
+    top: clamp(20px, 3.2vh, 56px);
+    right: clamp(20px, 3vw, 64px);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  #readout .big {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(34px, 5vw, 108px);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: var(--accent);
+  }
+  #readout .sub {
+    margin-top: 0.5em;
+    font-size: clamp(11px, 0.95vw, 20px);
+    color: var(--dim);
+    line-height: 1.6;
+  }
+  #readout .sub span { color: var(--ink); }
+
+  #caption {
+    position: fixed;
+    top: clamp(20px, 3.2vh, 56px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(30vw, 420px);
+    max-height: 25vh;
+    font-size: clamp(11px, 0.92vw, 19px);
+    color: var(--dim);
+    line-height: 1.55;
+    transition: opacity 0.5s ease;
+  }
+  #caption b { color: var(--ink); font-weight: 500; }
+
+  #bar {
+    display: flex;
+    flex: 0 0 auto;
+    gap: clamp(8px, 0.9vw, 16px);
+    padding: clamp(7px, 0.7vw, 12px);
+    border-radius: 999px;
+    background: rgba(29, 43, 35, 0.04);
+    border: 1px solid rgba(29, 43, 35, 0.12);
+    backdrop-filter: blur(12px);
+  }
+  button {
+    -webkit-appearance: none;
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--dim);
+    font: inherit;
+    font-size: clamp(12px, 1vw, 21px);
+    padding: clamp(9px, 0.85vw, 16px) clamp(18px, 1.7vw, 34px);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: color 0.2s ease, background 0.2s ease;
+    touch-action: manipulation;
+  }
+  button:hover { color: var(--ink); }
+
+  #hint {
+    position: static;
+    font-size: clamp(10px, 0.8vw, 16px);
+    color: rgba(111, 138, 118, 0.6);
+    text-align: right;
+    line-height: 1.7;
+  }
+
+  /* shed the least essential rows first on small or short screens */
+  @media (max-height: 780px) { #caption, .knote { display: none; } }
+  @media (max-width: 1100px) { #legend .mat { display: none; } }
+  @media (max-width: 720px) { #hint, #title .rule, #legend, #caption { display: none; } }
+</style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <div class="hud" id="panel">
+    <div id="title">
+      <h1>Barnsley&rsquo;s Fern</h1>
+      <div class="rule">
+        One point, four rules, and a die. Each throw picks a rule, the rule
+        <b>moves the point</b>, and the point is marked where it lands. Nothing
+        draws a leaf. The fern is just <b>everywhere the walk can go</b>.
+      </div>
+    </div>
+  </div>
+
+  <div id="caption"></div>
+
+  <div class="hud" id="readout">
+    <div class="big" id="ro-big"></div>
+    <div class="sub" id="ro-sub"></div>
+  </div>
+
+  <div id="foot">
+    <div id="leftcol">
+      <div id="knobs"></div>
+    </div>
+
+    <div id="bar">
+      <button id="btn-new">New walk</button>
+      <button id="btn-random">Random plant</button>
+      <button id="btn-reset">Barnsley&rsquo;s numbers</button>
+    </div>
+
+    <div id="rightcol">
+      <div id="legend"></div>
+      <div id="hint">
+        space pause &middot; n new walk &middot; m random plant &middot; r Barnsley&rsquo;s numbers
+      </div>
+    </div>
+  </div>
+
+  <!-- The wall's phone-controls client. A plain script, not a module: it is a
+       UMD build that defines globalThis.FootronMessaging, and footron.js treats
+       its absence as "no phone controls" rather than as an error. -->
+  <script src="vendor/footron-messaging.min.js"></script>
+  <script src="footron.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
