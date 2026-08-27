@@ -19,7 +19,8 @@ experiences = [
   "live-dashboard",
   "snowflake",
   "wave-lab",
-  "barnsley-fern"
+  "barnsley-fern",
+  "alg-infect"
 ]
 
 [game]
