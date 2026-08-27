@@ -1,0 +1,12 @@
+{
+  "id": "alg-infect",
+  "type": "web",
+  "title": "NODE ZERO",
+  "description": "Choose an infection strain — a real graph-search algorithm — and watch it race through a neon network. Learn why smart algorithms explore less.",
+  "long_description": "Every strain in NODE ZERO is a real graph-search algorithm: RIPPLE is breadth-first search, TENDRIL is depth-first, MISER is Dijkstra's algorithm, BLOODHOUND is greedy best-first, ORACLE is A* search, and PARANOIA is Bellman-Ford.<br><br>Read the sector map, call your shot, and watch all six race at once — the leaderboard scores each strain by how much work it did, so you can see exactly why the smart ones explore less.",
+  "artist": "Boston Sharp",
+  "action_hints": ["Pick a strain", "Pick patient zero", "Watch the infection race"],
+  "layout": "full",
+  "lifetime": 600,
+  "queueable": true
+}
