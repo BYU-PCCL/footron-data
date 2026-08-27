@@ -3,6 +3,7 @@
   "type": "web",
   "title": "Inside a Neural Network",
   "description": "Draw a digit and watch a real neural network think — every glowing pulse is real math.",
+  "artist": "Boston Sharp",
   "action_hints": [
     "finger-draw a digit on your phone",
     "watch the network think on the wall",
