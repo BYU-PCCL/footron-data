@@ -20,7 +20,8 @@ experiences = [
   "snowflake",
   "wave-lab",
   "barnsley-fern",
-  "alg-infect"
+  "alg-infect",
+  "neural-net-vis"
 ]
 
 [game]
