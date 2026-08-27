@@ -136,7 +136,12 @@ kbd {
   transition: opacity .25s ease;
 }
 #section.on { display: block; }
-#ui.hidden #section { opacity: 0; }
+/* `H` hides the panels, and the cross-section is one of them — but on the wall
+   the panels are hidden permanently and the cross-section is an instrument the
+   phone can ask for. Scoping the hide to the non-kiosk case is what makes the
+   phone's Cross-section chip do something: it was toggling the canvas on
+   underneath an opacity of zero. */
+body:not(.kiosk) #ui.hidden #section { opacity: 0; }
 @media (max-width: 900px) { #section { display: none !important; } }
 
 #lesson-card {

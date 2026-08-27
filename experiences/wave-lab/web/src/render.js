@@ -11,7 +11,7 @@
 // top of the water rather than as part of it, and the soft pass is a better
 // picture on its own.
 
-import { NX, NY } from './sim.js';
+import { NX, NY, VIEW_X0, VIEW_NX } from './sim.js';
 
 export const THEMES = {
   day: {
@@ -209,6 +209,9 @@ export class Renderer {
         const H = e - b;
         const il = row + (i > 0 ? i - 1 : 0);
         const ir = row + (i < NX - 1 ? i + 1 : NX - 1);
+        // Two-cell stencil, cross-shore only. See the note in the water branch.
+        const il2 = row + (i > 1 ? i - 2 : 0);
+        const ir2 = row + (i < NX - 2 ? i + 2 : NX - 1);
 
         // drifting cloud shadow, soft and slow
         const clA = w[cAc + i] * cAcs - w[cA + i] * cAs;
@@ -221,15 +224,36 @@ export class Renderer {
         let r, g, bb;
         if (H > 0.015) {
           // ---------------------------------------------------------- water
+          // The breaking limiter clips the crest cell by cell, which leaves a
+          // one-cell zig-zag in the surface across the surf zone. Measured, it
+          // is worth up to 0.4 in the second difference of eta — invisible at
+          // simulation resolution, but this buffer is upscaled about nine times
+          // onto a wall, and the two terms that read the surface's SHAPE rather
+          // than its height both amplify precisely that wavelength: the
+          // specular normal, and the Laplacian the caustics come from. The
+          // result was a band of bright scallops along the outer break.
+          //
+          // So both take a two-cell stencil in the cross-shore direction. A
+          // centred difference over +/-2 has the one-cell mode exactly in its
+          // null space — for an alternating signal f(i+2) and f(i-2) are equal,
+          // so the difference is zero, and the second difference cancels too —
+          // while the swell, at sixty-odd cells to a wavelength, is unchanged
+          // to well under a percent. It is a notch filter tuned to the
+          // artefact, not a blur, which is why it costs no softness. Alongshore
+          // is left on the one-cell stencil: it was measured clean, the limiter
+          // being a cross-shore effect.
           const RELIEF = 6.2;
-          const nx = -(sm[ir] - sm[il]) * 0.5 * RELIEF;
+          const nx = -(sm[ir2] - sm[il2]) * 0.25 * RELIEF;
           const ny = -(sm[rowp + i] - sm[rowm + i]) * 0.5 * RELIEF;
           const inv = 1 / Math.sqrt(nx * nx + ny * ny + 1);
           let dif = (nx * LX + ny * LY + LZ) * inv;
           if (dif < 0) dif = 0;
           const specIdx = (dif * POW_N) | 0;
           const spec = SPEC[specIdx] * 150 * glint * (H > 0.5 ? 1 : H * 2);
-          const lap = sm[il] + sm[ir] + sm[rowm + i] + sm[rowp + i] - 4 * sm[c];
+          // /4 on the x half keeps it the same physical second derivative, so
+          // the caustics keep the strength they were tuned to.
+          const lap = (sm[il2] + sm[ir2] - 2 * sm[c]) * 0.25
+                    + (sm[rowm + i] + sm[rowp + i] - 2 * sm[c]);
 
           const hIdx = H >= EXP_MAX ? EXP_N : (H * EXP_SCALE) | 0;
           // Silt in suspension does two things: it colours the water, and it
@@ -416,6 +440,9 @@ export class Renderer {
     else this.rasterise(theme, time);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(this.buf, 0, 0, NX, NY, 0, 0, w, h);
+    // Only the visible window. The columns left of VIEW_X0 hold the wave
+    // generator and its sponge, and they are rasterised — the loop is not worth
+    // splitting for a tenth of it — but never shown.
+    ctx.drawImage(this.buf, VIEW_X0, 0, VIEW_NX, NY, 0, 0, w, h);
   }
 }

@@ -1,10 +1,10 @@
-import { Sim, NX, NY, SCALE } from './sim.js';
+import { Sim, NX, NY, SCALE, VIEW_X0, VIEW_NX } from './sim.js';
 import { Renderer, THEMES } from './render.js';
 import { World, FLOATER_KINDS, PROP_KINDS } from './entities.js';
 import { Surf } from './sound.js';
 import { Section } from './section.js';
 import { drawStructures } from './structures.js';
-import { connectFootron, footronEnabled } from './footron.js';
+import { connectFootron, footronEnabled, dispatchControlMessage } from './footron.js';
 
 const sim = new Sim();
 const renderer = new Renderer(sim);
@@ -39,7 +39,11 @@ function resize() {
   canvas.style.width = W + 'px';
   canvas.style.height = H + 'px';
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  section.resize(340, 128, dpr);
+  // Proportional to the display, within limits. A fixed 340 px is right on a
+  // laptop and a postage stamp on a wall, where this is the panel that explains
+  // what the water is doing.
+  const secW = Math.max(340, Math.min(820, Math.round(W * 0.26)));
+  section.resize(secW, Math.round(secW * 0.376), dpr);
 }
 window.addEventListener('resize', resize);
 resize();
@@ -50,8 +54,10 @@ const pointers = new Map();
 
 function toGrid(ev) {
   const rect = canvas.getBoundingClientRect();
+  // The picture starts at VIEW_X0, not at column 0: the wave generator is
+  // simulated off the left edge of the frame.
   return [
-    ((ev.clientX - rect.left) / rect.width) * NX,
+    VIEW_X0 + ((ev.clientX - rect.left) / rect.width) * VIEW_NX,
     ((ev.clientY - rect.top) / rect.height) * NY,
   ];
 }
@@ -98,8 +104,7 @@ function applyOnce(gx, gy) {
       // mouth settles, and whether the sea bars it over, is up to the water.
       if (sim.river.discharge < 0.05) sim.river.discharge = 0.5;
       sim.setRiver(true, gy);
-      riverTool.classList.add('has');
-      syncSliders();
+      syncRiverUI();
       surf.splash(0.7);
       break;
     }
@@ -178,8 +183,11 @@ for (const el of sliders) {
     if (key === 'tide') sim.setTide(v);
     else if (key === 'river') {
       sim.river.discharge = v;
-      if (v > 0.01 && !sim.river.on) sim.setRiver(true);
-      else if (v <= 0.01) sim.river.on = false;
+      // Turning the slider to zero is turning the river off, which now means
+      // the valley and the silt go too rather than the flow quietly stopping
+      // and leaving its scenery behind.
+      if (v > 0.01) { if (!sim.river.on) sim.setRiver(true); }
+      else sim.setRiver(false);
       riverTool.classList.toggle('has', sim.river.on);
     } else sim.params[key] = v;
     el.nextElementSibling.textContent = fmt[key](v);
@@ -200,9 +208,19 @@ function selectIn(container, el) {
 const presetsEl = document.getElementById('presets');
 const themesEl = document.getElementById('themes');
 
+// sim.preset() clears the river along with the bed it was cut into, so every
+// path that rebuilds the scene has to put the panel back in step with it.
+// Forgetting is what left the tool lit up and the slider reading 0.85 next to a
+// coastline with no river in it.
+function syncRiverUI() {
+  riverTool.classList.toggle('has', sim.river.on);
+  syncSliders();
+}
+
 function setCoast(name) {
   sim.preset(name);
   world.reset();
+  syncRiverUI();
   selectIn(presetsEl, presetsEl.querySelector(`[data-preset="${name}"]`));
 }
 presetsEl.addEventListener('click', ev => {
@@ -358,9 +376,7 @@ function runLesson(name) {
   Object.assign(sim.params, L.params);
   sim.setTide(L.tide || 0);
   if (L.river) { sim.river.discharge = L.river; sim.setRiver(true); }
-  else { sim.river.on = false; }
-  riverTool.classList.toggle('has', sim.river.on);
-  syncSliders();
+  syncRiverUI();
   if (L.build) L.build(sim);
   if (L.props) {
     for (let i = 0; i < 6; i++) {
@@ -430,6 +446,7 @@ document.getElementById('btn-calm').addEventListener('click', () => {
 document.getElementById('btn-reset').addEventListener('click', () => {
   sim.preset(currentPreset());
   world.reset();
+  syncRiverUI();
   markInput();
 });
 let showFlow = false;
@@ -485,7 +502,7 @@ addEventListener('keydown', ev => {
   }
   switch (ev.key.toLowerCase()) {
     case ' ': ev.preventDefault(); togglePause(); break;
-    case 'r': sim.preset(currentPreset()); world.reset(); break;
+    case 'r': sim.preset(currentPreset()); world.reset(); syncRiverUI(); break;
     case 't': sim.tsunami(2.6); surf.rumble(); break;
     case 'd': depthBtn.click(); break;
     case 'f': flowBtn.click(); break;
@@ -515,7 +532,9 @@ function updateAttract(dt, now) {
   p.wind = Math.random() * 0.8;
   syncSliders();
   if (Math.random() < 0.35) {
-    world.addFloater((20 + Math.random() * 40) * SCALE, Math.random() * NY,
+    // Just inside the frame, so a toy drifts in from the deep rather than
+    // popping into existence somewhere the camera cannot see.
+    world.addFloater(VIEW_X0 + (4 + Math.random() * 40) * SCALE, Math.random() * NY,
       FLOATER_KINDS[(Math.random() * FLOATER_KINDS.length) | 0]);
   }
   if (Math.random() < 0.25) {
@@ -542,7 +561,7 @@ function drawCursor(sx, sy) {
   ctx.lineWidth = 1.2;
   ctx.setLineDash([5, 5]);
   ctx.beginPath();
-  ctx.ellipse(hover[0] * sx, hover[1] * sy, brush * sx, brush * sy, 0, 0, Math.PI * 2);
+  ctx.ellipse((hover[0] - VIEW_X0) * sx, hover[1] * sy, brush * sx, brush * sy, 0, 0, Math.PI * 2);
   ctx.stroke();
   ctx.restore();
 }
@@ -552,10 +571,13 @@ function drawCursor(sx, sy) {
 function drawFlow(sx, sy) {
   const step = Math.max(5, Math.round(7 * SCALE));
   ctx.save();
-  ctx.lineWidth = 1.1;
+  // Line width is in CSS pixels, so a constant is a hairline on a wall and the
+  // overlay reads as not having come on at all. Scale it with the display.
+  const weight = Math.max(1.1, W / 1000);
+  ctx.lineWidth = weight;
   ctx.lineCap = 'round';
   for (let j = step >> 1; j < NY; j += step) {
-    for (let i = step >> 1; i < NX; i += step) {
+    for (let i = VIEW_X0 + (step >> 1); i < NX; i += step) {
       const k = j * NX + i;
       if (sim.eta[k] - sim.bed[k] < 0.15) continue;
       const u = sim.u[k], v = sim.v[k];
@@ -564,15 +586,15 @@ function drawFlow(sx, sy) {
       const a = Math.min(0.72, (sp / SCALE) * 0.34);
       const len = Math.min(step * 0.9, (sp / SCALE) * 2.2);
       const nx = u / sp, ny = v / sp;
-      const x0 = i * sx, y0 = j * sy;
-      const x1 = (i + nx * len) * sx, y1 = (j + ny * len) * sy;
+      const x0 = (i - VIEW_X0) * sx, y0 = j * sy;
+      const x1 = (i - VIEW_X0 + nx * len) * sx, y1 = (j + ny * len) * sy;
       ctx.strokeStyle = `rgba(255,255,255,${a})`;
       ctx.beginPath();
       ctx.moveTo(x0, y0);
       ctx.lineTo(x1, y1);
       ctx.stroke();
       ctx.beginPath();          // arrowhead
-      ctx.arc(x1, y1, 1.3, 0, Math.PI * 2);
+      ctx.arc(x1, y1, weight * 1.2, 0, Math.PI * 2);
       ctx.fillStyle = `rgba(255,255,255,${a})`;
       ctx.fill();
     }
@@ -599,7 +621,7 @@ function updateReport() {
   for (let j = 2; j < NY; j += rowStep) {
     const row = j * NX;
     let shore = 0, wettest = 0, firstFoam = -1;
-    for (let i = Math.round(20 * SCALE); i < NX; i++) {
+    for (let i = VIEW_X0; i < NX; i++) {
       const k = row + i;
       const still = sim.sea - sim.bed[k];
       if (still > 0.1 && still < 3.0) {
@@ -709,8 +731,12 @@ function frame(now) {
   const theme = THEMES[themeName];
   renderer.blit(ctx, W, H, theme, sim.time);
 
-  const sx = W / NX, sy = H / NY;
+  // sx is pixels per cell across the VISIBLE window, and the translate slides
+  // the hidden offshore columns off the left of the screen. Everything drawn in
+  // grid units goes inside this transform.
+  const sx = W / VIEW_NX, sy = H / NY;
   ctx.save();
+  ctx.translate(-VIEW_X0 * sx, 0);
   ctx.scale(sx / sy, 1);          // entities are drawn in grid units, y-scaled
   world.draw(ctx, sy, themeName, sim.time);
   // Structures last: a pier deck is above the water and above everything on it.
@@ -739,7 +765,9 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 // A couple of toys and umbrellas so the beach never opens empty.
-for (let i = 0; i < 3; i++) world.addFloater(30 + Math.random() * 60, Math.random() * NY);
+for (let i = 0; i < 3; i++) {
+  world.addFloater(VIEW_X0 + (6 + Math.random() * 55) * SCALE, Math.random() * NY);
+}
 for (let i = 0; i < 4; i++) world.addProp(NX * (0.84 + Math.random() * 0.1), Math.random() * NY);
 
 // A handle for the headless scripts. The page is otherwise entirely
@@ -750,6 +778,11 @@ window.__wavelab = {
   sim, world, renderer,
   get theme() { return themeName; },
   setCoast, setTheme, setMood, rogueWave, runLesson,
+  get showFlow() { return showFlow; },
+  get section() { return section; },
+  // Set below, once the handlers exist: lets the checks send a phone message
+  // into the live page.
+  control: null,
   ready: true,
 };
 
@@ -767,7 +800,11 @@ if (footronEnabled()) {
   document.body.classList.add('kiosk');
 }
 
-connectFootron({
+// Named rather than inline so the headless checks can drive the exact path a
+// phone drives, without a socket. This is the whole of the wall's input on the
+// wall, and it was previously reachable only through a WebSocket, which meant
+// the one code path that matters most was the one nothing could test.
+const controlHandlers = {
   onActivity: () => { lastInput = performance.now(); attract = false; },
   onSwell: (key, value) => {
     if (key === 'tide') sim.setTide(value);
@@ -780,9 +817,11 @@ connectFootron({
   onRogue: rogueWave,
   onLesson: runLesson,
   onTouch: (fx, fy, which) => {
-    // Fractions of the wall, so the phone need not know the grid — which is
-    // picked at load from the display and differs between machines.
-    const gx = fx * NX, gy = fy * NY;
+    // Fractions of the VISIBLE wall, so the phone need not know the grid — which
+    // is picked at load from the display and differs between machines — and a
+    // finger at the left edge of the pad lands at the left edge of the picture,
+    // not in the hidden offshore strip.
+    const gx = VIEW_X0 + fx * VIEW_NX, gy = fy * NY;
     const previous = tool;
     tool = which;
     applyOnce(gx, gy);
@@ -798,9 +837,10 @@ connectFootron({
     const btn = { flow: flowBtn, depth: depthBtn, section: sectionBtn }[key];
     if (btn && btn.classList.contains('on') !== on) btn.click();
   },
-  onReset: () => { sim.preset(currentPreset()); world.reset(); },
+  onReset: () => { sim.preset(currentPreset()); world.reset(); syncRiverUI(); },
   onCalm: () => flattenSea(),
-  onRelease: () => { lastInput = 0; attract = true; },
-});
+};
+connectFootron(controlHandlers);
+window.__wavelab.control = (msg) => dispatchControlMessage(msg, controlHandlers);
 
 

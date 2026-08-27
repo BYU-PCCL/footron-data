@@ -6,7 +6,7 @@
 // become legible: the wave visibly shortens and steepens as the bed rises, then
 // breaks and runs up as a thin wedge.
 
-import { NX, NY, SCALE } from './sim.js';
+import { NX, NY, SCALE, VIEW_X0 } from './sim.js';
 
 export class Section {
   constructor(canvas) {
@@ -39,8 +39,10 @@ export class Section {
     ctx.clearRect(0, 0, w, h);
 
     const row = this.row * NX;
-    // Show the interesting part: from just outside the wave generator to the dune.
-    const i0 = Math.round(30 * SCALE), i1 = NX;
+    // The same stretch the picture above it shows, so a feature in one is at the
+    // same place along the other. Left of VIEW_X0 is the wave generator, which
+    // is not part of the beach.
+    const i0 = VIEW_X0, i1 = NX;
     const span = i1 - i0;
     // vertical range, in world units, with the sea level a fixed fraction down
     const TOP = 3.4, BOT = -7.0;

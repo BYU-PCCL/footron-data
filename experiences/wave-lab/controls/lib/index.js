@@ -24,7 +24,11 @@
  *   Overlays:    { type: "view", key: "flow" | "depth" | "section" | "pause",
  *                  value: <bool> }
  *   Reset:       { type: "reset" }      Flatten: { type: "calm" }
- *   Hand back:   { type: "release" }
+ *
+ * There is deliberately no "hand back" message. The wall returns to its attract
+ * loop 45 seconds after the last touch whatever happens, so a button for it was
+ * a second way to do the thing that already happens by itself — and one more
+ * control between a visitor and the beach.
  */
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { css } from "@emotion/react";
@@ -78,13 +82,16 @@ const SLIDERS = [
 ];
 
 // What a tap on the pad does. "Splash" leads because it is the one whose effect
-// is unmistakable — a ring spreads from exactly where the finger went.
+// is unmistakable — a ring spreads from exactly where the finger went. The
+// beach-stuff tool drops an umbrella, a palm, a towel, a chair or a sandcastle,
+// so it is named for what it does rather than for one of the five things it
+// might give you.
 const TOOLS = [
   { key: "splash", label: "Splash" },
   { key: "toy", label: "Drop a toy" },
   { key: "raise", label: "Pile sand" },
   { key: "dig", label: "Dig" },
-  { key: "prop", label: "Umbrella" },
+  { key: "prop", label: "Beach stuff" },
   { key: "river", label: "River" },
 ];
 
@@ -331,12 +338,6 @@ const WaveLabControls = () => {
     });
   }, [sendMessage]);
 
-  const release = useCallback(() => {
-    sendMessage({ type: "release" });
-    setViews({ flow: false, section: false, depth: false });
-    setPaused(false);
-  }, [sendMessage]);
-
   return (
     <div css={containerStyle}>
       <Typography variant="body2" css={hintStyle}>
@@ -477,13 +478,10 @@ const WaveLabControls = () => {
         </Button>
       </div>
 
-      <Button onClick={release} variant="outlined" fullWidth>
-        Let the wall carry on
-      </Button>
-
       <Typography variant="body2" css={hintStyle}>
         Leave it alone for 45 seconds and the wall goes back to running the surf
-        by itself, so there is nothing here you can leave it stuck in.
+        by itself, so there is nothing here you can leave it stuck in and nothing
+        to hand back when you are done.
       </Typography>
     </div>
   );
