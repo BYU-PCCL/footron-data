@@ -5,10 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NODE ZERO</title>
     <style>html, body { background: #04060e; margin: 0; }</style>
-    <script type="module" crossorigin src="./assets/index-DrYKahcy.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-C_r4GOhO.css">
+    <script type="module" crossorigin src="./assets/index-AhouGN6q.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CqoIR9MP.css">
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"></div>
+    <!-- The wall's phone-controls client. Plain script, not a module: it is a UMD
+         build that defines globalThis.FootronMessaging, and src/input/phone.ts
+         treats its absence as "no phone controls" rather than as an error. -->
+    <script src="./footron-messaging.development.js"></script>
   </body>
 </html>
