@@ -1,0 +1,15 @@
+{
+  "id": "photon-bounce",
+  "type": "web",
+  "title": "Photon Bounce",
+  "description": "Drag a lamp around a room from your phone and watch a path tracer rebuild the light, one bounce at a time.",
+  "artist": "Boston Sharp",
+  "action_hints": [
+    "drag the lamp around the floor plan on your phone",
+    "raise and lower it with the height slider",
+    "watch the render collapse to noise and settle again"
+  ],
+  "layout": "full",
+  "lifetime": 600,
+  "queueable": true
+}

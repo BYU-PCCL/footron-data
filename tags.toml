@@ -21,7 +21,8 @@ experiences = [
   "wave-lab",
   "barnsley-fern",
   "alg-infect",
-  "neural-net-vis"
+  "neural-net-vis",
+  "photon-bounce"
 ]
 
 [game]

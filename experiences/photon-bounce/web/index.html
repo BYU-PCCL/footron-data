@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Photon Bounce</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #0a0a12; overflow: hidden; }
+  #stage { position: relative; width: 2736px; height: 1216px; }
+  #gl { position: absolute; inset: 0; }
+  #overlay {
+    position: absolute; inset: 0; pointer-events: none;
+    font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+    color: rgba(255,255,255,0.85);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  .pane-label {
+    position: absolute; top: 36px; width: 600px;
+    font-variant-caps: small-caps; letter-spacing: 0.18em; font-size: 34px;
+    font-weight: 600;
+    padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.18);
+  }
+  #label-left { left: 60px; }
+  #label-right { left: 1428px; }
+  #divider { position: absolute; left: 1367px; top: 0; width: 2px; height: 1216px; background: rgba(255,255,255,0.10); }
+  #meter-wrap { position: absolute; left: 1428px; bottom: 44px; width: 1240px; }
+  #meter-bar { height: 4px; background: rgba(255,255,255,0.12); border-radius: 2px; overflow: hidden; }
+  #meter-fill {
+    height: 100%; width: 0%; background: #e8a765; border-radius: 2px;
+    transition: width 400ms ease;
+    box-shadow: 0 0 10px rgba(232,167,101,0.45);
+  }
+  #meter-text {
+    margin-top: 14px; font-size: 26px; font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em; color: rgba(255,255,255,0.55);
+  }
+  #caption {
+    position: absolute; left: 60px; bottom: 44px; width: 1200px;
+    font-size: 40px; line-height: 1.35; font-weight: 300;
+    color: rgba(255,255,255,0.80);
+    opacity: 0; transition: opacity 600ms ease;
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="gl" width="2736" height="1216"></canvas>
+  <div id="overlay">
+    <div class="pane-label" id="label-left">Inside the Simulation</div>
+    <div class="pane-label" id="label-right">What the Computer Sees</div>
+    <div id="divider"></div>
+    <div id="meter-wrap">
+      <div id="meter-bar"><div id="meter-fill"></div></div>
+      <div id="meter-text">0 light paths</div>
+    </div>
+    <div id="caption"></div>
+  </div>
+</div>
+<script src="three.min.js"></script>
+<script src="config.js"></script>
+<script src="geom.js"></script>
+<script src="scene.js"></script>
+<script src="photonPath.js"></script>
+<script src="messages.js"></script>
+<script src="state.js"></script>
+<script src="messaging.js"></script>
+<script src="blueprint.js"></script>
+<script src="photonSim.js"></script>
+<script src="pathtracer.js"></script>
+<script src="ui.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
