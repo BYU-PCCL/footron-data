@@ -227,7 +227,7 @@ const ControlsComponent = () => {
     <div css={containerStyle}>
       <h2>Learning to Walk</h2>
       <p className="hint">
-        A hundred humanoids are being scored on the wall right now. Make life harder for them and see
+        Sixteen humanoids are being scored on the wall right now. Make life harder for them and see
         which gaits survive it.
       </p>
 
