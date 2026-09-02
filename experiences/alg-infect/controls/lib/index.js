@@ -10,11 +10,12 @@
 //
 // Protocol (keep in sync with src/input/phone.ts in the app repo):
 //
-//   { type: "pad", action: "left"|"right"|"up"|"down"|"confirm"|"back"|"map" }
+//   { type: "pad", action: "left"|"right"|"up"|"down"|"confirm"|"back" }
 //
 // Every button press is one discrete action — the wall folds these into the
-// same PadAction stream its physical gamepad produces.
-import { css } from "@emotion/react";
+// same PadAction stream its physical gamepad produces. The arrows move the lit
+// button on whatever screen the wall is showing, A presses it, B backs out.
+import { css, Global } from "@emotion/react";
 import React, { useCallback, useState } from "react";
 import { useMessaging } from "@footron/controls-client";
 import Button from "@material-ui/core/Button";
@@ -26,13 +27,28 @@ const panel = "#10152a";
 const line = "#2a3354";
 const dim = "#8b95b8";
 
+// footron-web frames the panel between a 64px header and a 64px "more
+// experiences" footer on a near-white page. Painting the page itself dark
+// means nothing pale ever shows through under the panel, whatever the phone's
+// viewport does with its address bar.
+const pageStyle = css`
+  body {
+    background: ${ink};
+  }
+`;
+
 const containerStyle = css`
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 18px 14px 26px;
+  gap: 12px;
+  padding: 16px 14px 22px;
+  box-sizing: border-box;
+  /* fill to the footer: header (64) + footer clearance (64). The dvh line wins
+     on browsers that know it and tracks the visible viewport as chrome hides. */
+  min-height: calc(100vh - 128px);
+  min-height: calc(100dvh - 128px);
   background: radial-gradient(120% 90% at 50% 0%, #131b36 0%, ${ink} 70%);
-  border-radius: 14px;
+  border-radius: 14px 14px 0 0;
 
   @keyframes nz-scan {
     0%, 100% { opacity: 0.35; }
@@ -41,7 +57,7 @@ const containerStyle = css`
 
   .masthead {
     text-align: center;
-    padding: 4px 0 2px;
+    padding: 2px 0;
   }
   .masthead .title {
     font-weight: 800;
@@ -69,11 +85,6 @@ const containerStyle = css`
     animation: nz-scan 2.2s ease-in-out infinite;
   }
 
-  .arrows {
-    display: flex;
-    gap: 14px;
-  }
-
   button {
     border: 1px solid ${line};
     border-radius: 14px;
@@ -86,30 +97,46 @@ const containerStyle = css`
     transform: scale(0.96);
   }
 
-  .arrows button {
-    flex: 1;
-    height: 112px;
-    font-size: 36px;
+  /* a d-pad cross: the cursor moves the same way on the wall */
+  .dpad {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 74px 74px 74px;
+    gap: 10px;
+  }
+  .dpad button {
+    font-size: 32px;
     color: ${cyan};
     text-shadow: 0 0 14px rgba(56, 217, 255, 0.7);
+    min-width: 0;
   }
-  .arrows button:active {
+  .dpad button:active {
     box-shadow: 0 0 26px rgba(56, 217, 255, 0.35), inset 0 0 18px rgba(56, 217, 255, 0.15);
   }
-
-  button.map {
-    height: 58px;
-    font-size: 15px;
-    letter-spacing: 0.18em;
-    color: ${cyan};
-    border-color: rgba(56, 217, 255, 0.45);
+  .dpad .up { grid-column: 2; grid-row: 1; }
+  .dpad .left { grid-column: 1; grid-row: 2; }
+  .dpad .right { grid-column: 3; grid-row: 2; }
+  .dpad .down { grid-column: 2; grid-row: 3; }
+  .dpad .hub {
+    grid-column: 2;
+    grid-row: 2;
+    display: grid;
+    place-items: center;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: ${dim};
+    opacity: 0.7;
   }
-  button.map:active {
-    box-shadow: 0 0 22px rgba(56, 217, 255, 0.35);
+
+  button.back {
+    height: 56px;
+    font-size: 15px;
+    letter-spacing: 0.16em;
+    color: ${dim};
   }
 
   button.confirm {
-    height: 100px;
+    height: 92px;
     font-size: 24px;
     letter-spacing: 0.16em;
     color: ${ink};
@@ -121,14 +148,9 @@ const containerStyle = css`
     box-shadow: 0 0 40px rgba(255, 210, 62, 0.6);
   }
 
-  button.back {
-    height: 60px;
-    font-size: 15px;
-    letter-spacing: 0.16em;
-    color: ${dim};
-  }
-
   .foot {
+    margin-top: auto;
+    padding-top: 8px;
     text-align: center;
     font-size: 12px;
     letter-spacing: 0.14em;
@@ -154,6 +176,7 @@ const ControlsComponent = () => {
 
   return (
     <div css={containerStyle}>
+      <Global styles={pageStyle} />
       <div className="masthead">
         <div className="title">NODE ZERO</div>
         <div className="sub">
@@ -161,22 +184,21 @@ const ControlsComponent = () => {
           INFECTION CONTROL LINK
         </div>
       </div>
-      <div className="arrows">
-        <Button type="button" disableRipple onClick={() => press("left")}>
+      <div className="dpad">
+        <Button type="button" disableRipple className="up" onClick={() => press("up")}>
+          ▲
+        </Button>
+        <Button type="button" disableRipple className="left" onClick={() => press("left")}>
           ◀
         </Button>
-        <Button type="button" disableRipple onClick={() => press("right")}>
+        <div className="hub">AIM</div>
+        <Button type="button" disableRipple className="right" onClick={() => press("right")}>
           ▶
         </Button>
+        <Button type="button" disableRipple className="down" onClick={() => press("down")}>
+          ▼
+        </Button>
       </div>
-      <Button
-        type="button"
-        disableRipple
-        className="map"
-        onClick={() => press("map")}
-      >
-        ◈ view the map
-      </Button>
       <Button
         type="button"
         disableRipple
@@ -191,10 +213,10 @@ const ControlsComponent = () => {
         className="back"
         onClick={() => press("back")}
       >
-        B — back / rematch
+        B — back
       </Button>
       <div className="foot">
-        {lastAction ? "signal sent: " + lastAction : "aim the outbreak, then commit"}
+        {lastAction ? "signal sent: " + lastAction : "arrows move · A select · B back"}
       </div>
     </div>
   );
