@@ -5,15 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 <title>Barnsley's Fern</title>
 <style>
-  /* paper palette: the fern is drawn as ink on a warm sheet */
+  /* Night palette: the fern is light on a dark room. The wall is a large
+     emissive panel in a space that is usually dim, so ink-on-paper reads as a
+     slab of glare from across the room -- the picture is inverted instead, and
+     every map color is lifted to something that still separates against black. */
   :root {
-    --bg: #fbfaf6;
-    --ink: #1d2b23;
-    --dim: #6f8a76;
-    --accent: #1a5e3c;
-    --stem: #59452a;
-    --left: #116a80;
-    --right: #a9761f;
+    --bg: #080b09;
+    --ink: #edf3ee;
+    --dim: #93aa99;
+    --accent: #5fe0a0;
+    --stem: #c9a260;
+    --left: #56c8eb;
+    --right: #f2b746;
+    --line: rgba(226, 236, 229, 0.20);
 
     /* The bottom-left corner is not ours on the wall. Footron's launcher paints
        its "Scan to" QR card there, over the top of whatever the experience is
@@ -50,8 +54,8 @@
     position: fixed;
     left: clamp(20px, 3vw, 64px);
     top: clamp(20px, 3.2vh, 56px);
-    width: min(34vw, 560px);
-    max-height: 25vh;
+    width: min(38vw, 660px);
+    max-height: 32vh;
     display: flex;
     flex-direction: column;
     gap: clamp(8px, 1.2vh, 20px);
@@ -98,7 +102,7 @@
     font-size: clamp(12px, 1.05vw, 22px);
     color: var(--dim);
     line-height: 1.5;
-    max-width: 33ch;
+    max-width: 46ch;
   }
   #title .rule b { color: var(--accent); font-weight: 500; }
 
@@ -114,7 +118,7 @@
     grid-template-columns: auto auto 1fr;
     align-items: center;
     gap: clamp(9px, 1vw, 20px);
-    max-width: 40ch;
+    max-width: 52ch;
   }
   .card .swatch {
     width: clamp(7px, 0.55vw, 12px);
@@ -131,11 +135,16 @@
     gap: 0 0.7em;
     text-align: right;
   }
-  .card .mat .plus { color: rgba(111, 138, 118, 0.55); }
+  .card .mat .plus { color: rgba(147, 170, 153, 0.55); }
   .card .meta { line-height: 1.4; }
   .card .name {
     font-size: clamp(11px, 0.95vw, 20px);
     color: var(--ink);
+  }
+  .card .what {
+    font-size: clamp(9.5px, 0.78vw, 16px);
+    color: rgba(147, 170, 153, 0.8);
+    line-height: 1.45;
   }
   .card .odds {
     font-size: clamp(9.5px, 0.78vw, 16px);
@@ -152,7 +161,7 @@
   }
   .knob-head {
     font-size: clamp(10px, 0.82vw, 17px);
-    color: rgba(111, 138, 118, 0.85);
+    color: rgba(147, 170, 153, 0.9);
     margin-bottom: clamp(1px, 0.3vh, 6px);
   }
   .ktop {
@@ -169,7 +178,7 @@
   }
   .knote {
     font-size: clamp(9px, 0.72vw, 15px);
-    color: rgba(111, 138, 118, 0.7);
+    color: rgba(147, 170, 153, 0.75);
     margin-top: -0.15em;
   }
   input[type="range"] {
@@ -184,7 +193,7 @@
   input[type="range"]::-webkit-slider-runnable-track {
     height: 2px;
     border-radius: 2px;
-    background: rgba(29, 43, 35, 0.16);
+    background: var(--line);
   }
   input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
@@ -204,7 +213,7 @@
     display: none;
     align-items: center;
     /* the track, painted as a background rather than a second element */
-    background: linear-gradient(rgba(29, 43, 35, 0.16), rgba(29, 43, 35, 0.16))
+    background: linear-gradient(var(--line), var(--line))
       no-repeat 0 50% / 100% 2px;
   }
   .kmeter i {
@@ -233,7 +242,7 @@
   input[type="range"]::-moz-range-track {
     height: 2px;
     border-radius: 2px;
-    background: rgba(29, 43, 35, 0.16);
+    background: var(--line);
   }
   input[type="range"]::-moz-range-thumb {
     width: clamp(12px, 1.05vw, 22px);
@@ -270,8 +279,8 @@
     top: clamp(20px, 3.2vh, 56px);
     left: 50%;
     transform: translateX(-50%);
-    width: min(30vw, 420px);
-    max-height: 25vh;
+    width: min(32vw, 500px);
+    max-height: 30vh;
     font-size: clamp(11px, 0.92vw, 19px);
     color: var(--dim);
     line-height: 1.55;
@@ -285,8 +294,8 @@
     gap: clamp(8px, 0.9vw, 16px);
     padding: clamp(7px, 0.7vw, 12px);
     border-radius: 999px;
-    background: rgba(29, 43, 35, 0.04);
-    border: 1px solid rgba(29, 43, 35, 0.12);
+    background: rgba(237, 243, 238, 0.05);
+    border: 1px solid rgba(237, 243, 238, 0.14);
     backdrop-filter: blur(12px);
   }
   button {
@@ -305,15 +314,17 @@
   }
   button:hover { color: var(--ink); }
 
+  #hint b { color: var(--dim); font-weight: 500; }
   #hint {
     position: static;
     font-size: clamp(10px, 0.8vw, 16px);
-    color: rgba(111, 138, 118, 0.6);
+    color: rgba(147, 170, 153, 0.7);
     text-align: right;
     line-height: 1.7;
   }
 
   /* shed the least essential rows first on small or short screens */
+  @media (max-height: 900px) { .card .what { display: none; } }
   @media (max-height: 780px) { #caption, .knote { display: none; } }
   @media (max-width: 1100px) { #legend .mat { display: none; } }
   @media (max-width: 720px) { #hint, #title .rule, #legend, #caption { display: none; } }
@@ -326,9 +337,13 @@
     <div id="title">
       <h1>Barnsley&rsquo;s Fern</h1>
       <div class="rule">
-        One point, four rules, and a die. Each throw picks a rule, the rule
-        <b>moves the point</b>, and the point is marked where it lands. Nothing
-        draws a leaf. The fern is just <b>everywhere the walk can go</b>.
+        There is no fern in this program &mdash; no leaf, no stem, no outline
+        anywhere in the code. There is <b>one moving point</b>, four rules for
+        moving it, and a loaded die. Every throw picks a rule, the rule
+        <b>slides, shrinks and turns the point</b> to somewhere new, and a
+        speck of light is left where it lands. Seven million throws later the
+        specks have filled in <b>everywhere the walk can reach</b>, and that
+        reachable set is a fern.
       </div>
     </div>
   </div>
@@ -346,15 +361,16 @@
     </div>
 
     <div id="bar">
-      <button id="btn-new">New walk</button>
-      <button id="btn-random">Random plant</button>
-      <button id="btn-reset">Barnsley&rsquo;s numbers</button>
+      <button id="btn-new">Start the walk over</button>
+      <button id="btn-random">Roll a random plant</button>
+      <button id="btn-reset">Back to Barnsley&rsquo;s numbers</button>
     </div>
 
     <div id="rightcol">
       <div id="legend"></div>
       <div id="hint">
-        space pause &middot; n new walk &middot; m random plant &middot; r Barnsley&rsquo;s numbers
+        <b>space</b> pause the walk &middot; <b>n</b> start the walk over &middot;
+        <b>m</b> roll a random plant &middot; <b>r</b> back to Barnsley&rsquo;s numbers
       </div>
     </div>
   </div>

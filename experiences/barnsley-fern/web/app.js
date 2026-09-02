@@ -30,11 +30,20 @@ function fmt(n) {
  * whole fern and tips it slightly, f3 and f4 fold a whole fern into the two
  * bottom leaflets, and f1 -- one throw in a hundred -- is the stem. */
 
+/* The colors are the dark-room set: on an emissive wall the fern is light on
+ * black rather than ink on paper, so every map is lifted to something that
+ * still separates from its neighbours at fifteen feet. `what` is the plain-
+ * language reading of the matrix, shown under each name in the legend. */
+
 const BASE = [
-  { key: 'f₁', name: 'Stem',          p: 0.01, m: [ 0.00,  0.00,  0.00, 0.16, 0, 0.00], rgb: [ 96,  72,  40] },
-  { key: 'f₂', name: 'Whole fern, shrunk', p: 0.85, m: [ 0.85,  0.04, -0.04, 0.85, 0, 1.60], rgb: [ 26,  94,  60] },
-  { key: 'f₃', name: 'Left leaflet',  p: 0.07, m: [ 0.20, -0.26,  0.23, 0.22, 0, 1.60], rgb: [ 17, 106, 128] },
-  { key: 'f₄', name: 'Right leaflet', p: 0.07, m: [-0.15,  0.28,  0.26, 0.24, 0, 0.44], rgb: [169, 118,  31] },
+  { key: 'f₁', name: 'Stem', p: 0.01, m: [ 0.00,  0.00,  0.00, 0.16, 0, 0.00], rgb: [201, 162,  96],
+    what: 'flattens everything onto one vertical line' },
+  { key: 'f₂', name: 'The whole fern, shrunk', p: 0.85, m: [ 0.85,  0.04, -0.04, 0.85, 0, 1.60], rgb: [ 82, 214, 140],
+    what: 'shrinks a little, tips a little, steps up one leaflet' },
+  { key: 'f₃', name: 'Left leaflet', p: 0.07, m: [ 0.20, -0.26,  0.23, 0.22, 0, 1.60], rgb: [ 86, 200, 235],
+    what: 'folds a whole fern down into the left leaflet' },
+  { key: 'f₄', name: 'Right leaflet', p: 0.07, m: [-0.15,  0.28,  0.26, 0.24, 0, 0.44], rgb: [242, 183,  70],
+    what: 'folds a whole fern, mirrored, into the right one' },
 ];
 
 const TARGET = 7000000;   // points before the picture is called finished
@@ -59,19 +68,19 @@ const F = {
  * Barnsley's matrix, so the legend shows the real coefficients moving. */
 
 const KNOBS = [
-  { key: 'turn2', label: 'Stem curl', note: 'turns f\u2082',
+  { key: 'turn2', label: 'Stem curl', note: 'turns f\u2082 \u2014 straight, or curled like a fiddlehead',
     min: -18, max: 18, step: 0.25, def: 0,
     show: v => (v >= 0 ? '+' : '\u2212') + Math.abs(v).toFixed(2) + '\u00b0' },
-  { key: 'scale2', label: 'Shrink', note: 'scales f\u2082 \u2014 how many leaflets fit',
+  { key: 'scale2', label: 'Shrink', note: 'scales f\u2082 \u2014 how many leaflets fit before it runs out',
     min: 0.88, max: 1.09, step: 0.002, def: 1,
     show: v => (0.85085 * v).toFixed(3) + '\u00d7' },
-  { key: 'twistLeaf', label: 'Leaflet twist', note: 'turns f\u2083 and f\u2084',
+  { key: 'twistLeaf', label: 'Leaflet twist', note: 'turns f\u2083 and f\u2084 \u2014 sweeps the bottom leaflets up or down',
     min: -50, max: 50, step: 0.5, def: 0,
     show: v => (v >= 0 ? '+' : '\u2212') + Math.abs(v).toFixed(1) + '\u00b0' },
-  { key: 'scaleLeaf', label: 'Leaflet size', note: 'scales f\u2083 and f\u2084',
+  { key: 'scaleLeaf', label: 'Leaflet size', note: 'scales f\u2083 and f\u2084 \u2014 side-shoots, or leaflets that rival the plant',
     min: 0.5, max: 1.7, step: 0.01, def: 1,
     show: v => v.toFixed(2) + '\u00d7' },
-  { key: 'p2', label: 'Dice weight', note: 'odds of f\u2082 against the leaflets',
+  { key: 'p2', label: 'Dice weight', note: 'odds of f\u2082 against the leaflets \u2014 where the points go, not the shape',
     min: 0.62, max: 0.94, step: 0.002, def: 0.85,
     show: v => 'p = ' + v.toFixed(2) },
 ];
@@ -110,7 +119,7 @@ function makeMaps() {
     let m = src.m, p = src.p;
     if (i === 1) { m = bend(m, PAR.turn2, PAR.scale2); p = PAR.p2; }
     else if (i >= 2) { m = bend(m, PAR.twistLeaf, PAR.scaleLeaf); p = leaf; }
-    return { key: src.key, name: src.name, p: p, m: m.slice(), rgb: src.rgb };
+    return { key: src.key, name: src.name, what: src.what, p: p, m: m.slice(), rgb: src.rgb };
   });
 }
 
@@ -225,8 +234,15 @@ function buildLut(refLog) {
   for (let c = 0; c <= LUTN; c++) {
     let t = Math.log1p(c) / refLog;
     if (t > 1) t = 1;
-    lutA[c] = (0.12 + 0.88 * Math.pow(t, 0.72)) * 255;
-    lutK[c] = 1 - 0.3 * t;   // ink deepens where the walk keeps coming back
+    // A slightly higher floor than the paper version had: the sparse outer
+    // specks are now light on black rather than dark on white, and at 0.12
+    // they read as nothing at all from across the room.
+    lutA[c] = (0.20 + 0.80 * Math.pow(t, 0.72)) * 255;
+    // On paper the ink deepened where the walk kept coming back; on a dark
+    // wall it has to do the opposite. The channels are pushed past 255 and the
+    // clamped image data takes them to white, so the densest ridges burn out
+    // to a hot core the way a long exposure does.
+    lutK[c] = 1 + 0.55 * t * t;
   }
   lutA[0] = 0;
 }
@@ -432,7 +448,7 @@ function drawWalk() {
   for (let k = 1; k < tr.length; k++) {
     const age = k / tr.length;                    // 0 oldest, 1 newest
     const a = tr[k - 1], b = tr[k];
-    ctx.strokeStyle = 'rgba(29,43,35,' + (0.05 + 0.14 * age).toFixed(3) + ')';
+    ctx.strokeStyle = 'rgba(237,243,238,' + (0.07 + 0.20 * age).toFixed(3) + ')';
     ctx.lineWidth = unit * (0.35 + 0.5 * age);
     ctx.beginPath();
     ctx.moveTo(sxOf(a.x, a.y), syOf(a.x, a.y));
@@ -460,10 +476,10 @@ function drawWalk() {
   ctx.font = size.toFixed(1) + 'px Georgia, "Times New Roman", serif';
   ctx.textAlign = out * ROT_C >= 0 ? 'left' : 'right';
   ctx.textBaseline = 'middle';
-  ctx.strokeStyle = 'rgba(251,250,246,0.9)';
+  ctx.strokeStyle = 'rgba(8,11,9,0.85)';
   ctx.lineWidth = size * 0.34;
   ctx.lineJoin = 'round';
-  const label = m.key + '  ' + (m.p * 100).toFixed(0) + '%';
+  const label = m.key + '  ' + m.name.toLowerCase() + '  \u00b7  ' + (m.p * 100).toFixed(0) + '%';
   ctx.strokeText(label, lx, ly);
   ctx.fillStyle = 'rgba(' + m.rgb[0] + ',' + m.rgb[1] + ',' + m.rgb[2] + ',0.95)';
   ctx.fillText(label, lx, ly);
@@ -473,22 +489,27 @@ function drawWalk() {
 /* ---------- HUD ---------- */
 
 const CAPTION_DRAW =
-  'Every point is colored by the rule that put it there. Watch the ' +
-  '<b>teal</b> and <b>amber</b> gather: those two rules each fold an entire ' +
-  'fern into one bottom leaflet, and the green rule folds the fern into ' +
-  'itself, one leaflet up, forever.';
+  '<b>Every speck is colored by the rule that put it there.</b> Watch where ' +
+  'the <b>blue</b> and <b>gold</b> collect: each of those two rules takes an ' +
+  'entire fern and folds it down into a single bottom leaflet. The <b>green</b> ' +
+  'rule &mdash; the one the die picks 85 times in 100 &mdash; folds the fern ' +
+  'into itself, one leaflet further up, and then does it again, and again.';
 
 const CAPTION_DONE =
-  'Nothing here knows what a leaf is. Four matrices, twenty-four numbers, and ' +
-  'a die — and the same shape appears every time, from any starting point. ' +
-  'The teal leaflet is the whole fern, rotated and shrunk. So is the amber one. ' +
-  'So is everything above them.';
+  '<b>Nothing in this program knows what a leaf is.</b> Four matrices, ' +
+  'twenty-four numbers and a loaded die produce the same fern every time, ' +
+  'from any starting point you like &mdash; the picture is a property of the ' +
+  'numbers, not of where the walk began. Look closely: the blue leaflet is ' +
+  'the whole fern, turned and shrunk. So is the gold one. So is every leaflet ' +
+  'above them, all the way up, at every scale you can still see.';
 
 const CAPTION_BENT =
-  'These are no longer Barnsley\'s numbers. The maps are still contractions, ' +
-  'so the walk still settles onto <b>something</b> \u2014 it just is not the ' +
-  'fern any more. Every plant here is four matrices and a die, and the ' +
-  'coefficients doing it are listed above.';
+  'These are <b>no longer Barnsley\'s numbers</b>. The four rules still pull ' +
+  'points closer together than they were, so the walk still settles onto ' +
+  '<b>some</b> definite shape &mdash; that much is guaranteed &mdash; it is ' +
+  'simply not a fern any more. Whatever is on the wall right now is still ' +
+  'just four matrices and a die, and the coefficients making it are listed ' +
+  'in the corner as they move.';
 
 const roBig = document.getElementById('ro-big');
 const roSub = document.getElementById('ro-sub');
@@ -519,7 +540,9 @@ function buildLegend() {
       '</div>' +
       '<div class="meta">' +
         '<div class="name" style="color:' + c + '">' + m.key + ' &middot; ' + m.name + '</div>' +
-        '<div class="odds">p = ' + m.p.toFixed(2) + ' &middot; <i id="sh' + i + '">&mdash;</i> of points</div>' +
+        '<div class="what">' + m.what + '</div>' +
+        '<div class="odds">the die picks it <i>' + (m.p * 100).toFixed(0) + ' throws in 100</i>' +
+          ' &middot; it has placed <i id="sh' + i + '">&mdash;</i> of the specks</div>' +
       '</div>' +
     '</div>';
   }).join('');
@@ -529,7 +552,7 @@ const knobsEl = document.getElementById('knobs');
 
 function buildKnobs() {
   knobsEl.innerHTML =
-    '<div class="knob-head" id="knob-head">Drag a knob. The matrices to the right are what actually moves.</div>' +
+    '<div class="knob-head" id="knob-head">Drag a knob and you are editing the matrices, not the picture &mdash; the coefficients on the right are what actually moves. The fern follows.</div>' +
     KNOBS.map(k =>
       '<div class="knob">' +
         '<div class="ktop"><span class="klabel">' + k.label + '</span>' +
@@ -575,11 +598,13 @@ function syncKnobs() {
 function updateHud() {
   const pct = clamp(F.total / TARGET, 0, 1);
   setReadout(fmt(F.total), [
-    'points plotted',
+    'specks left by the walk so far',
     F.done
-      ? 'the walk keeps going'
-      : '<span>' + fmt(RATE) + '</span> throws per second',
-    F.done ? '<span>7 million</span> throws in' : '<span>' + (pct * 100).toFixed(0) + '%</span> of the way there',
+      ? 'the picture is settled &mdash; the walk keeps going anyway'
+      : 'landing at <span>' + fmt(RATE) + '</span> throws of the die per second',
+    F.done
+      ? 'every one of <span>7 million</span> throws obeyed one of the four rules'
+      : '<span>' + (pct * 100).toFixed(0) + '%</span> of the way to seven million',
   ]);
   for (let i = 0; i < 4; i++) {
     const el = document.getElementById('sh' + i);
@@ -622,13 +647,14 @@ function frame(now) {
   const realDt = dt;   // the idle clock must keep running while paused
   if (paused) dt = 0;
 
-  // warm paper ground, lit slightly from behind the fern
-  ctx.fillStyle = '#fbfaf6';
+  // dark ground, with the faintest lift behind the fern so the picture sits in
+  // a room rather than on a flat black rectangle
+  ctx.fillStyle = '#080b09';
   ctx.fillRect(0, 0, W, H);
   const gx = F.rect.x + F.rect.w * 0.5, gy = F.rect.y + F.rect.h * 0.5;
   const vg = ctx.createRadialGradient(gx, gy, 0, gx, gy, Math.max(W, H) * 0.7);
-  vg.addColorStop(0, 'rgba(255,254,249,0.95)');
-  vg.addColorStop(1, 'rgba(238,238,228,0.75)');
+  vg.addColorStop(0, 'rgba(30,48,38,0.55)');
+  vg.addColorStop(1, 'rgba(8,11,9,0)');
   ctx.fillStyle = vg;
   ctx.fillRect(0, 0, W, H);
 
@@ -758,9 +784,9 @@ function markFootron() {
   // Up there the sliders are a readout, the buttons are gone, and the bottom
   // row has been pushed clear of the QR card — so the copy has to move too.
   const hint = document.getElementById('hint');
-  if (hint) hint.textContent = 'scan the code in the corner \u2014 the knobs are on your phone';
+  if (hint) hint.textContent = 'Scan the code in the corner and the five knobs open on your phone \u2014 bend the rules and watch the plant redraw';
   const head = document.getElementById('knob-head');
-  if (head) head.textContent = 'Your phone moves these. The matrices to the right are what actually moves.';
+  if (head) head.textContent = 'Your phone moves these knobs. What they edit are the matrices on the right \u2014 the coefficients move first, and the plant follows.';
 }
 
 function connectFootron() {
