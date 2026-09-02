@@ -40466,7 +40466,10 @@ function createInjector(runner2, walkers2, note = "") {
     if (seeded === 0) {
       return null;
     }
-    return `${seeded} harvested walker(s) joined at generation ${COLD_GENERATIONS}` + (note ? ` (${note})` : "");
+    return {
+      seeded,
+      note: `${seeded} harvested walker(s) joined at generation ${COLD_GENERATIONS}` + (note ? ` (${note})` : "")
+    };
   };
   const rearm = () => {
     armed = queue.length > 0;
@@ -40772,7 +40775,74 @@ class WallCamera {
     this.demo.camera.lookAt(this.target.x, this.target.y, this.target.z);
   }
 }
-const QR_RESERVE_PX = 360;
+const CARD_TIMING = { in: 400, stay: 8500, out: 400 };
+const WORDS = [
+  "zero",
+  "one",
+  "two",
+  "three",
+  "four",
+  "five",
+  "six",
+  "seven",
+  "eight",
+  "nine",
+  "ten",
+  "eleven",
+  "twelve"
+];
+function numberWord(n2) {
+  return Number.isInteger(n2) && n2 >= 0 && n2 < WORDS.length ? WORDS[n2] : String(n2);
+}
+const capitalise = (s2) => s2.charAt(0).toUpperCase() + s2.slice(1);
+function buildCards(facts) {
+  const pop = facts.populationSize;
+  const genes = facts.genomeSize;
+  const elites = numberWord(facts.eliteCount);
+  const seconds = numberWord(facts.trialSeconds);
+  return [
+    {
+      title: "Nothing here knows what walking is",
+      body: `Each of these ${pop} bodies is steered by ${genes} numbers and nothing else. No instructions, no examples, no idea that a leg is for anything.`
+    },
+    {
+      title: `Every ${seconds} seconds, they are graded`,
+      body: "Only two things count: how far forward it got, and how long it stayed up. Nothing rewards looking graceful."
+    },
+    {
+      title: `The best ${elites} are kept, untouched`,
+      body: "The rest are thrown away. That is selection — the same step that decides which animals live long enough to have young."
+    },
+    {
+      title: "The next generation are their children",
+      body: "Take two survivors, some numbers from each, and you have a new body. Half of one walk plus half of another is sometimes better than both."
+    },
+    {
+      title: "Then every number is nudged at random",
+      body: "Almost every nudge makes things worse. The rare one that helps is the only place anything new can come from."
+    },
+    {
+      title: "That is the whole algorithm",
+      body: "Grade, keep the best, breed, nudge, repeat. Nobody steers it. Run it enough times and walking falls out on its own."
+    },
+    {
+      title: "Why they look so stiff",
+      body: "The arms are locked and the left leg mirrors the right. Fewer numbers to search means a gait shows up in minutes instead of days."
+    }
+  ];
+}
+function buildArrivalCard(count) {
+  if (count === 1) {
+    return {
+      title: "A ringer just joined",
+      body: "It came from a search left running overnight. Watch whether its gait spreads through everyone else."
+    };
+  }
+  return {
+    title: `${capitalise(numberWord(count))} ringers just joined`,
+    body: "They came from a search left running overnight. Watch how fast their gait spreads through everyone else."
+  };
+}
 const STYLE = `
 #hud, #hud * { box-sizing: border-box; }
 #hud {
@@ -40784,13 +40854,39 @@ const STYLE = `
 
 #hud .title {
   position: absolute; left: clamp(24px, 2.2vw, 60px); top: clamp(20px, 2vw, 52px);
+  width: clamp(300px, 30vw, 760px);
 }
 #hud .title h1 {
   margin: 0; font-size: clamp(28px, 2.6vw, 72px); font-weight: 700; letter-spacing: -0.02em;
 }
-#hud .title p {
-  margin: 0.35em 0 0; font-size: clamp(14px, 1.05vw, 29px); font-weight: 400;
-  max-width: 34ch; line-height: 1.45; color: #b9c9e4;
+
+/* Every card occupies the same grid cell, so they cross-fade in place and the deck is exactly as
+   tall as its longest card -- no magic height to keep in step with the copy, and no layout jump
+   when a short card follows a long one.
+
+   Opacity alone, deliberately. Toggling visibility too is what forces the double-rAF dance in
+   fluid's fader (the browser skips a transition that starts in the same frame as the visibility
+   change), and none of it is needed here: #hud is already pointer-events: none, so a faded-out card
+   is not a hit target and has nothing to be hidden from. */
+#hud .deck {
+  display: grid; margin-top: 0.5em;
+}
+#hud .deck .card {
+  grid-area: 1 / 1;
+  opacity: 0; transition: opacity ${CARD_TIMING.out}ms ease-in-out;
+}
+#hud .deck .card.on {
+  opacity: 1; transition-duration: ${CARD_TIMING.in}ms;
+}
+#hud .deck .card h2 {
+  margin: 0; font-size: clamp(17px, 1.35vw, 37px); font-weight: 600; line-height: 1.25;
+  letter-spacing: -0.01em;
+  /* The accent the deleted progress bar used to own. */
+  color: #6fd3ff;
+}
+#hud .deck .card p {
+  margin: 0.4em 0 0; font-size: clamp(14px, 1.05vw, 29px); font-weight: 400;
+  line-height: 1.45; color: #b9c9e4;
 }
 
 #hud .stats {
@@ -40811,30 +40907,14 @@ const STYLE = `
 /* Bottom-RIGHT: the bottom-left corner belongs to the launcher's QR card. */
 #hud .foot {
   position: absolute; right: clamp(24px, 2.2vw, 60px); bottom: clamp(20px, 2vw, 52px);
-  text-align: right; font-size: clamp(13px, 0.95vw, 26px); color: #b9c9e4; line-height: 1.5;
+  text-align: right;
 }
 #hud .foot .badge {
-  display: inline-block; margin-bottom: 0.5em; padding: 0.3em 0.8em; border-radius: 999px;
+  display: inline-block; padding: 0.3em 0.8em; border-radius: 999px;
   background: rgba(255, 176, 63, 0.16); border: 1px solid rgba(255, 176, 63, 0.5);
   color: #ffcb84; font-weight: 600; font-size: clamp(12px, 0.85vw, 23px);
 }
 #hud .foot .badge.hidden { display: none; }
-
-#hud .progress {
-  position: absolute; left: clamp(24px, 2.2vw, 60px); bottom: clamp(20px, 2vw, 52px);
-  width: clamp(240px, 22vw, 600px);
-  /* Clear of the QR card, which sits in the corner this would otherwise share. */
-  margin-left: ${QR_RESERVE_PX}px;
-}
-#hud .progress .bar {
-  height: clamp(5px, 0.4vw, 11px); border-radius: 999px; overflow: hidden;
-  background: rgba(255, 255, 255, 0.14);
-}
-#hud .progress .bar i { display: block; height: 100%; background: #6fd3ff; width: 0%; }
-#hud .progress .caption {
-  margin-top: 0.6em; font-size: clamp(12px, 0.9vw, 24px); color: #93a7c6;
-  font-variant-numeric: tabular-nums;
-}
 `;
 function row(parent, label, lead = false) {
   const dt = document.createElement("dt");
@@ -40849,13 +40929,13 @@ function row(parent, label, lead = false) {
   return dd;
 }
 class Hud {
-  /** @param {boolean} visible false for ?nohud, which is how thumb.jpg and wide.jpg get captured
-   *    as a clean picture of the arena */
-  /** @param {boolean} visible false for ?nohud
-   *  @param {number} walkers how many are in the arena, for the subtitle -- read from the config
-   *    rather than written into the copy, because the exhibit's batch size is a tuning knob and a
-   *    hard-coded "thirty" silently becomes a lie the first time it moves */
-  constructor(visible = true, walkers2 = 0) {
+  /** @param {boolean} visible false for ?nohud, which is how thumb.jpg and wide.jpg get captured as
+   *    a clean picture of the arena
+   *  @param {import('../evolution.js').EvolutionRunner} runner the live runner. Taken whole rather
+   *    than as a count because the cards quote four different figures off it, and every one of them
+   *    has to come from the config rather than from the copy -- ?walkers= can move the population,
+   *    and a hard-coded number silently becomes a lie the first time somebody does. */
+  constructor(visible = true, runner2 = null) {
     const style = document.createElement("style");
     style.textContent = STYLE;
     document.head.appendChild(style);
@@ -40867,19 +40947,37 @@ class Hud {
     root.innerHTML = `
       <div class="title">
         <h1>Learning to Walk</h1>
-        <p class="lede">Nobody programmed these humanoids to walk.</p>
+        <div class="deck"></div>
       </div>
       <dl class="stats"></dl>
-      <div class="progress">
-        <div class="bar"><i></i></div>
-        <div class="caption">&nbsp;</div>
-      </div>
       <div class="foot">
         <div class="badge hidden"></div>
-        <div class="note">&nbsp;</div>
       </div>`;
-    const lede = root.querySelector(".title .lede");
-    lede.textContent = walkers2 ? `Nobody programmed these humanoids to walk. All ${walkers2} of them are being scored at once; the ones that get furthest become the parents of the next generation.` : lede.textContent;
+    this.cards = buildCards({
+      populationSize: runner2 ? runner2.cfg.populationSize : 0,
+      genomeSize: runner2 ? runner2.genomeSize : 0,
+      eliteCount: runner2 ? runner2.cfg.eliteCount : 0,
+      trialSeconds: runner2 ? runner2.cfg.trialSeconds : 0
+    });
+    const deck = root.querySelector(".deck");
+    this.cardEls = this.cards.map((card) => {
+      const el = document.createElement("div");
+      el.className = "card";
+      const h2 = document.createElement("h2");
+      const p2 = document.createElement("p");
+      h2.textContent = card.title;
+      p2.textContent = card.body;
+      el.append(h2, p2);
+      deck.appendChild(el);
+      return el;
+    });
+    this.arrivalEl = null;
+    this.deck = deck;
+    this.index = 0;
+    this.showing = null;
+    this.holding = false;
+    this.phaseAt = 0;
+    this.pending = null;
     const stats = root.querySelector(".stats");
     this.el = {
       generation: row(stats, "Generation", true),
@@ -40887,20 +40985,61 @@ class Hud {
       speed: row(stats, "Best speed"),
       walking: row(stats, "Getting somewhere"),
       alive: row(stats, "Still standing"),
-      bar: root.querySelector(".progress .bar i"),
-      caption: root.querySelector(".progress .caption"),
-      badge: root.querySelector(".foot .badge"),
-      note: root.querySelector(".foot .note")
+      badge: root.querySelector(".foot .badge")
     };
     document.body.appendChild(root);
     this.root = root;
     this.visible = visible;
   }
-  /** The one-off line: where the population started. Said out loud because the honest description of
-   *  this exhibit is "live evolution, warm-started", and a visitor who assumes every bot began from
-   *  nothing five minutes ago has been misled by omission. */
-  setSeedNote(text) {
-    this.el.note.textContent = text;
+  /** Interrupts the rotation with the arrival card, then hands back to it after one normal dwell.
+   *
+   *  Called on the one frame the injector reports the harvested walkers landing. It replaces the
+   *  bottom-right note that used to carry this, and it is the reason that note could be removed
+   *  rather than just relocated. */
+  announceArrival(count = 2) {
+    if (!this.visible) {
+      return;
+    }
+    const card = buildArrivalCard(count);
+    if (!this.arrivalEl) {
+      this.arrivalEl = document.createElement("div");
+      this.arrivalEl.className = "card";
+      this.arrivalEl.append(document.createElement("h2"), document.createElement("p"));
+      this.deck.appendChild(this.arrivalEl);
+    }
+    this.arrivalEl.firstChild.textContent = card.title;
+    this.arrivalEl.lastChild.textContent = card.body;
+    this.pending = this.arrivalEl;
+    if (this.holding && this.showing) {
+      this.showing.classList.remove("on");
+      this.holding = false;
+      this.phaseAt = performance.now();
+    }
+  }
+  /** Back to the top of the deck, arrival card retired.
+   *
+   *  restartCycle() goes through here so the second attract cycle tells the same story in the same
+   *  order as the first -- and so an arrival card from the previous run is not still on the wall
+   *  describing walkers that have just been thrown away. */
+  reset() {
+    this.index = 0;
+    this.pending = null;
+    if (this.arrivalEl) {
+      this.arrivalEl.classList.remove("on");
+    }
+    this._show(this.cardEls[0]);
+  }
+  /** @param {HTMLElement} el */
+  _show(el) {
+    if (this.showing && this.showing !== el) {
+      this.showing.classList.remove("on");
+    }
+    if (el) {
+      el.classList.add("on");
+    }
+    this.showing = el;
+    this.holding = true;
+    this.phaseAt = performance.now();
   }
   /** Per-frame refresh. Reads runner.stats -- the same object the bench's readouts poll -- so the
    *  wall and the lab can never disagree about what generation it is. */
@@ -40914,11 +41053,7 @@ class Hud {
     this.el.speed.textContent = s2.bestSpeed.toFixed(2) + " m/s";
     this.el.walking.textContent = s2.bandCounts[1] + s2.bandCounts[2] + " / " + runner2.cfg.populationSize;
     this.el.alive.textContent = s2.alive + " / " + runner2.cfg.batchSize;
-    const within = runner2.trialSteps ? Math.min(1, runner2.trialStep / runner2.trialSteps) : 0;
-    const done = (s2.batchIndex + (s2.trialIndex + within) / s2.trialCount) / s2.batchCount;
-    this.el.bar.style.width = (Math.min(1, Math.max(0, done)) * 100).toFixed(1) + "%";
-    const left = Math.max(0, (runner2.trialSteps - runner2.trialStep) * (runner2.dt || 0));
-    this.el.caption.textContent = s2.batchCount === 1 ? `Generation ${s2.generation} · ${left.toFixed(1)}s left in this round` : `Generation ${s2.generation} · scoring group ${s2.batchIndex + 1} of ${s2.batchCount}`;
+    this._advanceDeck();
     const badge = this.el.badge;
     if (world2 && world2.modified) {
       const bits = [];
@@ -40936,6 +41071,52 @@ class Hud {
     } else {
       badge.classList.add("hidden");
     }
+  }
+  /** Moves the deck on when the current card's time is up.
+   *
+   *  SEQUENTIAL, not a cross-fade. Every card sits in the same grid cell, so fading the next one in
+   *  while the last one is still fading out puts two headings on top of each other for the length of
+   *  the transition -- which on text reads as a smear rather than as a change. So the outgoing card
+   *  is taken to zero first and the incoming one only starts once it is gone, which is what fluid's
+   *  fader does with its explicit out-then-in sequence.
+   *
+   *  Driven off the render loop rather than off setTimeout so that a wall which stalls -- a long
+   *  wasm hitch, a backgrounded tab -- resumes where it left off instead of flushing a queue of
+   *  expired timers and strobing through four cards at once.
+   *
+   *  Touches the DOM only on the two frames where a phase actually changes. This runs sixty times a
+   *  second on a machine already CPU-bound on physics, so the common path is one subtraction. */
+  _advanceDeck() {
+    if (this.cardEls.length === 0) {
+      return;
+    }
+    if (!this.showing) {
+      this._show(this.cardEls[0]);
+      return;
+    }
+    const now = performance.now();
+    if (this.holding) {
+      if (now - this.phaseAt < CARD_TIMING.in + CARD_TIMING.stay) {
+        return;
+      }
+      this.showing.classList.remove("on");
+      this.holding = false;
+      this.phaseAt = now;
+      return;
+    }
+    if (now - this.phaseAt < CARD_TIMING.out) {
+      return;
+    }
+    if (this.pending) {
+      const el = this.pending;
+      this.pending = null;
+      this._show(el);
+      return;
+    }
+    if (this.showing !== this.arrivalEl) {
+      this.index = (this.index + 1) % this.cardEls.length;
+    }
+    this._show(this.cardEls[this.index]);
   }
 }
 const IDLE_SECONDS = 45;
@@ -41045,13 +41226,13 @@ const world = new World(demo.model);
 world.onModelReloaded(demo.model, demo.robots);
 const camera = new WallCamera(demo);
 camera.fitTo(demo.gridLayout);
-const hud = new Hud(showHud, runner.cfg.batchSize);
-hud.setSeedNote(seedNote);
+const hud = new Hud(showHud, runner);
+console.info("[learning-to-walk] " + seedNote);
 demo.params.speed = DEFAULT_SPEED;
 const restartCycle = () => {
   world.reset(demo.model, demo.data, demo.robots);
   restart();
-  hud.setSeedNote(seedNote);
+  hud.reset();
 };
 const controller = createController({
   demo,
@@ -41076,7 +41257,7 @@ demo.evolutionSync = () => {
   controller.tick(dt);
   const arrival = injector.tick();
   if (arrival) {
-    hud.setSeedNote(arrival);
+    hud.announceArrival(arrival.seeded);
   }
   cycleSeconds += dt;
   if (cycleSeconds >= CYCLE_SECONDS && controller.idleSeconds() >= CYCLE_QUIET_SECONDS) {
