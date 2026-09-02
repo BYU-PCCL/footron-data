@@ -40339,41 +40339,49 @@ class MuJoCoDemo {
   }
 }
 const CHAMPIONS_URL = "./assets/champions.json";
-const SEED_FRACTION = 0.25;
-const SEED_JITTER = 0.04;
+const WEAK_DISTANCE_FRACTION = 0.45;
 async function loadChampions(url = CHAMPIONS_URL, expected = null) {
+  const nothing = (note) => ({ genomes: [], records: [], note });
   try {
     const response = await fetch(url);
     if (!response.ok) {
-      return { genomes: [], note: `champions.json: HTTP ${response.status}` };
+      return nothing(`champions.json: HTTP ${response.status}`);
     }
     const file = await response.json();
     const champions = Array.isArray(file?.champions) ? file.champions : [];
     if (champions.length === 0) {
-      return { genomes: [], note: "champions.json has no champions" };
+      return nothing("champions.json has no champions");
     }
     const fp = file.fingerprint || {};
     if (expected && fp.genomeSize && fp.genomeSize !== expected.genomeSize) {
-      return { genomes: [], note: `champions.json is for a ${fp.genomeSize}-gene creature, this arena runs ${expected.genomeSize}` };
+      return nothing(`champions.json is for a ${fp.genomeSize}-gene creature, this arena runs ${expected.genomeSize}`);
     }
-    const genomes = champions.filter((c2) => Array.isArray(c2?.genes)).sort((a2, b) => (a2.generation || 0) - (b.generation || 0)).map((c2) => c2.genes);
-    return { genomes, note: `${genomes.length} champion(s) over ${file.run?.generations ?? "?"} generations` };
+    const records = champions.filter((c2) => Array.isArray(c2?.genes)).sort((a2, b) => (a2.generation || 0) - (b.generation || 0));
+    const genomes = records.map((c2) => c2.genes);
+    return {
+      genomes,
+      records,
+      note: `${genomes.length} champion(s) over ${file.run?.generations ?? "?"} generations`
+    };
   } catch (e2) {
-    return { genomes: [], note: "champions.json unavailable: " + e2.message };
+    return nothing("champions.json unavailable: " + e2.message);
   }
 }
-function pickSeeds(genomes, count) {
-  if (genomes.length === 0 || count <= 0) {
+function pickWalkers(records) {
+  const moved = (records || []).filter(
+    (r2) => Array.isArray(r2?.genes) && Number.isFinite(r2.distance) && r2.distance > 0
+  );
+  if (moved.length === 0) {
     return [];
   }
-  if (genomes.length <= count) {
-    return genomes.slice();
+  const strong = moved.reduce((a2, b) => b.distance > a2.distance ? b : a2);
+  const rest = moved.filter((r2) => r2 !== strong);
+  if (rest.length === 0) {
+    return [strong.genes];
   }
-  const picked = [];
-  for (let i2 = 0; i2 < count; i2++) {
-    picked.push(genomes[Math.round(i2 * (genomes.length - 1) / (count - 1))]);
-  }
-  return picked;
+  const target = strong.distance * WEAK_DISTANCE_FRACTION;
+  const weak = rest.reduce((a2, b) => Math.abs(b.distance - target) < Math.abs(a2.distance - target) ? b : a2);
+  return [strong.genes, weak.genes];
 }
 const WALL_EVO_CONFIG = {
   ...HUMANOID_EVO_CONFIG,
@@ -40405,20 +40413,66 @@ const WALL_EVO_CONFIG = {
   // ten-second rounds cannot tell a new generation from the next group of the same one, and the
   // number on the HUD only moves once every seventy seconds of simulated time.
   //
-  // At 100-in-one-batch the arena IS the population: everything on screen is the whole generation,
-  // every reset is a real generational step, and the counter advances every ten seconds. It also
-  // makes the seeded and random genomes visible side by side at once, which is the exhibit's subject.
+  // In one batch the arena IS the population: everything on screen is the whole generation, every
+  // reset is a real generational step, and the counter advances every ten seconds.
   //
-  // The cost is search quality -- a hundred genomes per generation instead of two hundred, so a
-  // coarser sample of the space each round. tools/harvest.mjs runs under this same config, so the
-  // champions it produces are champions of exactly the search the wall is showing.
+  // SIXTEEN, not a hundred. A 4x4 grid is small enough that a visitor can watch individual bodies
+  // rather than a crowd, and it is what makes "shove one over" legible -- the shoved one is a
+  // sixteenth of the arena instead of a hundredth. Three things fall out of being small, all good:
   //
-  // 100 exceeds the 31 collision bits, so robots sharing a bit CAN collide. The 10x10 grid at 2 m
-  // puts the closest such pair 6.32 m apart against a best-ever travel of 2.22 m in a trial, and
-  // assertCollisionIsolation fails the build rather than letting that margin quietly erode.
-  populationSize: 100,
-  batchSize: 100
+  //   - 16 is INSIDE the 31 collision bits, so every robot gets a private bit and isolation is a
+  //     property of the masks again. At a hundred the bits wrapped and isolation degraded to a
+  //     property of the layout -- true, but only by 6.32 m of grid spacing, and its failure mode was
+  //     silent fitness corruption rather than an error. assertCollisionIsolation now returns early.
+  //   - 16 is inside SHADOW_BUDGET_ROBOTS, so the arena keeps its contact shadows (see tuneForCount).
+  //   - the camera frames a 6 m grid from 9 m rather than an 18 m grid from 18 m, which is clear of
+  //     the fog band the hundred-bot framing started inside.
+  //
+  // The cost is search quality: sixteen genomes per generation is a coarse sample of the space, and
+  // the wall leans on the harvested walkers arriving at COLD_GENERATIONS to make up for it. Note
+  // that tools/harvest.mjs imports THIS config, so an offline harvest inherits the coarse search
+  // too -- override the population there before re-harvesting.
+  populationSize: 16,
+  batchSize: 16,
+  // TWO ELITES. The baseline's 10 is 5% of its 200 and reasonable there; inherited unchanged it
+  // would be 62.5% of 16, so most of every generation would be a verbatim clone and the search would
+  // barely move. Two is 12.5%, near the 10% the hundred-bot arena effectively ran at.
+  //
+  // Also load-bearing for the injector: _applyPendingSeeds fills slots from the END of the batch and
+  // stops below eliteCount, so the harvested walkers land at indices 15 and 14 and evict random
+  // genomes rather than anything the GA earned.
+  eliteCount: 2
 };
+const COLD_GENERATIONS = 5;
+function createInjector(runner2, walkers2, note = "") {
+  const queue = Array.isArray(walkers2) ? walkers2 : [];
+  let armed = queue.length > 0;
+  const tick = () => {
+    if (!armed) {
+      return null;
+    }
+    if (runner2.generation < COLD_GENERATIONS - 1) {
+      return null;
+    }
+    armed = false;
+    let seeded = 0;
+    for (const genes of queue) {
+      try {
+        runner2.seedGenome(Float64Array.from(genes));
+        seeded++;
+      } catch (e2) {
+      }
+    }
+    if (seeded === 0) {
+      return null;
+    }
+    return `${seeded} harvested walker(s) joined at generation ${COLD_GENERATIONS}` + (note ? ` (${note})` : "");
+  };
+  const rearm = () => {
+    armed = queue.length > 0;
+  };
+  return { tick, rearm };
+}
 const SHADOW_BUDGET_ROBOTS = 40;
 function tuneForCount(demo2, count) {
   if (count <= SHADOW_BUDGET_ROBOTS || !demo2.mujocoRoot) {
@@ -40458,26 +40512,20 @@ async function createArena(demo2, config2 = WALL_EVO_CONFIG) {
   });
   demo2.setController((robots, model, data, time) => runner2.step(robots, model, data, time));
   await reloadHumanoidEvolution(demo2, config2);
-  const { genomes, note } = await loadChampions(CHAMPIONS_URL, { genomeSize: runner2.genomeSize });
-  const slots = Math.max(1, Math.round(runner2.cfg.populationSize * SEED_FRACTION));
-  const seeds = pickSeeds(genomes, Math.min(slots, Math.max(1, genomes.length)));
+  const { records, note } = await loadChampions(CHAMPIONS_URL, { genomeSize: runner2.genomeSize });
+  const walkers2 = pickWalkers(records);
+  const injector2 = createInjector(runner2, walkers2, note);
   const restart2 = () => {
     runner2.reset();
-    const info2 = runner2.seedPopulation(seeds, {
-      count: slots,
-      jitter: SEED_JITTER,
-      // Batches are evaluated in index order; without this the wall's first two batches would hold
-      // every champion and the remaining five nothing but flailers.
-      spread: true
-    });
+    injector2.rearm();
     runner2.running = true;
-    return info2;
   };
-  const info = restart2();
+  restart2();
   return {
     runner: runner2,
     restart: restart2,
-    seedNote: info.seeded ? `${info.seeded} of ${runner2.cfg.populationSize} warm-started (${note})` : `cold start (${note})`
+    injector: injector2,
+    seedNote: walkers2.length ? `cold start; ${walkers2.length} harvested walker(s) join at generation ${COLD_GENERATIONS} (${note})` : `cold start (${note})`
   };
 }
 const MAX_WIND_N = 100;
@@ -40992,7 +41040,7 @@ const walkers = Number.isFinite(requested) && requested > 0 ? Math.min(200, Math
 const config = walkers ? { ...WALL_EVO_CONFIG, populationSize: walkers, batchSize: walkers } : WALL_EVO_CONFIG;
 const demo = new MuJoCoDemo();
 await demo.init({ gui: false, scenes: ["humanoid.xml"] });
-const { runner, restart, seedNote } = await createArena(demo, config);
+const { runner, restart, injector, seedNote } = await createArena(demo, config);
 const world = new World(demo.model);
 world.onModelReloaded(demo.model, demo.robots);
 const camera = new WallCamera(demo);
@@ -41003,6 +41051,7 @@ demo.params.speed = DEFAULT_SPEED;
 const restartCycle = () => {
   world.reset(demo.model, demo.data, demo.robots);
   restart();
+  hud.setSeedNote(seedNote);
 };
 const controller = createController({
   demo,
@@ -41025,6 +41074,10 @@ demo.evolutionSync = () => {
   camera.update(runner, demo.robots, demo.data, dt);
   hud.update(runner, world);
   controller.tick(dt);
+  const arrival = injector.tick();
+  if (arrival) {
+    hud.setSeedNote(arrival);
+  }
   cycleSeconds += dt;
   if (cycleSeconds >= CYCLE_SECONDS && controller.idleSeconds() >= CYCLE_QUIET_SECONDS) {
     cycleSeconds = 0;
