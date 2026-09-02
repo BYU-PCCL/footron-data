@@ -15,8 +15,7 @@
 //   { type: "mood",  value: "glassy"|"surf"|"storm" }  a whole sea state at once
 //   { type: "rogue" }                                  one big wave, now
 //   { type: "lesson", value: "shoal"|"rip"|…  }        a demonstration
-//   { type: "touch", x: <0…1>, y: <0…1>, tool: "splash"|"toy"|"prop"|"river"
-//                                              |"raise"|"dig"|"smooth" }
+//   { type: "touch", x: <0…1>, y: <0…1>, tool: "toy"|"prop"|"raise"|"dig" }
 //                     x and y are fractions of the VISIBLE wall, not of the
 //                     simulated basin — the basin extends off the left edge.
 //   { type: "view",  key: "flow"|"depth"|"section"|"pause", value: <bool> }
@@ -44,15 +43,15 @@ export const RANGES = {
   wind: [0, 1],
   tide: [-1.5, 1.5],
   erosion: [0, 1],
-  speed: [0.25, 2],
+  speed: [0.25, 4],
 };
 
 export const COASTS = ['classic', 'sandbar', 'coves', 'reef', 'pier', 'jetty', 'flat'];
 export const LIGHTS = ['day', 'sunset', 'night'];
 export const MOODS = ['glassy', 'surf', 'storm'];
-export const LESSONS = ['shoal', 'rip', 'groin', 'refract', 'surge', 'delta',
+export const LESSONS = ['shoal', 'rip', 'groin', 'refract', 'surge',
   'reefbreak', 'pierscour'];
-export const TOOLS = ['splash', 'toy', 'prop', 'river', 'raise', 'dig', 'smooth'];
+export const TOOLS = ['toy', 'prop', 'raise', 'dig'];
 export const VIEWS = ['flow', 'depth', 'section', 'pause'];
 
 const finite = (v) => typeof v === 'number' && Number.isFinite(v);
@@ -114,7 +113,7 @@ export function dispatchControlMessage(body, h) {
       return true;
     case 'touch': {
       if (!finite(msg.x) || !finite(msg.y)) return false;
-      const tool = TOOLS.includes(msg.tool) ? msg.tool : 'splash';
+      const tool = TOOLS.includes(msg.tool) ? msg.tool : 'raise';
       // Fractions of the wall, so the phone never needs to know the grid size —
       // which is chosen at load from the display, and differs between machines.
       h.onActivity();

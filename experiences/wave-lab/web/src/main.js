@@ -1,4 +1,4 @@
-import { Sim, NX, NY, SCALE, VIEW_X0, VIEW_NX } from './sim.js';
+import { Sim, NX, NY, SCALE, VIEW_X0, VIEW_NX, STEP_HZ } from './sim.js';
 import { Renderer, THEMES } from './render.js';
 import { World, FLOATER_KINDS, PROP_KINDS } from './entities.js';
 import { Surf } from './sound.js';
@@ -18,7 +18,7 @@ const ctx = canvas.getContext('2d', { alpha: false });
 const ui = document.getElementById('ui');
 
 let themeName = 'day';
-let tool = 'splash';
+let tool = 'raise';
 let brush = Math.round(12 * SCALE);
 let dpr = 1;
 let W = 0, H = 0;
@@ -76,9 +76,9 @@ function markInput() {
   if (soundOn) surf.start();
 }
 
-// One-shot actions happen on press. Continuous tools (sand, splash) are driven
-// from the render loop instead of from pointermove, so the rate doesn't depend
-// on the mouse's report rate and holding still keeps working.
+// One-shot actions happen on press. The sand tools are driven from the render
+// loop instead of from pointermove, so the rate doesn't depend on the mouse's
+// report rate and holding still keeps working.
 function applyOnce(gx, gy) {
   switch (tool) {
     case 'toy':
@@ -94,33 +94,14 @@ function applyOnce(gx, gy) {
         world.addProp(gx, gy);
       }
       break;
-    case 'splash':
-      sim.splash(gx, gy, 1.5, Math.max(4, brush * 0.6));
-      world.addSplash(gx, gy, 14, 1);
-      surf.splash(1.1);
-      break;
-    case 'river': {
-      // Put the valley where you clicked. It only cuts a channel; where the
-      // mouth settles, and whether the sea bars it over, is up to the water.
-      if (sim.river.discharge < 0.05) sim.river.discharge = 0.5;
-      sim.setRiver(true, gy);
-      syncRiverUI();
-      surf.splash(0.7);
-      break;
-    }
   }
 }
 
 function applyHeld(gx, gy, dt) {
   const step = Math.min(0.05, dt);
   switch (tool) {
-    case 'raise': sim.sculpt(gx, gy, brush, 5.5 * step, 'raise'); break;
-    case 'dig': sim.sculpt(gx, gy, brush, -5.5 * step, 'raise'); break;
-    case 'smooth': sim.sculpt(gx, gy, brush, 0, 'smooth'); break;
-    case 'splash':
-      sim.splash(gx, gy, 14 * step, Math.max(4, brush * 0.6));
-      if (Math.random() < step * 30) world.addSplash(gx, gy, 3, 1);
-      break;
+    case 'raise': sim.sculpt(gx, gy, brush, 5.5 * step); break;
+    case 'dig': sim.sculpt(gx, gy, brush, -5.5 * step); break;
   }
 }
 
@@ -161,7 +142,6 @@ const fmt = {
   tide: v => (v > 0 ? '+' : '') + v.toFixed(2),
   erosion: v => Math.round(v * 100) + '%',
   speed: v => v.toFixed(2) + '×',
-  river: v => (v > 0.01 ? v.toFixed(2) : 'off'),
 };
 
 // Only sliders we know how to format and apply; an unrecognised data-p would
@@ -172,7 +152,7 @@ const sliders = [...document.querySelectorAll('input[data-p]')]
 function syncSliders() {
   for (const el of sliders) {
     const key = el.dataset.p;
-    el.value = key === 'river' ? (sim.river.on ? sim.river.discharge : 0) : sim.params[key];
+    el.value = sim.params[key];
     el.nextElementSibling.textContent = fmt[key](+el.value);
   }
 }
@@ -181,15 +161,7 @@ for (const el of sliders) {
     const key = el.dataset.p;
     const v = +el.value;
     if (key === 'tide') sim.setTide(v);
-    else if (key === 'river') {
-      sim.river.discharge = v;
-      // Turning the slider to zero is turning the river off, which now means
-      // the valley and the silt go too rather than the flow quietly stopping
-      // and leaving its scenery behind.
-      if (v > 0.01) { if (!sim.river.on) sim.setRiver(true); }
-      else sim.setRiver(false);
-      riverTool.classList.toggle('has', sim.river.on);
-    } else sim.params[key] = v;
+    else sim.params[key] = v;
     el.nextElementSibling.textContent = fmt[key](v);
     markInput();
   });
@@ -208,19 +180,10 @@ function selectIn(container, el) {
 const presetsEl = document.getElementById('presets');
 const themesEl = document.getElementById('themes');
 
-// sim.preset() clears the river along with the bed it was cut into, so every
-// path that rebuilds the scene has to put the panel back in step with it.
-// Forgetting is what left the tool lit up and the slider reading 0.85 next to a
-// coastline with no river in it.
-function syncRiverUI() {
-  riverTool.classList.toggle('has', sim.river.on);
-  syncSliders();
-}
-
 function setCoast(name) {
   sim.preset(name);
   world.reset();
-  syncRiverUI();
+  syncSliders();
   selectIn(presetsEl, presetsEl.querySelector(`[data-preset="${name}"]`));
 }
 presetsEl.addEventListener('click', ev => {
@@ -271,7 +234,7 @@ const LESSONS = {
       // cut a channel through the bar, the way a real rip maintains its own gap
       const gy = NY * 0.5;
       for (let k = 0; k < 34; k++) {
-        sim.sculpt(NX * (0.36 + k * 0.006), gy, Math.round(9 * SCALE), -0.55, 'raise');
+        sim.sculpt(NX * (0.36 + k * 0.006), gy, Math.round(9 * SCALE), -0.55);
       }
     },
   },
@@ -303,18 +266,6 @@ const LESSONS = {
       + 'deep water, so the whole wave pivots. Flatten the bars and it stops.',
     preset: 'coves',
     params: { amplitude: 0.6, frequency: 0.07, angle: 48, chop: 0.15, wind: 0.15, erosion: 0.1 },
-  },
-  delta: {
-    title: 'Where the river meets the sea',
-    body: 'Fresh water carrying silt runs down the valley and fans out at the '
-      + 'mouth as a brown plume. Watch what the swell does to it: arriving at an '
-      + 'angle, it drags sand along the coast and starts building a spit across '
-      + 'the opening, bending the mouth downdrift. Turn the swell straight on '
-      + '(Direction to 0) and the river wins; angle it and the sea does.',
-    preset: 'classic',
-    params: { amplitude: 0.55, frequency: 0.09, angle: 26, chop: 0.3, wind: 0.3, erosion: 0.75 },
-    river: 0.85,
-    section: false,
   },
   reefbreak: {
     title: 'Why a reef makes a lagoon',
@@ -375,16 +326,19 @@ function runLesson(name) {
   world.reset();
   Object.assign(sim.params, L.params);
   sim.setTide(L.tide || 0);
-  if (L.river) { sim.river.discharge = L.river; sim.setRiver(true); }
-  syncRiverUI();
+  syncSliders();
   if (L.build) L.build(sim);
   if (L.props) {
     for (let i = 0; i < 6; i++) {
       world.addProp(NX * (0.80 + Math.random() * 0.11), Math.random() * NY);
     }
   }
-  // let the situation develop before it is looked at
-  for (let i = 0; i < 200; i++) { sim.step(); world.update(sim.lastDt); }
+  // Let the situation develop a little before it is looked at. This is a slice
+  // of SIM-time rather than a step count so the wave clock cannot quietly change
+  // how much of a head start a demonstration gets, and it is kept short because
+  // it runs synchronously: every unit of it is a freeze between the click and
+  // the card. The rest of the scene builds on screen, at the speed it happens.
+  for (let t = 0; t < 10; t += sim.lastDt) { sim.step(); world.update(sim.lastDt); }
 
   if (L.flow && !showFlow) flowBtn.click();
   if (L.section && !section.visible) sectionBtn.click();
@@ -418,7 +372,6 @@ document.getElementById('moods').addEventListener('click', ev => {
 });
 
 const toolBar = document.getElementById('tools');
-const riverTool = toolBar.querySelector('[data-tool="river"]');
 toolBar.addEventListener('click', ev => {
   const b = ev.target.closest('button[data-tool]'); if (!b) return;
   tool = b.dataset.tool;
@@ -446,11 +399,17 @@ document.getElementById('btn-calm').addEventListener('click', () => {
 document.getElementById('btn-reset').addEventListener('click', () => {
   sim.preset(currentPreset());
   world.reset();
-  syncRiverUI();
+  syncSliders();
   markInput();
 });
-let showFlow = false;
+// The currents overlay is on from the first frame. It is the one instrument
+// that explains what the water is doing rather than what it looks like — where
+// the rip runs, which way the longshore drift is going — and leaving it off by
+// default meant most viewers never saw it. The toggle still works (F, the
+// button, or the phone) for anyone who wants the bare water.
+let showFlow = true;
 const flowBtn = document.getElementById('btn-flow');
+flowBtn.classList.toggle('on', showFlow);
 flowBtn.addEventListener('click', () => {
   showFlow = !showFlow;
   flowBtn.classList.toggle('on', showFlow);
@@ -493,7 +452,7 @@ function togglePause() {
 
 addEventListener('keydown', ev => {
   if (ev.target instanceof HTMLInputElement) return;   // let sliders keep arrows/space
-  const keys = { '1': 'raise', '2': 'dig', '3': 'smooth', '4': 'splash', '5': 'toy', '6': 'prop', '7': 'river' };
+  const keys = { '1': 'raise', '2': 'dig', '3': 'toy', '4': 'prop' };
   markInput();
   if (keys[ev.key]) {
     tool = keys[ev.key];
@@ -502,7 +461,7 @@ addEventListener('keydown', ev => {
   }
   switch (ev.key.toLowerCase()) {
     case ' ': ev.preventDefault(); togglePause(); break;
-    case 'r': sim.preset(currentPreset()); world.reset(); syncRiverUI(); break;
+    case 'r': sim.preset(currentPreset()); world.reset(); syncSliders(); break;
     case 't': sim.tsunami(2.6); surf.rumble(); break;
     case 'd': depthBtn.click(); break;
     case 'f': flowBtn.click(); break;
@@ -554,7 +513,7 @@ canvas.addEventListener('pointerleave', () => { hover = null; });
 
 function drawCursor(sx, sy) {
   if (!hover) return;
-  const sculpting = tool === 'raise' || tool === 'dig' || tool === 'smooth' || tool === 'splash';
+  const sculpting = tool === 'raise' || tool === 'dig';
   if (!sculpting) return;
   ctx.save();
   ctx.strokeStyle = 'rgba(255,255,255,0.55)';
@@ -685,7 +644,6 @@ function rememberSmallerGrid() {
 const statsEl = document.getElementById('stats');
 let last = performance.now();
 let fpsAvg = 60, statTimer = 0;
-let warmup = 280;
 
 // sim.step() always advances the same slice of sim-time, so how fast the water
 // appears to move is set by how OFTEN it is stepped, not by how long the frame
@@ -694,7 +652,8 @@ let warmup = 280;
 // switching preset, a heavier coastline, the tab coming back to the
 // foreground — made the swell visibly speed up or slow down. So real time is
 // accumulated here and spent in whole steps at a fixed rate instead.
-const STEP_HZ = 60;             // solver steps per real second
+// STEP_HZ and the sim-time each step advances live in sim.js; together they set
+// how fast the water runs (see 'the wave clock' there).
 const MAX_CATCHUP = 4;          // steps one frame may spend
 let acc = 0;
 
@@ -703,12 +662,14 @@ function frame(now) {
   last = now;
   fpsAvg += (1 / dt - fpsAvg) * 0.06;
 
-  // Spin the sim up over the first second or so instead of blocking the first
-  // paint: a display should open with waves already breaking, not a flat pond.
-  for (let i = 0; i < 5 && warmup > 0; i++, warmup--) {
-    sim.step();
-    world.update(sim.lastDt);
-  }
+  // No spin-up: the beach opens as flat calm water and the swell arrives at the
+  // speed it actually travels. There used to be a burst of extra steps here to
+  // have waves already breaking on the first frame — a crossing time is about
+  // 20 units of sim-time, and 60 before the surf settles — but it is 4.5 s of
+  // solver however it is spent, and spending it in the render loop means the
+  // opening seconds play at twenty times speed. Fast-forwarding in front of the
+  // viewer looks like the simulation is broken rather than starting, so the
+  // first wave is simply allowed to travel.
 
   updateAttract(dt, now);
   for (const [, g] of pointers) applyHeld(g[0], g[1], dt);
@@ -827,7 +788,7 @@ const controlHandlers = {
     applyOnce(gx, gy);
     // The held-down tools do nothing on a single tap, so a tap on one of them
     // gets a single step's worth rather than silently no-op.
-    if (which === 'raise' || which === 'dig' || which === 'smooth') {
+    if (which === 'raise' || which === 'dig') {
       applyHeld(gx, gy, 0.35);
     }
     tool = previous;
@@ -837,7 +798,7 @@ const controlHandlers = {
     const btn = { flow: flowBtn, depth: depthBtn, section: sectionBtn }[key];
     if (btn && btn.classList.contains('on') !== on) btn.click();
   },
-  onReset: () => { sim.preset(currentPreset()); world.reset(); syncRiverUI(); },
+  onReset: () => { sim.preset(currentPreset()); world.reset(); syncSliders(); },
   onCalm: () => flattenSea(),
 };
 connectFootron(controlHandlers);

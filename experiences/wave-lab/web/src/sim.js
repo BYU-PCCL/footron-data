@@ -92,8 +92,33 @@ const G = 9.8 * SCALE * SCALE;
 // Velocities are in cells per unit time, so every speed threshold scales too.
 const VS = SCALE;
 const DT_CFL = 0.0667;
-// Silt in the surf tops out here; a river runs several times muddier, which is
-// what keeps a freshwater plume readable against churned-up sea.
+// --- the wave clock -------------------------------------------------------
+//
+// The solver is stepped at a fixed real-time rate and advances a fixed slice of
+// sim-time per step, so sim-time runs at STEP_DT * STEP_HZ units per wall-clock
+// second and the swell's rhythm is independent of the frame rate. That product
+// is the only thing that sets how fast the water appears to move: at 3 units a
+// second, the surf report's 10 s period arrives as a wave every ~3.5 real
+// seconds, which reads as ocean swell rather than a ripple tank. (It used to be
+// 12, which put a whole 'ten-second' swell inside one second.) Everything on
+// the water — foam, sand transport, entities — is integrated in sim-time, so
+// they all keep step with it.
+export const STEP_HZ = 60;                            // solver steps / real second
+export const STEP_DT = 0.05;                          // sim-time / step at speed 1
+export const SIM_PER_SECOND = STEP_DT * STEP_HZ;      // sim-time / real second
+// Several of the stabilisers below take a fixed FRACTION of something per call
+// — breaking relaxes the crest by 55%, sand slumps 40% of the way to its
+// neighbours, the de-noiser pulls 22% toward the local mean. Those fractions
+// were tuned when a step was REF_DT of sim-time, and applying them per call
+// makes them rates per STEP rather than per unit of time: dice the clock finer
+// and the surf quietly dissipates harder, which is exactly what happened when
+// the wave clock was slowed. `perStep` converts a per-REF_DT fraction into the
+// equivalent fraction for a step of `dt` — identical at REF_DT, and converging
+// on a true exponential rate as the step shrinks.
+const REF_DT = 0.2;
+const perStep = (frac, dt) => 1 - Math.pow(1 - frac, dt / REF_DT);
+// How murky the surf is allowed to get: enough that a working break looks
+// stirred up, not so much that the whole coast reads as being in flood.
 const SURF_TURB = 0.26;
 
 // --- frequency dispersion -------------------------------------------------
@@ -118,8 +143,6 @@ const DISP_C = SCALE / H_PER_CELL;            // height units -> cells
 // amplify them, so the correction is capped at a fraction of the gravity term.
 // That leaves the physical range intact and refuses only the runaway.
 const DISP_CAP = 0.30;
-// Bed drag in the river channel; see carveRiver for why it is there.
-const RIVER_ROUGH = 0.7;
 const SPONGE = Math.round(16 * (NX / 320));   // absorbing band at the ocean edge
 const SRCX = Math.round(24 * (NX / 320));     // internal wave generator column
 const SRC_HALF = Math.max(3, Math.round(5 * SCALE));   // half-width of the generator
@@ -201,24 +224,15 @@ export class Sim {
     this.qy = new Float32Array(n);
     this.fyCarry = new Float32Array(NX);
     this.fyWrap = new Float32Array(NX);
-    // Turbidity: a passive tracer carried by the flow. Rivers run silty, and
-    // breaking waves stir the bed up, so this is what makes fresh water and
-    // churned surf visibly different from clean sea.
+    // Turbidity: a passive tracer carried by the flow. Breaking waves stir the
+    // bed up, so this is what makes churned surf visibly different from clean
+    // sea.
     this.turb = new Float32Array(n);
     this.turbTmp = new Float32Array(n);
-    this.river = {
-      on: false,
-      y: NY * 0.42,
-      discharge: 0.5,
-      width: Math.max(3, 5 * SCALE),
-      depth: 1.8,                 // set by carveRiver; caps the head's stage
-      headX: Math.round(NX * 0.965),
-      carved: false,
-    };
     this.sea = 0;
     this.time = 0;
     this.rippleOff = 0;
-    this.lastDt = 0.2;
+    this.lastDt = STEP_DT;
     this.foamTotal = 0;
     this.breakEnergy = 0;
     this.swashEnergy = 0;
@@ -293,9 +307,9 @@ export class Sim {
     this.structures = [];
     this.hasFloor = false;
     this.hasMaterial = false;
-    // A new sea bed is a new scene. Anything the last one had carved into it
-    // goes with it — see clearRiver.
-    this.clearRiver();
+    // A new sea bed is a new scene: the silt the last one stirred up goes with
+    // it, or the fresh coastline arrives stained brown with no visible source.
+    this.turb.fill(0);
     for (let j = 0; j < NY; j++) {
       const fy = j / NY;
       const w1 = Math.sin(2 * Math.PI * 2 * fy + 0.7);
@@ -546,131 +560,6 @@ export class Sim {
     }
   }
 
-  // Cut a channel for the river to run down. The bed already falls toward the
-  // sea, so once there is a channel the water finds its own way out; everything
-  // after that — where the mouth ends up, the delta, the spit across it — is
-  // the sediment code doing its job, not a script.
-  //
-  // What was here was a Gaussian eleven cells wide and about a metre and a half
-  // deep, which sounds like a valley and is not one: the sides of a Gaussian
-  // are cut almost as deep as its middle, so the measured freeboard — how far
-  // the banks stood above the channel bed — came out between 0.05 and 0.6 m at
-  // the moment of carving, and negative in places. There was nothing to confine
-  // the water. It spread sideways immediately and ran as a sheet over the back
-  // beach instead of as a river, which is what the whole feature looked wrong
-  // because of.
-  //
-  // This cuts a flat bed with steep sides and a guaranteed depth below the
-  // ground it is cutting through, then piles the spoil into levees along the
-  // banks. Both halves are what a real river does, and together they are what
-  // makes the water go where the channel goes.
-  // Walk every cell of the channel, so carving it and removing it cannot
-  // disagree about where it was.
-  channelCells(fn) {
-    const r = this.river;
-    const w = r.width;
-    const outer = Math.ceil(w * 2.6);
-    const from = Math.round(NX * 0.50);
-    const jc = Math.round(r.y);
-    for (let i = from; i < NX; i++) {
-      for (let d = -outer; d <= outer; d++) {
-        fn((((jc + d) % NY + NY) % NY) * NX + i, Math.abs(d), i, w, outer, from);
-      }
-    }
-  }
-
-  carveRiver(y) {
-    const r = this.river;
-    if (y !== undefined) r.y = ((y % NY) + NY) % NY;
-    const { bed, eta, floor, rough } = this;
-    const w = r.width;                        // half-width of the flat bed
-    const outer = Math.ceil(w * 2.6);         // where the banks meet the ground
-    const DEPTH = 1.8;                        // bed below the surrounding ground
-    const LEVEE = 0.5;                        // spoil piled along the banks
-    r.depth = DEPTH;
-    const from = Math.round(NX * 0.50);
-    const jc = Math.round(r.y);
-    const at = (d, i) => (((jc + d) % NY + NY) % NY) * NX + i;
-
-    for (let i = from; i < NX; i++) {
-      const s2 = (i - from) / (NX - 1 - from);
-      // The water-surface line the channel is aiming at: below sea level at the
-      // shore so the mouth is always open, climbing inland to give it a fall.
-      const flow = this.sea - 0.7 + 2.4 * s2 * s2;
-      // Ground either side, sampled before anything on this column is touched.
-      const ground = (bed[at(-outer, i)] + bed[at(outer, i)]) * 0.5;
-      const target = Math.min(flow, ground - DEPTH);
-
-      for (let d = -outer; d <= outer; d++) {
-        const k = at(d, i);
-        const a = Math.abs(d);
-        // 1 across the flat bed, easing to 0 at the outer edge of the bank.
-        const t = a <= w ? 1 : 1 - (a - w) / (outer - w);
-        const sm = t * t * (3 - 2 * t);
-        const cut = target * sm + bed[k] * (1 - sm);
-        if (cut < bed[k]) bed[k] = cut;
-        if (a > w) {
-          // A low ridge just outside the channel, highest a little way up the
-          // bank and gone by the time it reaches undisturbed ground.
-          const u = (a - w) / (outer - w);
-          bed[k] += LEVEE * Math.exp(-Math.pow((u - 0.30) / 0.26, 2));
-        }
-        if (bed[k] < floor[k]) bed[k] = floor[k];
-        if (eta[k] < bed[k]) eta[k] = bed[k];
-        // A river bed is not a sandy sea floor. It is cobbles, weed and the
-        // roughness of its own banks, and it takes far more energy out of the
-        // water — which matters here for a measured reason: the bedload law was
-        // written for surf, where the flow reverses twice a wave and the net
-        // transport is a small difference between two big numbers. A river's
-        // flow is STEADY, so the same law runs at its cap continuously and in
-        // one direction, and it excavated the channel by two metres in a minute
-        // and dumped the spoil in a bar just downstream. Slowing the water is
-        // the physical fix, and the quadratic bed drag is already there for the
-        // reef flat: the transport falls off as the square of the speed, so a
-        // third off the velocity is more than half off the bedload.
-        if (a <= outer) rough[k] = Math.max(rough[k], RIVER_ROUGH);
-      }
-    }
-    this.hasFloor = true;   // `rough` is only read when this is set
-    r.carved = true;
-  }
-
-  setRiver(on, y) {
-    if (!on) { this.clearRiver(); return; }
-    this.river.on = true;
-    this.carveRiver(y);
-  }
-
-  // Turn the river off and leave nothing behind.
-  //
-  // Switching it off used to mean setting one flag. The valley stayed cut, the
-  // silt stayed in the water, and the mouth stayed where the last flood had put
-  // it — so the next coastline arrived with somebody else's river-mouth in it.
-  // Worse, rebuilding the bed for a new preset erased the channel but NOT the
-  // flag, so the inflow carried on pouring into a hillside with nowhere to go
-  // and spread a flood across the back beach. A river is part of a scene, and
-  // it has to leave with the scene.
-  clearRiver() {
-    const r = this.river;
-    // Take the channel's bed roughness back out. The valley itself is left in
-    // the sand — that is scenery the sea is entitled to rework, and a rebuilt
-    // preset wipes it anyway — but roughness is invisible, so leaving it behind
-    // would quietly damp a stretch of coast for no reason anyone could see.
-    if (r.carved) {
-      const rough = this.rough;
-      this.channelCells((k) => {
-        const v = rough[k] - RIVER_ROUGH;
-        rough[k] = v > 0 ? v : 0;
-      });
-    }
-    r.on = false;
-    r.carved = false;
-    r.y = NY * 0.42;
-    // Silt is the river's, not the sea's. Left behind it stains the next
-    // coastline brown for a minute or so with no visible source.
-    this.turb.fill(0);
-  }
-
   resetWater() {
     this.sea = this.params.tide;
     for (let k = 0; k < this.eta.length; k++) {
@@ -753,7 +642,7 @@ export class Sim {
 
   // ------------------------------------------------------------- sculpting
 
-  sculpt(gx, gy, radius, amount, mode) {
+  sculpt(gx, gy, radius, amount) {
     const bed = this.bed, eta = this.eta;
     const r = Math.max(1, radius), r2 = r * r;
     for (let dj = -r; dj <= r; dj++) {
@@ -765,13 +654,7 @@ export class Sim {
         if (d2 > r2) continue;
         const f = Math.pow(1 - Math.sqrt(d2) / r, 1.5);
         const k = j * NX + i;
-        if (mode === 'smooth') {
-          const jm = ((j - 1 + NY) % NY) * NX + i, jp = ((j + 1) % NY) * NX + i;
-          const avg = (bed[k - 1] + bed[k + 1] + bed[jm] + bed[jp]) * 0.25;
-          bed[k] += (avg - bed[k]) * f * 0.6;
-        } else {
-          bed[k] += amount * f;
-        }
+        bed[k] += amount * f;
         // You can pile sand onto coral or against a pile, but you cannot dig
         // either of them away with a finger.
         const fl = this.floor[k];
@@ -798,7 +681,7 @@ export class Sim {
     // 11% off target, so the wave clock ran at slightly different rates on
     // different grids — the same 'time speed' has to mean the same thing
     // everywhere.
-    const target = 0.2 * this.params.speed;
+    const target = STEP_DT * this.params.speed;
     const sub = Math.max(1, Math.min(12, Math.ceil(target / dtMax)));
     const dt = target / sub;
     for (let s = 0; s < sub; s++) {
@@ -937,63 +820,6 @@ export class Sim {
         fyCarry[i] = fU;
       }
     }
-
-    if (this.river.on) this.riverInflow(dt);
-  }
-
-  // Discharge at the head of the valley. Water is added as mass and given a
-  // seaward nudge; gravity does the rest. The sponge at the ocean edge is the
-  // outlet, so the basin's total volume stays bounded however long it runs.
-  riverInflow(dt) {
-    const r = this.river;
-    const { bed, eta, u, turb } = this;
-    const q = r.discharge;
-    if (q <= 0) return;
-    const w = r.width;
-    const half = Math.ceil(w * 1.6);
-    const i0 = Math.max(1, r.headX - Math.round(6 * SCALE));
-    const i1 = Math.min(NX - 1, r.headX + Math.round(2 * SCALE));
-    // The head is a pond at a more or less fixed level, and what leaves it is
-    // whatever the channel below can carry.
-    //
-    // This used to add mass at a fixed RATE, which works right up until the
-    // channel silts up — and the sediment code guarantees it will, because that
-    // is what the delta is made of. After that the water had nowhere to go: it
-    // piled up at the head and spread over the back beach as a sheet a few
-    // centimetres deep, which the thin-film highlight rendered as a pale wash.
-    // On screen that is not a river, it is a flood, and it was the main thing
-    // wrong with the feature.
-    //
-    // Relaxing toward a target stage instead makes the discharge emergent. The
-    // slider sets how deep the pond is; the channel decides how much gets out;
-    // and when the channel closes the pond stops rising rather than overtopping
-    // its banks. A river that runs out of channel now goes quiet, which is at
-    // least something that happens to rivers.
-    // Never deep enough to overtop its own banks: the pond is capped at a
-    // fraction of the channel's depth, so the discharge slider makes the river
-    // fuller and faster but cannot turn it back into a flood.
-    const depth = Math.min(0.35 + 1.3 * q, (r.depth || 1.8) * 0.72);
-    const rate = Math.min(1, dt * 2.4);
-    for (let i = i0; i < i1; i++) {
-      for (let d = -half; d <= half; d++) {
-        const j = ((Math.round(r.y) + d) % NY + NY) % NY;
-        const k = j * NX + i;
-        const prof = Math.exp(-(d * d) / (w * w));
-        if (prof < 0.02) continue;
-        const target = bed[k] + depth;
-        if (eta[k] < target) eta[k] += (target - eta[k]) * rate * prof;
-        // a push toward the sea, so the flow starts moving rather than ponding
-        u[k] -= dt * 5.5 * SCALE * prof;
-        // Silt comes off the catchment with the water, so it is metered by how
-        // fast the water is actually leaving. Injecting it at a fixed rate meant
-        // a stalled river went on making mud, and left a brown stain sitting on
-        // the back beach with nothing moving in it.
-        const moving = Math.min(1, Math.abs(u[k]) / (0.6 * VS));
-        const load = Math.min(1.4, turb[k] + dt * 2.6 * prof * moving);
-        turb[k] = load;
-        if (eta[k] < bed[k]) eta[k] = bed[k];
-      }
-    }
   }
 
   postProcess(dt) {
@@ -1004,7 +830,16 @@ export class Sim {
     // continuously, not just where it breaks — which is how a reef shelters a
     // lagoon that is deep enough for the swell to cross unbroken. Sand is
     // smooth enough that the uniform damping already covers it.
-    const CD_BED = 0.12;
+    //
+    // 0.12 was tuned when the solver's own dissipation was doing much of this
+    // job for it: the breaking stabiliser ran per step rather than per unit
+    // time, so a coarse clock quietly ate the surf (see 'the wave clock'). With
+    // that fixed and the swell measured at four step sizes, 0.12 left the lagoon
+    // at 0.77 of an open beach's wave height — the reef had stopped sheltering.
+    // Measured against the same swell: 0.12 -> 0.77, 0.30 -> 0.34, 0.60 -> 0.20.
+    // 0.30 restores the sheltering the reef always appeared to have, and sits
+    // inside the range measured over real coral flats rather than beyond it.
+    const CD_BED = 0.30;
     let foamTotal = 0, breakEnergy = 0, swashEnergy = 0;
     const p = this.params;
     const sea = this.sea;
@@ -1012,7 +847,12 @@ export class Sim {
     // to decay with a 0.07 s time constant, which meant foam existed only in
     // the exact cells generating it — isolated blobs instead of surf.
     const foamDecay = Math.exp(-0.055 * dt);
-    const etaFilter = Math.min(0.40, 0.18 + p.amplitude * 0.18);
+    const etaFilter = perStep(Math.min(0.40, 0.18 + p.amplitude * 0.18), dt);
+    const breakRelax = perStep(0.55, dt);   // crest knocked down by breaking
+    const breakFoam = 0.05 * (dt / REF_DT); // whitewater it leaves behind
+    const slumpRate = perStep(0.40, dt);    // sand sliding toward its neighbours
+    const velFilter = perStep(0.22, dt);    // checkerboard de-noiser
+    const foamBlur = perStep(0.50, dt);
     for (let j = 0; j < NY; j++) {
       const row = j * NX;
       const rowp = (j + 1 < NY ? j + 1 : 0) * NX;
@@ -1032,8 +872,8 @@ export class Sim {
             Math.max(0.9 * p.amplitude + 0.4, 0.85 * stillH));
           const over = eta[c] - sea - cap;
           if (over > 0) {
-            eta[c] -= over * 0.55;     // relax, don't snap: snapping rings
-            foam[c] = Math.min(1.15, foam[c] + 0.05);
+            eta[c] -= over * breakRelax;   // relax, don't snap: snapping rings
+            foam[c] = Math.min(1.15, foam[c] + breakFoam);
           }
         }
         // 2. water can't outrun its own wave speed by much.
@@ -1057,10 +897,10 @@ export class Sim {
 
         // foam: breaking crests + whitecaps + swash on wet sand
         let f = foam[c] * foamDecay;
-        // Whitewater is only MADE in the sea. Above the waterline — swash, or a
-        // river running downhill — the surface sits well above sea level, so a
-        // crest-versus-sea-level test fires permanently and paints the whole
-        // thing white. Foam gets there by being carried, not by being created.
+        // Whitewater is only MADE in the sea. Above the waterline — in the
+        // swash — the surface sits well above sea level, so a crest-versus-sea-
+        // level test fires permanently and paints the whole thing white. Foam
+        // gets up there by being carried, not by being created.
         const stillHere = sea - bed[c];
         if (H > 0.02 && stillHere > 0.04) {
           const crest = eta[c] - sea;
@@ -1075,10 +915,8 @@ export class Sim {
         }
         foam[c] = f > 1.15 ? 1.15 : f;
         // Breaking waves lift sand into the water, so the surf runs murky. Free
-        // to add here: foam and speed are already in hand.
-        // Kept well below the river's load, and capped: the surf should look
-        // faintly churned, not like the whole coast is in flood. One field
-        // serves both because they never need telling apart — only showing.
+        // to add here: foam and speed are already in hand, and it is capped so
+        // the surf looks faintly churned rather than like a flood.
         if (H > 0.03 && H < 2.2) {
           const stir = foam[c] * 0.35 + (spd > 1.4 * VS ? (spd / VS - 1.4) * 0.16 : 0);
           if (stir > 0.01 && turb[c] < SURF_TURB) {
@@ -1111,8 +949,8 @@ export class Sim {
         // slope limits are per-cell rises, so they shrink as cells do
         const repose = (0.45 + 0.5 * Math.max(0, 1 - H / 0.30)) / VS;
         let slump = 0;
-        if (diff > repose) slump = (diff - repose) * 0.4;
-        else if (diff < -repose) slump = (diff + repose) * 0.4;
+        if (diff > repose) slump = (diff - repose) * slumpRate;
+        else if (diff < -repose) slump = (diff + repose) * slumpRate;
         if (hasFloor && slump !== 0) {
           // Only the loose sand lying on top can slump. Without this the reef
           // crest and the pier piles — both steep by construction — would
@@ -1150,8 +988,8 @@ export class Sim {
       const rowm = (j > 0 ? j - 1 : NY - 1) * NX;
       for (let i = 1; i < NX - 1; i++) {
         const c = row + i, cd = rowm + i, cu = rowp + i;
-        u[c] += ((u[c - 1] + u[c + 1] + u[cd] + u[cu]) * 0.25 - u[c]) * 0.22;
-        v[c] += ((v[c - 1] + v[c + 1] + v[cd] + v[cu]) * 0.25 - v[c]) * 0.22;
+        u[c] += ((u[c - 1] + u[c + 1] + u[cd] + u[cu]) * 0.25 - u[c]) * velFilter;
+        v[c] += ((v[c - 1] + v[c + 1] + v[cd] + v[cu]) * 0.25 - v[c]) * velFilter;
         if (eta[c] - bed[c] > 0.05 && eta[c - 1] - bed[c - 1] > 0.05 &&
             eta[c + 1] - bed[c + 1] > 0.05 && eta[cd] - bed[cd] > 0.05 &&
             eta[cu] - bed[cu] > 0.05) {
@@ -1194,7 +1032,7 @@ export class Sim {
       const rowm = (j > 0 ? j - 1 : NY - 1) * NX;
       for (let i = 1; i < NX - 1; i++) {
         const c = row + i;
-        foam[c] = ft[c] + ((ft[c - 1] + ft[c + 1] + ft[rowm + i] + ft[rowp + i]) * 0.25 - ft[c]) * 0.5;
+        foam[c] = ft[c] + ((ft[c - 1] + ft[c + 1] + ft[rowm + i] + ft[rowp + i]) * 0.25 - ft[c]) * foamBlur;
       }
     }
 
@@ -1209,9 +1047,9 @@ export class Sim {
   }
 
   // Silt is carried by the water and settles out of it. Advecting the tracer is
-  // what turns the river into a plume: it fans out at the mouth, gets bent along
-  // the coast by the longshore current, and thins as it mixes — none of which
-  // could be drawn from the river's position alone.
+  // what makes the murk belong to the surf that raised it: it drifts along the
+  // coast with the longshore current and thins as it mixes, rather than sitting
+  // in the cells where it was stirred up.
   advectTurb(dt) {
     const { turb, turbTmp, u, v, eta, bed } = this;
     const k = dt * 1.9;

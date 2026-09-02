@@ -2,11 +2,9 @@
 // crabs that bolt from the swash, gulls overhead, and beach furniture that the
 // tide will eventually steal.
 
-import { NX, NY, SCALE, VIEW_X0 } from './sim.js';
+import { NX, NY, SCALE, VIEW_X0, SIM_PER_SECOND } from './sim.js';
 
 const TAU = Math.PI * 2;
-// The solver advances ~12 sim-time units per wall-clock second at speed 1.
-const SIM_PER_SECOND = 12;
 // Lengths and speeds below are in cells, so they scale with the grid: that keeps
 // a beach ball the same size and a crab the same speed on every tier.
 const S = SCALE;
@@ -160,7 +158,7 @@ export class World {
 
   // ----------------------------------------------------------------- update
 
-  // `dt` is SIM time (the water's clock, ~12 units per wall-clock second).
+  // `dt` is SIM time (the water's clock; SIM_PER_SECOND units per real second).
   // Anything coupled to the water integrates in it; anything with its own pace
   // (legs, wingbeats, timers, fading) uses the wall-clock equivalent `rs`.
   update(dt) {

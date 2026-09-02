@@ -9,8 +9,8 @@
  * visitor has the wall for a couple of minutes and will not read it, so the
  * things with the largest, fastest, most obvious effect come first — the
  * weather buttons and the rogue wave — and the fine sliders come after. The
- * beach pad is high up too, because touching a spot on the wall and seeing a
- * splash appear there is the moment someone understands that this thing is
+ * beach pad is high up too, because touching a spot on the wall and seeing the
+ * sand pile up there is the moment someone understands that this thing is
  * listening to them.
  *
  * Message formats (keep in sync with src/footron.js in the Wave Lab repo):
@@ -20,7 +20,7 @@
  *   Coastline:   { type: "coast", value: "reef" | "pier" | … }
  *   Light:       { type: "light", value: "day" | "sunset" | "night" }
  *   Demo:        { type: "lesson", value: "reefbreak" | … }
- *   Tap/drag:    { type: "touch", x: <0…1>, y: <0…1>, tool: "splash" | … }
+ *   Tap/drag:    { type: "touch", x: <0…1>, y: <0…1>, tool: "raise" | … }
  *   Overlays:    { type: "view", key: "flow" | "depth" | "section" | "pause",
  *                  value: <bool> }
  *   Reset:       { type: "reset" }      Flatten: { type: "calm" }
@@ -81,18 +81,16 @@ const SLIDERS = [
     fmt: (v) => `${v > 0 ? "+" : ""}${v.toFixed(2)} m` },
 ];
 
-// What a tap on the pad does. "Splash" leads because it is the one whose effect
-// is unmistakable — a ring spreads from exactly where the finger went. The
-// beach-stuff tool drops an umbrella, a palm, a towel, a chair or a sandcastle,
-// so it is named for what it does rather than for one of the five things it
-// might give you.
+// What a tap on the pad does. "Pile sand" leads because it is the one whose
+// effect is unmistakable — a bar rises exactly where the finger went, and the
+// next wave breaks on it. The beach-stuff tool drops an umbrella, a palm, a
+// towel, a chair or a sandcastle, so it is named for what it does rather than
+// for one of the five things it might give you.
 const TOOLS = [
-  { key: "splash", label: "Splash" },
-  { key: "toy", label: "Drop a toy" },
   { key: "raise", label: "Pile sand" },
   { key: "dig", label: "Dig" },
+  { key: "toy", label: "Drop a toy" },
   { key: "prop", label: "Beach stuff" },
-  { key: "river", label: "River" },
 ];
 
 const LESSONS = [
@@ -102,7 +100,6 @@ const LESSONS = [
   { key: "groin", label: "Groin trap" },
   { key: "reefbreak", label: "Reef break" },
   { key: "pierscour", label: "Pier scour" },
-  { key: "delta", label: "River delta" },
   { key: "surge", label: "Storm surge" },
 ];
 
@@ -214,7 +211,7 @@ const WaveLabControls = () => {
   });
   const [coast, setCoast] = useState("classic");
   const [light, setLight] = useState("day");
-  const [tool, setTool] = useState("splash");
+  const [tool, setTool] = useState("raise");
   const [views, setViews] = useState({ flow: false, section: false, depth: false });
   const [paused, setPaused] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -267,7 +264,7 @@ const WaveLabControls = () => {
       const p = at(e);
       // Only the continuous tools want a drag; tapping "drop a toy" twenty
       // times because a finger wandered is not what anyone meant.
-      if (p && (tool === "splash" || tool === "raise" || tool === "dig")) {
+      if (p && (tool === "raise" || tool === "dig")) {
         pending.current = { ...p, tool };
       }
     },
