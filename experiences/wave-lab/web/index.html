@@ -42,14 +42,11 @@
       <label class="slider"><span>Tide</span>
         <input type="range" data-p="tide" min="-1.6" max="1.6" step="0.01" value="0">
         <output></output></label>
-      <label class="slider"><span>River flow</span>
-        <input type="range" data-p="river" min="0" max="1.4" step="0.01" value="0.5">
-        <output></output></label>
       <label class="slider"><span>Sand drift</span>
         <input type="range" data-p="erosion" min="0" max="1" step="0.01" value="0.4">
         <output></output></label>
       <label class="slider"><span>Time speed</span>
-        <input type="range" data-p="speed" min="0.25" max="2" step="0.05" value="1">
+        <input type="range" data-p="speed" min="0.25" max="4" step="0.05" value="1">
         <output></output></label>
 
       <div class="group-title">Coastline</div>
@@ -77,7 +74,6 @@
         <button data-lesson="groin">Groin trap</button>
         <button data-lesson="refract">Refraction</button>
         <button data-lesson="surge">Storm surge</button>
-        <button data-lesson="delta">River delta</button>
         <button data-lesson="reefbreak">Reef break</button>
         <button data-lesson="pierscour">Pier scour</button>
       </div>
@@ -103,13 +99,10 @@
   </div>
 
   <div class="panel tools" id="tools">
-    <button data-tool="raise"><i>⛰</i><span>Pile sand</span><kbd>1</kbd></button>
+    <button data-tool="raise" class="on"><i>⛰</i><span>Pile sand</span><kbd>1</kbd></button>
     <button data-tool="dig"><i>🕳</i><span>Dig</span><kbd>2</kbd></button>
-    <button data-tool="smooth"><i>〰</i><span>Smooth</span><kbd>3</kbd></button>
-    <button data-tool="splash" class="on"><i>💦</i><span>Splash</span><kbd>4</kbd></button>
-    <button data-tool="toy"><i>🏐</i><span>Drop toys</span><kbd>5</kbd></button>
-    <button data-tool="prop"><i>⛱</i><span>Beach stuff</span><kbd>6</kbd></button>
-    <button data-tool="river"><i>🏞</i><span>River</span><kbd>7</kbd></button>
+    <button data-tool="toy"><i>🏐</i><span>Drop toys</span><kbd>3</kbd></button>
+    <button data-tool="prop"><i>⛱</i><span>Beach stuff</span><kbd>4</kbd></button>
     <div class="brush">
       <span>Brush</span>
       <input type="range" id="brush" min="3" max="34" step="1" value="12">

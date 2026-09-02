@@ -160,7 +160,6 @@ body:not(.kiosk) #ui.hidden #section { opacity: 0; }
   border-radius: 7px; line-height: 1; font-size: 14px; cursor: pointer;
   background: rgba(255,255,255,.08); color: #cfe6f5; border: 1px solid rgba(255,255,255,.12);
 }
-#tools button.has i { filter: drop-shadow(0 0 6px rgba(120,225,255,.9)); }
 
 /* On the wall there is no pointer, so the cursor ring and the crosshair are
    noise in front of the beach; the phone is the only input. And the frame-rate
