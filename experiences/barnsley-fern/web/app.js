@@ -184,16 +184,56 @@ function allocGrid() {
   F.frame = 0; F.drawStart = 0;
 }
 
-/* The fern is tilted: it grows out of the lower left towards the upper right,
- * in a block at the middle of the sheet, with the writing in the corners
- * around it. BAND is that block as a fraction of the window -- the buffer, the
- * screen box and the CSS that keeps the text clear of it all read from the
- * same numbers. ROT is the tilt, clockwise from upright, so 0 stands the fern
- * up and 90 lays it on its side. */
-const BAND = { top: 0.185, h: 0.63, w: 0.46 };
+/* The fern is tilted: it grows out of the lower left towards the upper right.
+ * BAND is the block it is drawn into, as a fraction of the window. It is
+ * full-bleed now that the knobs have gone to the phone: the whole height of
+ * the sheet, and enough width that the rotated picture is height-limited on
+ * anything wider than about 5:4. What that leaves is the two side margins
+ * beside a diamond, which is where the narration and the legend sit -- so the
+ * writing overlaps the picture's bounding box and not its ink.
+ *
+ * ROT is the tilt, clockwise from upright, so 0 stands the fern up and 90 lays
+ * it on its side. */
+const BAND = { top: 0.01, h: 0.98, w: 0.60 };
 const ROT = 46;
 const ROT_C = Math.cos(ROT * Math.PI / 180);
 const ROT_S = Math.sin(ROT * Math.PI / 180);
+
+/* The sway: the fern is a flat thing, and this turns it slowly about the
+ * screen's vertical axis so it reads as a flat thing *in a space* rather than
+ * a picture printed on the glass.
+ *
+ * Two parts, both affine, so the whole plane is still one drawImage. Squeezing
+ * horizontally by cos(theta) is exactly what an orthographic camera sees of a
+ * plane turned by theta. Orthographic alone reads as a squeeze rather than a
+ * turn, though, so a shear proportional to sin(theta) is laid over it: the
+ * edge coming towards you drops and the edge going away rises, which is the
+ * depth cue that sells it. It is the standard cheat for a card flip and it is
+ * a lie about perspective, but a consistent one -- the fern and the walk
+ * overlay both go through it, so the walk stays on the ink.
+ *
+ * It sways rather than spins: a full turn passes through edge-on twice a lap,
+ * and a wall that folds the picture into a bright line every half minute reads
+ * as broken rather than as dimensional. SWAY_DEG is how far it turns each way,
+ * so the picture is never narrower than cos(SWAY_DEG) of itself. */
+const SWAY_DEG = 32;       // amplitude of the turn, each way from face-on
+const SWAY_PERIOD = 34;    // seconds for a there-and-back-again
+const SWAY_SHEAR = 0.158;  // tan 9 degrees: how hard the fake perspective bites
+
+// The current pose: a horizontal squeeze, and the shear that goes with it.
+const POSE = { c: 1, k: 0 };
+
+function poseAt(t) {
+  const th = SWAY_DEG * (Math.PI / 180) * Math.sin(2 * Math.PI * t / SWAY_PERIOD);
+  POSE.c = Math.cos(th);
+  POSE.k = SWAY_SHEAR * Math.sin(th);
+}
+
+// Worst-case vertical growth from the shear, as a fraction of the picture's
+// width. layout() has to leave room for it or the fern clips at the extremes
+// of the sway -- and a fern that fits only sometimes is worse than one drawn
+// a few percent smaller all the time.
+const SWAY_RISE = SWAY_SHEAR * Math.abs(Math.sin(SWAY_DEG * Math.PI / 180));
 
 /* Screen box for the tilted fern, plus the largest sub-rectangle of the grid
  * with the same shape. The fern is still rasterized upright -- only the
@@ -207,13 +247,19 @@ function layout() {
   let ih = 1, iw = F.xspan / F.yspan;
   // ... and tilted it needs this much room, so scale to whichever axis binds
   const bw = iw * c + ih * sn, bh = iw * sn + ih * c;
-  const k = Math.min(boxW / bw, boxH / bh);
+  // The sway never widens the picture (cos <= 1), but the shear does raise one
+  // side of it, so the height to fit is the swept height and not the face-on
+  // one. The sway is symmetric, so the center of the swept box is still the
+  // center of the plane -- which is what the composite and the walk rotate
+  // about.
+  const swept = bh + bw * SWAY_RISE;
+  const k = Math.min(boxW / bw, boxH / swept);
   iw *= k; ih *= k;
   F.iw = iw; F.ih = ih;
   F.rect = {
     x: W * 0.5 - bw * k / 2,
-    y: H * BAND.top + (boxH - bh * k) / 2,
-    w: bw * k, h: bh * k,
+    y: H * BAND.top + (boxH - swept * k) / 2,
+    w: bw * k, h: swept * k,
   };
 
   const aspect = iw / ih;            // buffer is still upright: xspan / yspan
@@ -389,14 +435,12 @@ function reset(quick) {
   F.walk = { x: F.x, y: F.y, mi: 1, t: 0, trail: [] };
   clearImage();
   buildLegend();
-  syncKnobs();
-  setCaption(paramsAreDefault() ? CAPTION_DRAW : CAPTION_BENT);
+  setPlantLine();
   if (quick) plot(SKETCH);   // a thin fern right away, so a drag tracks
 
   if (PREFILL) {
     for (let k = 0; k < 28; k++) plot(TARGET / 28);
     F.done = true;
-    setCaption(paramsAreDefault() ? CAPTION_DONE : CAPTION_BENT);
   }
 }
 
@@ -404,7 +448,11 @@ function reset(quick) {
 /* The same chaos game, slowed to a few throws a second, so the mechanism
  * behind the millions of points is watchable. */
 
-const WALK_RATE = 5.4;
+/* Slow enough to follow: a bit over two throws a second, so each jump is a
+ * separate event with time to see where it landed and to read the name of the
+ * rule that put it there. The trail is 26 points, which at this rate is about
+ * the last twelve seconds of the game. */
+const WALK_RATE = 2.2;
 const TRAIL = 26;
 
 function stepWalk(dt) {
@@ -424,19 +472,21 @@ function stepWalk(dt) {
 }
 
 /* Fern coordinates to screen: place the point on the upright picture, offset
- * from its center, then turn that offset by the tilt. Same transform the
- * composite uses, so the walk lands on the ink. */
+ * from its center, turn that offset by the tilt, then put it through the sway.
+ * Exactly the transform the composite uses, in the same order, so the walk
+ * lands on the ink at every point of the turn. */
 const offOf = (x, y) => [
   ((x - F.xmin) / F.xspan - 0.5) * F.iw,
   (0.5 - (y - F.ymin) / F.yspan) * F.ih,
 ];
 const sxOf = (x, y) => {
   const o = offOf(x, y);
-  return F.rect.x + F.rect.w * 0.5 + o[0] * ROT_C - o[1] * ROT_S;
+  return F.rect.x + F.rect.w * 0.5 + (o[0] * ROT_C - o[1] * ROT_S) * POSE.c;
 };
 const syOf = (x, y) => {
   const o = offOf(x, y);
-  return F.rect.y + F.rect.h * 0.5 + o[0] * ROT_S + o[1] * ROT_C;
+  return F.rect.y + F.rect.h * 0.5 +
+    (o[0] * ROT_C - o[1] * ROT_S) * POSE.k + (o[0] * ROT_S + o[1] * ROT_C);
 };
 
 function drawWalk() {
@@ -488,39 +538,151 @@ function drawWalk() {
 
 /* ---------- HUD ---------- */
 
-const CAPTION_DRAW =
-  '<b>Every speck is colored by the rule that put it there.</b> Watch where ' +
-  'the <b>blue</b> and <b>gold</b> collect: each of those two rules takes an ' +
-  'entire fern and folds it down into a single bottom leaflet. The <b>green</b> ' +
-  'rule &mdash; the one the die picks 85 times in 100 &mdash; folds the fern ' +
-  'into itself, one leaflet further up, and then does it again, and again.';
+/* The narration. What used to be three fixed blocks of prose on the sheet is
+ * one beat at a time down the left side, fading from each to the next: someone
+ * who walks up mid-draw gets the next sentence rather than a wall of text they
+ * would have to find the top of. The clock is the wall's own and not the
+ * draw's, so the argument keeps building across plant changes instead of
+ * restarting from the first line every forty seconds. */
 
-const CAPTION_DONE =
-  '<b>Nothing in this program knows what a leaf is.</b> Four matrices, ' +
-  'twenty-four numbers and a loaded die produce the same fern every time, ' +
-  'from any starting point you like &mdash; the picture is a property of the ' +
-  'numbers, not of where the walk began. Look closely: the blue leaflet is ' +
-  'the whole fern, turned and shrunk. So is the gold one. So is every leaflet ' +
-  'above them, all the way up, at every scale you can still see.';
+/* A beat is 40-odd words. Read from across a dim room at maybe two and a half
+ * words a second that is a good eighteen seconds, so a beat is up for twenty,
+ * of which the first second and a half is it fading in. The lap comes out at
+ * about four minutes -- longer than one visitor's session, which is the right
+ * way round: whoever walks up gets a beat they can finish rather than the
+ * middle of a sentence that is already leaving. */
+const BEAT = 21;        // seconds from the start of one beat to the next
+const BEAT_HOLD = 19.5; // of which it is up; the remainder is the crossfade
+const BEAT_LEAD = 1;    // dark before the first beat of a lap
 
-const CAPTION_BENT =
-  'These are <b>no longer Barnsley\'s numbers</b>. The four rules still pull ' +
+const NARRATION = [
+  'There is <b>no fern in this program</b> &mdash; no leaf, no stem, no ' +
+  'outline anywhere in the code. There is one moving point, four rules for ' +
+  'moving it, and a loaded die.',
+
+  'Every throw of the die picks one of the four rules. The rule <b>slides, ' +
+  'shrinks and turns</b> the point to somewhere new, and a speck of light is ' +
+  'left where it lands.',
+
+  'Seven million throws later the specks have filled in <b>everywhere the ' +
+  'walk can reach</b> &mdash; and that reachable set is a fern. Nothing drew ' +
+  'it; it is the only place the walk could go.',
+
+  'Every speck is <b>colored by the rule that placed it</b>. The four rules ' +
+  'are in the corner, each with the six numbers that are all it is: multiply ' +
+  'by these, add those.',
+
+  'Watch where the <b>blue</b> and the <b>gold</b> collect. Each of those two ' +
+  'rules takes an entire fern and folds it down into a <b>single bottom ' +
+  'leaflet</b>.',
+
+  'The <b>green</b> rule &mdash; the one the die picks 85 throws in 100 &mdash; ' +
+  'folds the fern into itself one leaflet further up. Then it does it again, ' +
+  'and again, and again.',
+
+  'So the blue leaflet is <b>the whole plant</b>, turned and shrunk. So is the ' +
+  'gold one. So is every leaflet above them, at every scale you can still ' +
+  'see. That property is called <b>self-similarity</b>.',
+
+  'The <b>tan</b> rule is the stem, and the die picks it one throw in a ' +
+  'hundred. One throw in a hundred is the whole difference between a plant ' +
+  'and a bunch of leaves.',
+
+  'The bright walker is <b>the same game slowed down</b>, to about two throws ' +
+  'a second, so you can watch it happen. It never leaves the fern, because the ' +
+  'fern is exactly the set the walk cannot escape.',
+
+  'Change the twenty-four numbers and the plant changes with them. The rules ' +
+  'still pull points closer together than they were, so the walk still settles ' +
+  'onto <b>some</b> definite shape &mdash; it is simply not a fern any more.',
+
+  'Four matrices, twenty-four numbers and a loaded die. <b>Nothing here knows ' +
+  'what a leaf is</b>, and the same fern comes back every time, from any ' +
+  'starting point you like.',
+].map((text, i) => ({ text: text, start: BEAT_LEAD + i * BEAT }));
+
+const NARRATION_LAP = BEAT_LEAD + NARRATION.length * BEAT + 3;
+
+/* Someone is turning the knobs by hand, and these are numbers nobody named.
+ * The lap stops for them: whoever is driving is not reading the essay, and
+ * whoever is watching wants to know what they are looking at. Picking one of
+ * the *named* plants from the phone does not stop it -- Crozier is as much a
+ * fern as Barnsley's is, and the wall has other people in front of it. */
+const BENT_NOTE =
+  'These are <b>no longer Barnsley&rsquo;s numbers</b>. The four rules still pull ' +
   'points closer together than they were, so the walk still settles onto ' +
   '<b>some</b> definite shape &mdash; that much is guaranteed &mdash; it is ' +
-  'simply not a fern any more. Whatever is on the wall right now is still ' +
-  'just four matrices and a die, and the coefficients making it are listed ' +
-  'in the corner as they move.';
+  'simply not a fern any more. Whatever is on the wall right now is still just ' +
+  'four matrices and a die, and the coefficients making it are listed in the ' +
+  'corner as they move.';
 
 const roBig = document.getElementById('ro-big');
 const roSub = document.getElementById('ro-sub');
-const capEl = document.getElementById('caption');
 const legendEl = document.getElementById('legend');
+const narrEl = document.getElementById('narrate');
+const plantEl = document.getElementById('plant');
 
-let capNow = '';
-function setCaption(html) {
-  if (capNow === html) return;
-  capNow = html;
-  capEl.innerHTML = html;
+let narrClock = 0;
+let narrShown = null;    // the html on screen or fading in; null is nothing
+let narrTimer = 0;
+
+/* Fade the panel out, swap the words while it is invisible, fade it back in.
+ * The delay is the CSS transition, so the two never overlap and a beat is
+ * never legible half-way through being replaced. */
+function showNarration(html) {
+  if (narrShown === html) return;
+  narrShown = html;
+  narrEl.classList.remove('visible');
+  clearTimeout(narrTimer);
+  if (html === null) return;
+  narrTimer = setTimeout(() => {
+    narrEl.innerHTML = html;
+    narrEl.classList.add('visible');
+  }, 480);
+}
+
+function tickNarration(dt) {
+  if (bentByHand()) { showNarration(BENT_NOTE); return; }
+  narrClock += dt;
+  const t = narrClock % NARRATION_LAP;
+  let hit = null;
+  for (let i = 0; i < NARRATION.length; i++) {
+    const b = NARRATION[i];
+    if (t >= b.start && t < b.start + BEAT_HOLD) { hit = b.text; break; }
+  }
+  showNarration(hit);
+}
+
+/* Which plant is on the wall. The unattended loop works through the named
+ * ones and a phone can put any numbers at all up there, so the sheet has to
+ * say what is actually on it rather than assume the original. */
+let plantNow = '';
+// Is a phone editing coefficients directly, rather than sitting on one of the
+// plants that has a name? plantLabel is cleared the moment a knob moves.
+function bentByHand() {
+  return FT.active && !plantLabel && !paramsAreDefault();
+}
+
+function setPlantLine() {
+  let name, note;
+  if (bentByHand()) {
+    name = 'your numbers';
+    // ...and, for the few seconds after a knob moves, which knob it was: the
+    // panel of sliders is on the phone now, but the wall still has to show
+    // that the phone is what is moving the coefficients.
+    const k = FT.idle < 3.5 && lastKnob;
+    note = k ? k.label + ' &middot; ' + k.show(PAR[k.key])
+             : 'five knobs on a phone, reaching into the matrices themselves';
+  } else if (plantLabel) {
+    name = plantLabel[0];
+    note = plantLabel[1];
+  } else {
+    name = 'Barnsley\u2019s own numbers';
+    note = 'the original';
+  }
+  const html = 'on the wall right now: <b>' + name + '</b>' +
+    '<br><span class="note">' + note + '</span>';
+  if (plantNow !== html) { plantNow = html; plantEl.innerHTML = html; }
 }
 
 function num(v) {
@@ -548,64 +710,30 @@ function buildLegend() {
   }).join('');
 }
 
-const knobsEl = document.getElementById('knobs');
-
-function buildKnobs() {
-  knobsEl.innerHTML =
-    '<div class="knob-head" id="knob-head">Drag a knob and you are editing the matrices, not the picture &mdash; the coefficients on the right are what actually moves. The fern follows.</div>' +
-    KNOBS.map(k =>
-      '<div class="knob">' +
-        '<div class="ktop"><span class="klabel">' + k.label + '</span>' +
-        '<span class="kval" id="kv-' + k.key + '"></span></div>' +
-        '<input type="range" id="ki-' + k.key + '" min="' + k.min + '" max="' + k.max +
-          '" step="' + k.step + '" value="' + PAR[k.key] + '" />' +
-        // On the wall the same knob is a readout: there is nothing to drag up
-        // there, but the position still has to be legible from across the room,
-        // because it is what the phone is moving. CSS shows one or the other.
-        '<div class="kmeter"><i id="km-' + k.key + '"></i></div>' +
-        '<div class="knote">' + k.note + '</div>' +
-      '</div>'
-    ).join('');
-
-  KNOBS.forEach(k => {
-    const el = document.getElementById('ki-' + k.key);
-    // redraw on every drag step, but at most once a frame: the handler only
-    // flags the change and the loop picks it up
-    el.addEventListener('input', () => {
-      PAR[k.key] = parseFloat(el.value);
-      pendingKnob = true;
-    });
-    // on release, re-measure properly so the framing is exact
-    el.addEventListener('change', () => {
-      PAR[k.key] = parseFloat(el.value);
-      pendingKnob = false;
-      reset(false);
-    });
-  });
-}
-
-function syncKnobs() {
-  KNOBS.forEach(k => {
-    const el = document.getElementById('ki-' + k.key);
-    if (el && parseFloat(el.value) !== PAR[k.key]) el.value = PAR[k.key];
-    const v = document.getElementById('kv-' + k.key);
-    if (v) v.textContent = k.show(PAR[k.key]);
-    const m = document.getElementById('km-' + k.key);
-    if (m) m.style.width = (clamp((PAR[k.key] - k.min) / (k.max - k.min), 0, 1) * 100) + '%';
-  });
-}
+/* The knobs themselves are not drawn here any more. They are five sliders on
+ * a visitor's phone (.footron/controls/lib/index.js), and what the wall shows
+ * of them is the thing they actually edit: the coefficients in the legend,
+ * moving. KNOBS above is still the one authority for their bounds, their
+ * labels and their formatting -- the phone mirrors it, the socket clamps
+ * against it, and setPlantLine names whichever one was last touched.
+ *
+ * Off the wall there is no phone, so the keyboard stands in for it: see the
+ * keydown handler and #hint. */
 
 function updateHud() {
   const pct = clamp(F.total / TARGET, 0, 1);
   setReadout(fmt(F.total), [
     'specks left by the walk so far',
     F.done
-      ? 'the picture is settled &mdash; the walk keeps going anyway'
+      ? (FT.active
+          ? 'the picture is settled &mdash; the walk keeps going anyway'
+          : 'the picture is settled &mdash; another plant begins in a moment')
       : 'landing at <span>' + fmt(RATE) + '</span> throws of the die per second',
     F.done
       ? 'every one of <span>7 million</span> throws obeyed one of the four rules'
       : '<span>' + (pct * 100).toFixed(0) + '%</span> of the way to seven million',
   ]);
+  setPlantLine();
   for (let i = 0; i < 4; i++) {
     const el = document.getElementById('sh' + i);
     if (!el) continue;
@@ -626,6 +754,7 @@ let paused = false;
 let last = performance.now();
 let pendingKnob = false;
 let hudAcc = 0;
+let swayT = 0;
 
 function resize() {
   DPR = Math.min(2, window.devicePixelRatio || 1);
@@ -664,12 +793,17 @@ function frame(now) {
     F.owed += dt * RATE;
     const n = Math.min(Math.floor(F.owed), TARGET - F.total);
     if (n > 0) { F.owed -= n; plot(n); }
-    if (F.total >= TARGET) { F.done = true; setCaption(paramsAreDefault() ? CAPTION_DONE : CAPTION_BENT); }
+    if (F.total >= TARGET) { F.done = true; sinceDone = 0; }
   }
 
-  // the upright picture, turned by the tilt about the center of its box
+  // The upright picture: tilted, then turned about the vertical axis, about
+  // the center of its box. The sway runs on the real clock -- pausing stops
+  // the walk, not the room.
+  swayT += realDt;
+  poseAt(swayT);
   ctx.save();
   ctx.translate(F.rect.x + F.rect.w * 0.5, F.rect.y + F.rect.h * 0.5);
+  ctx.transform(POSE.c, POSE.k, 0, 1, 0, 0);
   ctx.rotate(ROT * Math.PI / 180);
   ctx.drawImage(F.off, 0, 0, F.fw, F.fh, -F.iw / 2, -F.ih / 2, F.iw, F.ih);
   ctx.restore();
@@ -677,7 +811,7 @@ function frame(now) {
   stepWalk(dt);
   drawWalk();
 
-  tickIdle(realDt);
+  tickAmbient(realDt);
 
   hudAcc += dt;
   if (hudAcc > 0.1 || F.total < 5000) { hudAcc = 0; updateHud(); }
@@ -685,22 +819,26 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-/* controls */
-document.getElementById('btn-new').addEventListener('click', () => reset(false));
-document.getElementById('btn-random').addEventListener('click', () => {
-  randomParams();
-  reset(false);
-});
-document.getElementById('btn-reset').addEventListener('click', () => {
-  resetParams();
-  reset(false);
-});
+/* Controls. On the wall these are the phone's; off it they are the keyboard's,
+ * and both go through the same door -- a key counts as activity, so the
+ * unattended rotation stands down for as long as someone is pressing things
+ * and picks itself back up when they stop. */
+
+const HINT_WALL =
+  'Scan the code in the corner and the five knobs open on your phone \u2014 ' +
+  'bend the rules and watch the plant redraw';
+const HINT_LOCAL =
+  '<b>space</b> pause &middot; <b>n</b> start the walk over &middot; ' +
+  '<b>[</b> <b>]</b> the named plants &middot; <b>m</b> a plant nobody named ' +
+  '&middot; <b>r</b> back to Barnsley\u2019s numbers';
 
 window.addEventListener('keydown', e => {
-  if (e.key === ' ') { paused = !paused; e.preventDefault(); }
-  else if (e.key === 'n') reset(false);
-  else if (e.key === 'm') { randomParams(); reset(false); }
-  else if (e.key === 'r') { resetParams(); reset(false); }
+  if (e.key === ' ') { touched(); paused = !paused; e.preventDefault(); }
+  else if (e.key === 'n') { touched(); reset(false); }
+  else if (e.key === 'm') { touched(); showPlant(null); }
+  else if (e.key === 'r') { touched(); showPlant('barnsley'); }
+  else if (e.key === '[') { touched(); stepPlant(-1); }
+  else if (e.key === ']') { touched(); stepPlant(1); }
 });
 
 window.addEventListener('resize', () => {
@@ -722,10 +860,85 @@ const FT = {
   idle: 0,
 };
 
-// How long the wall waits after the last message before putting Barnsley's own
-// numbers back. Long enough that reading the caption does not lose your plant,
+// How long the wall waits after the last message before it takes itself back.
+// Long enough that reading a beat of the narration does not lose your plant,
 // short enough that the next person along does not walk up to a stranger's.
 const IDLE_HOME = 45;
+
+/* Left alone, the wall does not sit on one finished picture forever. It works
+ * through the plants the phone can also pick, redrawing each from an empty
+ * sheet, and comes back to Barnsley's own numbers in between every one of them
+ * so that the canonical fern is what a visitor is most likely to walk up to.
+ * `null` is a plant nobody has named -- randomParams() inside the knob ranges.
+ *
+ * The ids are keys of PRESETS in footron.js: the wall owns the numbers behind
+ * each name, and this is the same table the phone reads, so a plant retuned
+ * there is retuned in both places at once. */
+const ROTATION = [
+  'barnsley', 'crozier', 'barnsley', 'feather', 'barnsley',
+  'arch', 'barnsley', 'spiral', 'barnsley', null,
+];
+
+const PLANT_LABELS = {
+  barnsley: ['Barnsley\u2019s own numbers', 'the original'],
+  crozier: ['Crozier', 'curls into a hook'],
+  feather: ['Feather', 'broad, leaflets up'],
+  arch: ['Arch', 'long and thin'],
+  spiral: ['Spiral', 'coils in on itself'],
+};
+
+// How long a finished picture is held before the next plant starts drawing.
+// A draw is about forty seconds, so this is the pause at the end of one.
+const LINGER = 13;
+
+let rotAt = 0;          // which entry of ROTATION is on the wall
+let plantLabel = PLANT_LABELS.barnsley;
+let sinceDone = 0;      // seconds the finished picture has been up
+let lastKnob = null;    // the knob a phone moved most recently
+
+function presetOf(id) {
+  const api = window.FernFootron;
+  const p = api && api.PRESETS && api.PRESETS[id];
+  return p || null;
+}
+
+/* Put a named plant (or, for null, an unnamed random one) on the wall from an
+ * empty sheet. Values still go through PAR, so the legend, the walk and the
+ * phone all see the same coefficients they would from a knob. */
+function showPlant(id) {
+  resetParams();
+  if (id === null) {
+    randomParams();
+    plantLabel = ['a plant nobody has named', 'rolled from the ranges of the five knobs'];
+  } else {
+    const p = presetOf(id);
+    if (p) Object.keys(p).forEach(k => { if (k in PAR) PAR[k] = p[k]; });
+    plantLabel = PLANT_LABELS[id] || null;
+  }
+  pendingKnob = false;
+  sinceDone = 0;
+  reset(false);
+}
+
+function nextPlant() {
+  rotAt = (rotAt + 1) % ROTATION.length;
+  showPlant(ROTATION[rotAt]);
+}
+
+// [ and ] off the wall, so a named plant can be looked at without waiting for
+// the rotation to reach it. Steps over the repeats of Barnsley's own numbers.
+const NAMED = Object.keys(PLANT_LABELS);
+let namedAt = 0;
+function stepPlant(d) {
+  namedAt = (namedAt + d + NAMED.length) % NAMED.length;
+  rotAt = ROTATION.indexOf(NAMED[namedAt]);
+  if (rotAt < 0) rotAt = 0;
+  showPlant(NAMED[namedAt]);
+}
+
+// A key press off the wall is the same event as a phone message on it: someone
+// is driving, so the rotation waits.
+function touched() { FT.active = true; FT.idle = 0; }
 
 // Bounds for footron.js to clamp against. KNOBS stays the one authority, so
 // what the socket will accept and what the sliders draw cannot drift apart.
@@ -737,14 +950,25 @@ function goHome() {
   FT.idle = 0;
   paused = false;
   pendingKnob = false;
-  resetParams();
-  reset(false);
+  lastKnob = null;
+  narrClock = 0;            // whoever comes next starts the narration at line one
+  showPlant(ROTATION[rotAt]);
 }
 
-function tickIdle(dt) {
-  if (!FT.on || !FT.active) return;
-  FT.idle += dt;
-  if (FT.idle >= IDLE_HOME) goHome();
+/* The unattended loop, one frame's worth. Runs on the real clock rather than
+ * the paused one: the narration keeps reading and the hand-back keeps counting
+ * down while a phone holds the walk still. */
+function tickAmbient(dt) {
+  tickNarration(dt);
+  if (FT.active) {
+    FT.idle += dt;
+    if (FT.idle >= IDLE_HOME) goHome();
+    return;
+  }
+  if (F.done) {
+    sinceDone += dt;
+    if (sinceDone >= LINGER) nextPlant();
+  }
 }
 
 const FT_HANDLERS = {
@@ -755,6 +979,8 @@ const FT_HANDLERS = {
   // once per message. The release re-measures the attractor properly.
   onKnob(key, value, live) {
     PAR[key] = value;
+    lastKnob = KNOBS.find(k => k.key === key) || null;
+    plantLabel = null;    // whatever this is, it is nobody's named plant now
     if (live) { pendingKnob = true; return; }
     pendingKnob = false;
     reset(false);
@@ -762,11 +988,21 @@ const FT_HANDLERS = {
 
   onPreset(id, values) {
     Object.keys(values).forEach(k => { PAR[k] = values[k]; });
+    lastKnob = null;
+    plantLabel = PLANT_LABELS[id] || null;
+    // Keep the rotation's place in step with the phone, so handing the wall
+    // back does not jump to a different plant than the one being looked at.
+    const at = ROTATION.indexOf(id);
+    if (at >= 0) rotAt = at;
     pendingKnob = false;
+    sinceDone = 0;
     reset(false);
   },
 
-  onRandom() { randomParams(); pendingKnob = false; reset(false); },
+  onRandom() {
+    lastKnob = null;
+    showPlant(null);
+  },
   onWalk() { reset(false); },
   onPause(value) { paused = value; },
   onRelease() { goHome(); },
@@ -778,15 +1014,15 @@ const FT_HANDLERS = {
 
 function markFootron() {
   const api = window.FernFootron;
-  if (!api || !api.footronEnabled()) return;
+  const hint = document.getElementById('hint');
+  if (!api || !api.footronEnabled()) {
+    if (hint) hint.innerHTML = HINT_LOCAL;
+    return;
+  }
   FT.on = true;
   document.body.classList.add('footron');
-  // Up there the sliders are a readout, the buttons are gone, and the bottom
-  // row has been pushed clear of the QR card — so the copy has to move too.
-  const hint = document.getElementById('hint');
-  if (hint) hint.textContent = 'Scan the code in the corner and the five knobs open on your phone \u2014 bend the rules and watch the plant redraw';
-  const head = document.getElementById('knob-head');
-  if (head) head.textContent = 'Your phone moves these knobs. What they edit are the matrices on the right \u2014 the coefficients move first, and the plant follows.';
+  // Up there the keyboard hints are a lie: the phone is the only input.
+  if (hint) hint.innerHTML = HINT_WALL;
 }
 
 function connectFootron() {
@@ -796,7 +1032,6 @@ function connectFootron() {
 
 /* ---------- boot ---------- */
 
-buildKnobs();      // must exist before the first reset syncs values into it
 markFootron();     // the wall's chrome, before anything is measured or drawn
 resize();          // establishes W/H, builds the buffer, seeds the walk
 updateHud();
