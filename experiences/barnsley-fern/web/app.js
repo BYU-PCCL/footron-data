@@ -199,42 +199,6 @@ const ROT = 46;
 const ROT_C = Math.cos(ROT * Math.PI / 180);
 const ROT_S = Math.sin(ROT * Math.PI / 180);
 
-/* The sway: the fern is a flat thing, and this turns it slowly about the
- * screen's vertical axis so it reads as a flat thing *in a space* rather than
- * a picture printed on the glass.
- *
- * Two parts, both affine, so the whole plane is still one drawImage. Squeezing
- * horizontally by cos(theta) is exactly what an orthographic camera sees of a
- * plane turned by theta. Orthographic alone reads as a squeeze rather than a
- * turn, though, so a shear proportional to sin(theta) is laid over it: the
- * edge coming towards you drops and the edge going away rises, which is the
- * depth cue that sells it. It is the standard cheat for a card flip and it is
- * a lie about perspective, but a consistent one -- the fern and the walk
- * overlay both go through it, so the walk stays on the ink.
- *
- * It sways rather than spins: a full turn passes through edge-on twice a lap,
- * and a wall that folds the picture into a bright line every half minute reads
- * as broken rather than as dimensional. SWAY_DEG is how far it turns each way,
- * so the picture is never narrower than cos(SWAY_DEG) of itself. */
-const SWAY_DEG = 32;       // amplitude of the turn, each way from face-on
-const SWAY_PERIOD = 34;    // seconds for a there-and-back-again
-const SWAY_SHEAR = 0.158;  // tan 9 degrees: how hard the fake perspective bites
-
-// The current pose: a horizontal squeeze, and the shear that goes with it.
-const POSE = { c: 1, k: 0 };
-
-function poseAt(t) {
-  const th = SWAY_DEG * (Math.PI / 180) * Math.sin(2 * Math.PI * t / SWAY_PERIOD);
-  POSE.c = Math.cos(th);
-  POSE.k = SWAY_SHEAR * Math.sin(th);
-}
-
-// Worst-case vertical growth from the shear, as a fraction of the picture's
-// width. layout() has to leave room for it or the fern clips at the extremes
-// of the sway -- and a fern that fits only sometimes is worse than one drawn
-// a few percent smaller all the time.
-const SWAY_RISE = SWAY_SHEAR * Math.abs(Math.sin(SWAY_DEG * Math.PI / 180));
-
 /* Screen box for the tilted fern, plus the largest sub-rectangle of the grid
  * with the same shape. The fern is still rasterized upright -- only the
  * compositing and the walk overlay know about the tilt -- so this sizes the
@@ -247,19 +211,13 @@ function layout() {
   let ih = 1, iw = F.xspan / F.yspan;
   // ... and tilted it needs this much room, so scale to whichever axis binds
   const bw = iw * c + ih * sn, bh = iw * sn + ih * c;
-  // The sway never widens the picture (cos <= 1), but the shear does raise one
-  // side of it, so the height to fit is the swept height and not the face-on
-  // one. The sway is symmetric, so the center of the swept box is still the
-  // center of the plane -- which is what the composite and the walk rotate
-  // about.
-  const swept = bh + bw * SWAY_RISE;
-  const k = Math.min(boxW / bw, boxH / swept);
+  const k = Math.min(boxW / bw, boxH / bh);
   iw *= k; ih *= k;
   F.iw = iw; F.ih = ih;
   F.rect = {
     x: W * 0.5 - bw * k / 2,
-    y: H * BAND.top + (boxH - swept * k) / 2,
-    w: bw * k, h: swept * k,
+    y: H * BAND.top + (boxH - bh * k) / 2,
+    w: bw * k, h: bh * k,
   };
 
   const aspect = iw / ih;            // buffer is still upright: xspan / yspan
@@ -449,11 +407,38 @@ function reset(quick) {
  * behind the millions of points is watchable. */
 
 /* Slow enough to follow: a bit over two throws a second, so each jump is a
- * separate event with time to see where it landed and to read the name of the
- * rule that put it there. The trail is 26 points, which at this rate is about
- * the last twelve seconds of the game. */
+ * separate event, with time to see where it landed and what colour -- which is
+ * to say which rule -- put it there. The trail is 26 points, which at this rate
+ * is about the last twelve seconds of the game. */
 const WALK_RATE = 2.2;
 const TRAIL = 26;
+
+/* The moving point itself is drawn off-palette, in magenta.
+ *
+ * It used to take the colour of the rule that had just placed it, which is
+ * tidy but means the one thing on the screen you are supposed to follow is
+ * painted to match the ink it is standing on -- a green point on the green
+ * body, a gold point in the gold leaflet. It disappeared exactly when it
+ * mattered.
+ *
+ * Red is the only strong hue the four rules do not use, so it cannot be
+ * mistaken for any of them and it separates from all four: it is opposite the
+ * green body, well clear of the blue and gold leaflets, and dark enough on a
+ * burned-out white ridge to still read there. The trail behind it stays
+ * rule-coloured, so which rule fired is still readable from the last few beads
+ * -- that reading moved one point back rather than being lost.
+ *
+ * One flat disc, one colour: no halo, no glow, no lit core. Sized against the
+ * picture rather than the screen, so it holds its proportion from a laptop to
+ * a 4K wall.
+ *
+ * It does not pulse, flash or otherwise animate in place. The point already
+ * moves -- that is the entire thing it does -- and on an ambient piece that is
+ * on screen for the length of a session, a bead that also throbs between jumps
+ * keeps pulling the eye back to something that has not changed. The jump is the
+ * event; the dot just has to be findable when you look. */
+const DOT = [190, 40, 55];
+const DOT_R = 4.2;
 
 function stepWalk(dt) {
   const w = F.walk;
@@ -472,21 +457,19 @@ function stepWalk(dt) {
 }
 
 /* Fern coordinates to screen: place the point on the upright picture, offset
- * from its center, turn that offset by the tilt, then put it through the sway.
- * Exactly the transform the composite uses, in the same order, so the walk
- * lands on the ink at every point of the turn. */
+ * from its center, then turn that offset by the tilt. Same transform the
+ * composite uses, so the walk lands on the ink. */
 const offOf = (x, y) => [
   ((x - F.xmin) / F.xspan - 0.5) * F.iw,
   (0.5 - (y - F.ymin) / F.yspan) * F.ih,
 ];
 const sxOf = (x, y) => {
   const o = offOf(x, y);
-  return F.rect.x + F.rect.w * 0.5 + (o[0] * ROT_C - o[1] * ROT_S) * POSE.c;
+  return F.rect.x + F.rect.w * 0.5 + o[0] * ROT_C - o[1] * ROT_S;
 };
 const syOf = (x, y) => {
   const o = offOf(x, y);
-  return F.rect.y + F.rect.h * 0.5 +
-    (o[0] * ROT_C - o[1] * ROT_S) * POSE.k + (o[0] * ROT_S + o[1] * ROT_C);
+  return F.rect.y + F.rect.h * 0.5 + o[0] * ROT_S + o[1] * ROT_C;
 };
 
 function drawWalk() {
@@ -505,7 +488,9 @@ function drawWalk() {
     ctx.lineTo(sxOf(b.x, b.y), syOf(b.x, b.y));
     ctx.stroke();
   }
-  for (let k = 0; k < tr.length; k++) {
+  // the trail: every bead but the last keeps the colour of the rule that
+  // placed it, which is what still says who fired now that nothing is labelled
+  for (let k = 0; k < tr.length - 1; k++) {
     const age = (k + 1) / tr.length;
     const p = tr[k], c = F.maps[p.mi].rgb;
     ctx.fillStyle = 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + (0.10 + 0.75 * age * age).toFixed(3) + ')';
@@ -514,25 +499,14 @@ function drawWalk() {
     ctx.fill();
   }
 
-  // name the map that just fired, held clear of the fern's body
-  const head = tr[tr.length - 1];
-  const m = F.maps[head.mi];
-  const hx = sxOf(head.x, head.y), hy = syOf(head.x, head.y);
-  const size = clamp(F.iw * 0.062, 11, 30);
-  // push the name out sideways from the fern's spine, in the tilted frame
-  const out = (head.x - F.xmin) / F.xspan < 0.5 ? -1 : 1;
-  const lx = clamp(hx + out * ROT_C * size * 1.3, size * 3, W - size * 3);
-  const ly = clamp(hy + out * ROT_S * size * 1.3, size * 2, H - size * 2);
-  ctx.font = size.toFixed(1) + 'px Georgia, "Times New Roman", serif';
-  ctx.textAlign = out * ROT_C >= 0 ? 'left' : 'right';
-  ctx.textBaseline = 'middle';
-  ctx.strokeStyle = 'rgba(8,11,9,0.85)';
-  ctx.lineWidth = size * 0.34;
-  ctx.lineJoin = 'round';
-  const label = m.key + '  ' + m.name.toLowerCase() + '  \u00b7  ' + (m.p * 100).toFixed(0) + '%';
-  ctx.strokeText(label, lx, ly);
-  ctx.fillStyle = 'rgba(' + m.rgb[0] + ',' + m.rgb[1] + ',' + m.rgb[2] + ',0.95)';
-  ctx.fillText(label, lx, ly);
+  // and the point itself, off-palette so it is never camouflaged by the ink
+  const h = tr[tr.length - 1];
+  const hx = sxOf(h.x, h.y), hy = syOf(h.x, h.y);
+  ctx.fillStyle = 'rgb(' + DOT.join(',') + ')';
+  ctx.beginPath();
+  ctx.arc(hx, hy, unit * DOT_R, 0, Math.PI * 2);
+  ctx.fill();
+
   ctx.restore();
 }
 
@@ -754,7 +728,6 @@ let paused = false;
 let last = performance.now();
 let pendingKnob = false;
 let hudAcc = 0;
-let swayT = 0;
 
 function resize() {
   DPR = Math.min(2, window.devicePixelRatio || 1);
@@ -796,14 +769,9 @@ function frame(now) {
     if (F.total >= TARGET) { F.done = true; sinceDone = 0; }
   }
 
-  // The upright picture: tilted, then turned about the vertical axis, about
-  // the center of its box. The sway runs on the real clock -- pausing stops
-  // the walk, not the room.
-  swayT += realDt;
-  poseAt(swayT);
+  // the upright picture, turned by the tilt about the center of its box
   ctx.save();
   ctx.translate(F.rect.x + F.rect.w * 0.5, F.rect.y + F.rect.h * 0.5);
-  ctx.transform(POSE.c, POSE.k, 0, 1, 0, 0);
   ctx.rotate(ROT * Math.PI / 180);
   ctx.drawImage(F.off, 0, 0, F.fw, F.fh, -F.iw / 2, -F.ih / 2, F.iw, F.ih);
   ctx.restore();
