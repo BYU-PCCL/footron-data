@@ -29487,6 +29487,11 @@ const EVO_CONFIG = {
   // humanoid's 0.8 applies to its 1.282 m. The old 0.3048 ("one foot") let Cassie fold into a crouch
   // and still count as upright.
   fallHeight: 0.5,
+  // Extra seconds to keep simulating after the last body has dropped, purely so a viewer sees the
+  // fall finish. Zero here and on the humanoid: it changes nothing a score depends on (see
+  // _settleTick) but it does cost wall-clock time per generation, which a search should not pay.
+  // The exhibit turns it on -- see src/watch/config.js.
+  settleSeconds: 0,
   // 500 Hz, kept rather than raised to the humanoid's 0.005. The old note "verified stable under
   // worst-case torques; 0.004 explodes" was measured under TORQUE control; position servos through
   // Cassie's closed chains and equality constraints have a different stability profile, so this stays
@@ -29506,6 +29511,10 @@ const EVO_CONFIG = {
   // (hip-roll, hip-yaw, hip-pitch, knee, foot), so contiguous blocks are real limb sub-chains -- the
   // same property that makes two-point worth using on the humanoid. See twoPointBlockCrossover.
   crossoverOp: "twoPoint",
+  // Give each child crossover OR mutation instead of both. Off here and on the humanoid: it is an
+  // experiment, and the bench measures experiments one flag at a time against these baselines. See
+  // nextGeneration for what it does, and src/watch/config.js for the run that motivated it.
+  exclusiveOperators: false,
   mutationSigma: 0.2,
   mutationSigmaScale: null,
   // see HUMANOID_EVO_CONFIG; off by default on both creatures
@@ -29682,6 +29691,11 @@ const HUMANOID_EVO_CONFIG = {
   // collapse into a deep crouch and still count as up. 0.8 (upper half of standing height) makes
   // "upright" mean upright; undriven it survives ~1.10 s, the baseline to beat.
   fallHeight: 0.8,
+  // Extra seconds to keep simulating after the last body has dropped, so a viewer sees the fall
+  // finish instead of the arena cutting mid-tumble. Zero here, because a search has no viewer and
+  // every settling second is a second not spent evaluating. See _settleTick for why it is free
+  // of any effect on fitness, and src/watch/config.js for the exhibit that needs it.
+  settleSeconds: 0,
   timestep: 5e-3,
   // humanoid.xml's native 200 Hz
   spacing: 2,
@@ -29709,6 +29723,11 @@ const HUMANOID_EVO_CONFIG = {
   // NOTE it also lowers the EFFECTIVE crossover rate to ~0.46 (an empty segment clones one parent);
   // see twoPointBlockCrossover, which documents both that and the operator's centre bias.
   crossoverOp: "twoPoint",
+  // Give each child crossover OR mutation instead of both, split by crossoverRate. Off here, and on
+  // Cassie, because it is an experiment and the bench measures experiments one flag at a time against
+  // this baseline. Turned on for the wall -- see src/watch/config.js for the measurement behind that,
+  // and nextGeneration for the branch itself.
+  exclusiveOperators: false,
   mutationSigma: 0.2,
   // Per-role mutation step scaling: sigma for gene role r is mutationSigma * mutationSigmaScale[r].
   // null = one uniform sigma for every gene, which is the pre-change behaviour and the baseline this
@@ -30540,19 +30559,24 @@ function nextGeneration(population, fitnesses, cfg, rng, codec = null) {
   for (let e2 = 0; e2 < Math.min(cfg.eliteCount, population.length); e2++) {
     next.push(population[ranking[e2]].slice());
   }
+  const mutate = (g2) => mutateBlocked(
+    g2,
+    cfg.mutationSigma,
+    cfg.mutationSigmaScale,
+    cfg.weightClip,
+    rng,
+    layout.head,
+    layout.block
+  );
   while (next.length < population.length) {
     const a2 = pickParent();
     const b = pickParent();
-    const child = rng() < cfg.crossoverRate ? crossover(a2, b, rng, layout.head, layout.block) : a2.slice();
-    next.push(mutateBlocked(
-      child,
-      cfg.mutationSigma,
-      cfg.mutationSigmaScale,
-      cfg.weightClip,
-      rng,
-      layout.head,
-      layout.block
-    ));
+    if (cfg.exclusiveOperators) {
+      next.push(rng() < cfg.crossoverRate ? crossover(a2, b, rng, layout.head, layout.block) : mutate(a2.slice()));
+    } else {
+      const child = rng() < cfg.crossoverRate ? crossover(a2, b, rng, layout.head, layout.block) : a2.slice();
+      next.push(mutate(child));
+    }
   }
   return { population: next, ranking };
 }
@@ -31011,6 +31035,7 @@ class EvolutionRunner {
     this.meanSpeed = 0;
     this.bandCounts = [0, 0, 0];
     this.bestEver = 0;
+    this.settleHold = 0;
     this.pendingSeeds = [];
     this.seedInfo = "";
     this.pendingReset = true;
@@ -31241,11 +31266,41 @@ class EvolutionRunner {
   /** Recomputes the trial length in steps. Safe to call before a model is loaded. */
   syncTrialSteps() {
     this.trialSteps = this.dt ? Math.max(1, Math.round(this.cfg.trialSeconds / this.dt)) : 0;
+    this.settleSteps = this.dt ? Math.max(0, Math.round((this.cfg.settleSeconds || 0) / this.dt)) : 0;
+  }
+  /** One step of the post-trial hold -- the arena finishing its fall with nothing being measured.
+   *
+   *  Called at the top of step(), BEFORE anything is scored. By the time a hold is running the trial
+   *  is completely over: _endTrial has recorded every score and, if that finished the generation,
+   *  has already bred the next one. All that is left is _beginTrial, which teleports every body back
+   *  to the home pose -- and this is what delays that call and nothing else.
+   *
+   *  So the evaluation is untouched. A trial still ends on the exact step it always did, and no
+   *  accumulator can move during the hold because step() returns before it reaches the scoring loop.
+   *  The safety here is structural rather than an argument about which fields happen to be latched.
+   *
+   *  Control is zeroed while holding. That is what already happens to a fallen slot mid-trial (a 0
+   *  target is the neutral pose for a position actuator), so the bodies simply flop and settle
+   *  instead of being driven by genomes from a batch that has not started yet.
+   *
+   *  @param {object} data live MjData; only `ctrl` is touched
+   *  @returns {'run'|'hold'|'restart'} run: no hold; hold: return early; restart: reset then return */
+  _settleTick(data) {
+    if (this.pendingReset) {
+      this.settleHold = 0;
+      return "run";
+    }
+    if (this.settleHold <= 0) {
+      return "run";
+    }
+    data.ctrl.fill(0);
+    return --this.settleHold === 0 ? "restart" : "hold";
   }
   /** Loads the home keyframe, applies this trial's start jitter, and clears the per-trial
    *  accumulators. The generated scene emits exactly one keyframe holding every robot's home pose,
    *  so index 0 resets the whole arena at once. */
   _beginTrial(model, data) {
+    this.settleHold = 0;
     this.mujoco.mj_resetDataKeyframe(model, data, 0);
     this._applyStartJitter(model, data);
     this.mujoco.mj_forward(model, data);
@@ -31456,6 +31511,14 @@ class EvolutionRunner {
     if (!this.running || !this.jointMaps || robots.length === 0) {
       return;
     }
+    const settle = this._settleTick(data);
+    if (settle === "restart") {
+      this._beginTrial(model, data);
+      return;
+    }
+    if (settle === "hold") {
+      return;
+    }
     const wantCfrc = this.cfg.contactWeight !== 0 || this.cfg.control === "cpg" && this.cfg.cpg.phaseReset;
     if (wantCfrc) {
       this.mujoco.mj_rnePostConstraint(model, data);
@@ -31490,6 +31553,11 @@ class EvolutionRunner {
     this.trialStep++;
     if (allFallen || this.trialStep >= this.trialSteps) {
       this._endTrial();
+      if (this.settleSteps > 0) {
+        this.settleHold = this.settleSteps;
+        ctrl.fill(0);
+        return;
+      }
       this._beginTrial(model, data);
     }
     const cpg = this.cfg.control === "cpg" ? this.cfg.cpg : null;
@@ -40339,7 +40407,9 @@ class MuJoCoDemo {
   }
 }
 const CHAMPIONS_URL = "./assets/champions.json";
-const WEAK_DISTANCE_FRACTION = 0.45;
+const SHUFFLE_DISTANCE_FRACTION = 0.15;
+const WALK_DISTANCE_FRACTION = 0.7;
+const WALK_SCORE_FRACTION = 0.7;
 async function loadChampions(url = CHAMPIONS_URL, expected = null) {
   const nothing = (note) => ({ genomes: [], records: [], note });
   try {
@@ -40367,21 +40437,37 @@ async function loadChampions(url = CHAMPIONS_URL, expected = null) {
     return nothing("champions.json unavailable: " + e2.message);
   }
 }
-function pickWalkers(records) {
-  const moved = (records || []).filter(
-    (r2) => Array.isArray(r2?.genes) && Number.isFinite(r2.distance) && r2.distance > 0
-  );
-  if (moved.length === 0) {
-    return [];
+function pickStages(records) {
+  const seen2 = /* @__PURE__ */ new Set();
+  const usable = [];
+  for (const r2 of records || []) {
+    if (!Array.isArray(r2?.genes) || !Number.isFinite(r2?.distance)) {
+      continue;
+    }
+    const key = r2.genes.join(",");
+    if (seen2.has(key)) {
+      continue;
+    }
+    seen2.add(key);
+    usable.push(r2);
   }
-  const strong = moved.reduce((a2, b) => b.distance > a2.distance ? b : a2);
-  const rest = moved.filter((r2) => r2 !== strong);
-  if (rest.length === 0) {
-    return [strong.genes];
+  if (usable.length === 0) {
+    return { stand: [], shuffle: [], walk: [] };
   }
-  const target = strong.distance * WEAK_DISTANCE_FRACTION;
-  const weak = rest.reduce((a2, b) => Math.abs(b.distance - target) < Math.abs(a2.distance - target) ? b : a2);
-  return [strong.genes, weak.genes];
+  const furthest = usable.reduce((a2, b) => b.distance > a2.distance ? b : a2).distance;
+  if (!(furthest > 0)) {
+    return { stand: usable.map((r2) => r2.genes), shuffle: [], walk: [] };
+  }
+  const shuffleEdge = furthest * SHUFFLE_DISTANCE_FRACTION;
+  const walkEdge = furthest * WALK_DISTANCE_FRACTION;
+  const scores = usable.map((r2) => r2.score).filter(Number.isFinite);
+  const scoreEdge = scores.length ? Math.max(...scores) * WALK_SCORE_FRACTION : null;
+  const walks = (r2) => scoreEdge !== null && Number.isFinite(r2.score) ? r2.score >= scoreEdge : r2.distance >= walkEdge;
+  const stages = { stand: [], shuffle: [], walk: [] };
+  for (const r2 of usable.slice().sort((a2, b) => b.distance - a2.distance)) {
+    stages[walks(r2) ? "walk" : r2.distance >= shuffleEdge ? "shuffle" : "stand"].push(r2.genes);
+  }
+  return stages;
 }
 const WALL_EVO_CONFIG = {
   ...HUMANOID_EVO_CONFIG,
@@ -40429,7 +40515,7 @@ const WALL_EVO_CONFIG = {
   //     the fog band the hundred-bot framing started inside.
   //
   // The cost is search quality: sixteen genomes per generation is a coarse sample of the space, and
-  // the wall leans on the harvested walkers arriving at COLD_GENERATIONS to make up for it. Note
+  // the wall leans on the harvest arriving in stages (see INJECTION_STAGES) to make up for it. Note
   // that tools/harvest.mjs imports THIS config, so an offline harvest inherits the coarse search
   // too -- override the population there before re-harvesting.
   populationSize: 16,
@@ -40441,35 +40527,124 @@ const WALL_EVO_CONFIG = {
   // Also load-bearing for the injector: _applyPendingSeeds fills slots from the END of the batch and
   // stops below eliteCount, so the harvested walkers land at indices 15 and 14 and evict random
   // genomes rather than anything the GA earned.
-  eliteCount: 2
+  eliteCount: 2,
+  // CROSSOVER OR MUTATION, NEVER BOTH. Half of each generation is crossed and then left alone; the
+  // other half is a mutated clone of one parent. crossoverRate is 0.5 from the baseline, which is
+  // what splits it.
+  //
+  // WHY. The baseline mutates every child, crossed or not, so no genome can ever be passed on
+  // intact. On this wall that is not academic: a headless run of this config with two harvested
+  // walkers injected at generation 55 sat at score bands 14/2/0 for the following sixty generations
+  // -- the two walkers held verbatim by the elite block, and not one of their descendants ever
+  // reaching their band. Seeding nine walkers instead of two gave 7/9/0 for a single generation and
+  // then 14/2/0 again. Breeding was destroying the gift faster than selection could spread it, which
+  // makes the exhibit's central claim -- watch the gait spread -- something the arena never does.
+  //
+  // With this on, a cross between two walkers keeps two working gaits recombined and unmutated, so
+  // there is a path by which the gift survives a generation.
+  //
+  // WHAT IT MEASURED, same probe, same seed, same schedule. Counting the genomes above the base score
+  // band (bandCounts[1] + [2], which is what the HUD calls "walking"):
+  //
+  //                       gen 40   gen 55   gen 57   gen 70   gen 90   gen 115
+  //   baseline breeding        2        9        2        2        2         2
+  //   crossover-or-mutation    2       14        2        6        8         5
+  //
+  // Two things changed, and the first was not expected. The population now improves WITHOUT being
+  // given anything: best score went 2.82 -> 6.29 between generations 35 and 40, off the back of the
+  // shuffle beat alone. Under the baseline, best never moved except on the frame an injection landed
+  // -- 2.82 flat from generation 30 to 54, then 6.43 flat from 55 to 358. The search was doing
+  // nothing at all, and this is what was stopping it.
+  //
+  // Second, the gift now persists. After the walkers land the upper band holds somewhere between
+  // three and fourteen genomes for the next sixty generations instead of dropping straight back to
+  // the two the elite block protects. "Watch the gait spread" is finally a description of the arena.
+  //
+  // THE PREDICTED COST IS REAL. Genome diversity fell from 2.0-4.2 under the baseline to 0.8-1.7 here
+  // -- roughly halved, which is the identical-parents-cross-to-a-clone effect in nextGeneration's
+  // comment. It has not stalled anything inside 115 generations, but it is the thing to watch if the
+  // arena ever starts looking like sixteen copies of one body.
+  //
+  // Minor: the cold phase is slightly weaker, because half of each generation is now unmutated. Best
+  // at generation 10 is 2.00 against the baseline's 2.19 -- which incidentally makes the stand beat
+  // worth having, since 2.00 is exactly the stander's own score and it no longer arrives already
+  // beaten.
+  //
+  // On for the wall only -- the lab baselines stay off so the bench can still measure against them.
+  // Note this DOES change what tools/harvest.mjs searches, since harvest imports this config.
+  exclusiveOperators: true,
+  // LET THE FALL FINISH BEFORE THE NEXT GENERATION STARTS. A trial ends when every pelvis is below
+  // fallHeight, which for this creature is 0.8 m against a standing torso of about 1.28 m -- barely a
+  // stumble. Without this the arena resets on that same step, so sixteen bodies are teleported back
+  // to the home pose mid-tumble and a generational step reads as a glitch rather than a round ending.
+  //
+  // WHAT IT DELAYS IS THE RESET, NOT THE TRIAL. _endTrial still fires on exactly the step it always
+  // did: every score for the finished trial is recorded, and the next generation is bred, at the
+  // original moment. Only _beginTrial -- the call that teleports the bodies home -- waits. So the
+  // evolution of the walkers is untouched, and untouched STRUCTURALLY rather than by argument:
+  // during a hold, step() returns before it reaches the scoring loop at all. See _settleTick.
+  //
+  // MEASURED, not guessed. Forty trials of this exact config, run headless with a deliberately
+  // generous settle so nothing was cut short, timing from the last body dropping to every body being
+  // motionless (under 0.5 mm of pelvis movement per step for twenty consecutive steps):
+  //
+  //   median 1.56 s | p75 1.88 s | p90 2.04 s | p95 2.28 s | max 2.52 s
+  //
+  // Every one of the forty settled -- none span or slid indefinitely. Two seconds covers ninety per
+  // cent of them outright, and the last ten per cent are near-still by then. A first guess of 1.2 s
+  // would have cut more than half of them off while they were still moving.
+  //
+  // "Completely fallen" is a fair description of the result: once still, the pelvis sits at a median
+  // of 0.103 m and at most 0.402 m, against the 0.8 m line that declared the fall in the first place.
+  //
+  // THE COST IS TIME. Roughly two simulated seconds per generation that ends in a fall, which early
+  // on is nearly all of them -- so fewer generations fit in a slot and the INJECTION_STAGES beats
+  // land later in wall-clock terms. That is why the lab baselines leave it at zero: a search has no
+  // viewer, and every settling second is a second not spent evaluating.
+  settleSeconds: 2
 };
-const COLD_GENERATIONS = 5;
-function createInjector(runner2, walkers2, note = "") {
-  const queue = Array.isArray(walkers2) ? walkers2 : [];
-  let armed = queue.length > 0;
+const INJECTION_STAGES = [
+  { tier: "stand", generation: 10, count: 9 },
+  { tier: "shuffle", generation: 30, count: 9 },
+  { tier: "walk", generation: 55, count: 9 }
+];
+function createInjector(runner2, stages, note = "", schedule = INJECTION_STAGES) {
+  const bands = stages || {};
+  const band = (tier) => Array.isArray(bands[tier]) ? bands[tier] : [];
+  let armed = schedule.map((stage) => band(stage.tier).length > 0);
   const tick = () => {
-    if (!armed) {
-      return null;
-    }
-    if (runner2.generation < COLD_GENERATIONS - 1) {
-      return null;
-    }
-    armed = false;
-    let seeded = 0;
-    for (const genes of queue) {
-      try {
-        runner2.seedGenome(Float64Array.from(genes));
-        seeded++;
-      } catch (e2) {
+    for (let i2 = 0; i2 < schedule.length; i2++) {
+      if (!armed[i2]) {
+        continue;
       }
+      const stage = schedule[i2];
+      if (runner2.generation < stage.generation - 1) {
+        return null;
+      }
+      armed[i2] = false;
+      const genomes = band(stage.tier);
+      let seeded = 0;
+      for (let k = 0; k < stage.count; k++) {
+        const genes = genomes[k % genomes.length];
+        try {
+          runner2.seedGenome(Float64Array.from(genes));
+          seeded++;
+        } catch (e2) {
+        }
+      }
+      if (seeded === 0) {
+        return null;
+      }
+      return {
+        seeded,
+        tier: stage.tier,
+        note: `${seeded} harvested ${stage.tier} genome(s) joined at generation ${stage.generation}` + (note ? ` (${note})` : "")
+      };
     }
-    if (seeded === 0) {
-      return null;
-    }
-    return `${seeded} harvested walker(s) joined at generation ${COLD_GENERATIONS}` + (note ? ` (${note})` : "");
+    return null;
   };
   const rearm = () => {
-    armed = queue.length > 0;
+    armed = schedule.map((stage) => band(stage.tier).length > 0);
   };
   return { tick, rearm };
 }
@@ -40513,8 +40688,9 @@ async function createArena(demo2, config2 = WALL_EVO_CONFIG) {
   demo2.setController((robots, model, data, time) => runner2.step(robots, model, data, time));
   await reloadHumanoidEvolution(demo2, config2);
   const { records, note } = await loadChampions(CHAMPIONS_URL, { genomeSize: runner2.genomeSize });
-  const walkers2 = pickWalkers(records);
-  const injector2 = createInjector(runner2, walkers2, note);
+  const stages = pickStages(records);
+  const injector2 = createInjector(runner2, stages, note);
+  const beats = INJECTION_STAGES.filter((stage) => stages[stage.tier].length > 0).map((stage) => `${stage.count} ${stage.tier} at generation ${stage.generation}`).join("; ");
   const restart2 = () => {
     runner2.reset();
     injector2.rearm();
@@ -40525,7 +40701,7 @@ async function createArena(demo2, config2 = WALL_EVO_CONFIG) {
     runner: runner2,
     restart: restart2,
     injector: injector2,
-    seedNote: walkers2.length ? `cold start; ${walkers2.length} harvested walker(s) join at generation ${COLD_GENERATIONS} (${note})` : `cold start (${note})`
+    seedNote: beats ? `cold start; ${beats} (${note})` : `cold start (${note})`
   };
 }
 const MAX_WIND_N = 100;
@@ -40772,7 +40948,100 @@ class WallCamera {
     this.demo.camera.lookAt(this.target.x, this.target.y, this.target.z);
   }
 }
-const QR_RESERVE_PX = 360;
+const CARD_TIMING = { in: 400, stay: 8500, out: 400 };
+const WORDS = [
+  "zero",
+  "one",
+  "two",
+  "three",
+  "four",
+  "five",
+  "six",
+  "seven",
+  "eight",
+  "nine",
+  "ten",
+  "eleven",
+  "twelve"
+];
+function numberWord(n2) {
+  return Number.isInteger(n2) && n2 >= 0 && n2 < WORDS.length ? WORDS[n2] : String(n2);
+}
+const capitalise = (s2) => s2.charAt(0).toUpperCase() + s2.slice(1);
+function buildCards() {
+  return [
+    {
+      title: "Nobody has to know the answer",
+      body: "This is a way of solving a problem when you cannot say how it is done. You only need to recognise a good attempt when you see one."
+    },
+    {
+      title: "Start with a crowd of bad guesses",
+      body: "Random ones. None of them work, and that is fine. What matters is that they fail in different ways from each other."
+    },
+    {
+      title: "Give every guess a score",
+      body: "The score is the only instruction anything here ever receives. Choose it carelessly and you get exactly what you asked for instead of what you wanted."
+    },
+    {
+      title: "Keep the best. Throw the rest away",
+      body: "That step is called selection. It is the same thing that decides which animals live long enough to have young."
+    },
+    {
+      title: "Build the next crowd from the survivors",
+      body: "Take two that did well and mix their settings together. Half of one attempt plus half of another is sometimes better than either."
+    },
+    {
+      title: "Then change things at random",
+      body: "In living things this is a copying error in DNA. Almost every one is harmful. The rare helpful one is where anything new comes from."
+    },
+    {
+      title: "All of this has a name",
+      body: "A genetic algorithm. Score, keep, mix, change, and repeat it thousands of times. Nobody steers it, and it finds things nobody thought to write down."
+    }
+  ];
+}
+const ARRIVAL_COPY = {
+  // Beat one. The claim is deliberately small: the exhibit's whole argument is that walking is
+  // reached in increments, and this is the increment nobody would think to be impressed by.
+  stand: {
+    one: {
+      title: "One that can stay on its feet",
+      body: "It came from a search left running overnight. It still cannot go anywhere. Staying upright is the first thing that has to work."
+    },
+    many: (word) => ({
+      title: `${word} that can stay on their feet`,
+      body: "They came from a search left running overnight. They still cannot go anywhere. Staying upright is the first thing that has to work."
+    })
+  },
+  // Beat two. Undercut on purpose -- "barely" is doing the work, because what is on the screen is
+  // genuinely unimpressive and the copy has to agree with it or it stops being believed.
+  shuffle: {
+    one: {
+      title: "One that has learned to inch forward",
+      body: "Barely. Watch it lean, catch itself and creep forward. It is not walking yet, but it is the shape of it."
+    },
+    many: (word) => ({
+      title: `${word} that have learned to inch forward`,
+      body: "Barely. Watch them lean, catch themselves and creep forward. It is not walking yet, but it is the shape of it."
+    })
+  },
+  // Beat three, and the payoff. Nine like the others -- see the counts note in injector.js for why
+  // it stopped being two.
+  walk: {
+    one: {
+      title: "A ringer just joined",
+      body: "It came from a search left running overnight. Watch whether its gait spreads through everyone else."
+    },
+    many: (word) => ({
+      title: `${word} ringers just joined`,
+      body: "They came from a search left running overnight. Watch how much of that gait the generations after them manage to keep."
+    })
+  }
+};
+function buildArrivalCard(count, tier = "walk") {
+  const copy = ARRIVAL_COPY[tier] || ARRIVAL_COPY.walk;
+  return count === 1 ? copy.one : copy.many(capitalise(numberWord(count)));
+}
 const STYLE = `
 #hud, #hud * { box-sizing: border-box; }
 #hud {
@@ -40784,13 +41053,39 @@ const STYLE = `
 
 #hud .title {
   position: absolute; left: clamp(24px, 2.2vw, 60px); top: clamp(20px, 2vw, 52px);
+  width: clamp(300px, 30vw, 760px);
 }
 #hud .title h1 {
   margin: 0; font-size: clamp(28px, 2.6vw, 72px); font-weight: 700; letter-spacing: -0.02em;
 }
-#hud .title p {
-  margin: 0.35em 0 0; font-size: clamp(14px, 1.05vw, 29px); font-weight: 400;
-  max-width: 34ch; line-height: 1.45; color: #b9c9e4;
+
+/* Every card occupies the same grid cell, so they cross-fade in place and the deck is exactly as
+   tall as its longest card -- no magic height to keep in step with the copy, and no layout jump
+   when a short card follows a long one.
+
+   Opacity alone, deliberately. Toggling visibility too is what forces the double-rAF dance in
+   fluid's fader (the browser skips a transition that starts in the same frame as the visibility
+   change), and none of it is needed here: #hud is already pointer-events: none, so a faded-out card
+   is not a hit target and has nothing to be hidden from. */
+#hud .deck {
+  display: grid; margin-top: 0.5em;
+}
+#hud .deck .card {
+  grid-area: 1 / 1;
+  opacity: 0; transition: opacity ${CARD_TIMING.out}ms ease-in-out;
+}
+#hud .deck .card.on {
+  opacity: 1; transition-duration: ${CARD_TIMING.in}ms;
+}
+#hud .deck .card h2 {
+  margin: 0; font-size: clamp(17px, 1.35vw, 37px); font-weight: 600; line-height: 1.25;
+  letter-spacing: -0.01em;
+  /* The accent the deleted progress bar used to own. */
+  color: #6fd3ff;
+}
+#hud .deck .card p {
+  margin: 0.4em 0 0; font-size: clamp(14px, 1.05vw, 29px); font-weight: 400;
+  line-height: 1.45; color: #b9c9e4;
 }
 
 #hud .stats {
@@ -40811,30 +41106,14 @@ const STYLE = `
 /* Bottom-RIGHT: the bottom-left corner belongs to the launcher's QR card. */
 #hud .foot {
   position: absolute; right: clamp(24px, 2.2vw, 60px); bottom: clamp(20px, 2vw, 52px);
-  text-align: right; font-size: clamp(13px, 0.95vw, 26px); color: #b9c9e4; line-height: 1.5;
+  text-align: right;
 }
 #hud .foot .badge {
-  display: inline-block; margin-bottom: 0.5em; padding: 0.3em 0.8em; border-radius: 999px;
+  display: inline-block; padding: 0.3em 0.8em; border-radius: 999px;
   background: rgba(255, 176, 63, 0.16); border: 1px solid rgba(255, 176, 63, 0.5);
   color: #ffcb84; font-weight: 600; font-size: clamp(12px, 0.85vw, 23px);
 }
 #hud .foot .badge.hidden { display: none; }
-
-#hud .progress {
-  position: absolute; left: clamp(24px, 2.2vw, 60px); bottom: clamp(20px, 2vw, 52px);
-  width: clamp(240px, 22vw, 600px);
-  /* Clear of the QR card, which sits in the corner this would otherwise share. */
-  margin-left: ${QR_RESERVE_PX}px;
-}
-#hud .progress .bar {
-  height: clamp(5px, 0.4vw, 11px); border-radius: 999px; overflow: hidden;
-  background: rgba(255, 255, 255, 0.14);
-}
-#hud .progress .bar i { display: block; height: 100%; background: #6fd3ff; width: 0%; }
-#hud .progress .caption {
-  margin-top: 0.6em; font-size: clamp(12px, 0.9vw, 24px); color: #93a7c6;
-  font-variant-numeric: tabular-nums;
-}
 `;
 function row(parent, label, lead = false) {
   const dt = document.createElement("dt");
@@ -40849,13 +41128,14 @@ function row(parent, label, lead = false) {
   return dd;
 }
 class Hud {
-  /** @param {boolean} visible false for ?nohud, which is how thumb.jpg and wide.jpg get captured
-   *    as a clean picture of the arena */
-  /** @param {boolean} visible false for ?nohud
-   *  @param {number} walkers how many are in the arena, for the subtitle -- read from the config
-   *    rather than written into the copy, because the exhibit's batch size is a tuning knob and a
-   *    hard-coded "thirty" silently becomes a lie the first time it moves */
-  constructor(visible = true, walkers2 = 0) {
+  /** @param {boolean} visible false for ?nohud, which is how thumb.jpg and wide.jpg get captured as
+   *    a clean picture of the arena
+   *
+   *  Takes no runner. It used to take one so the cards could quote the arena's own figures off its
+   *  config; the deck is about genetic algorithms in general now and names none of them, so there is
+   *  nothing to read at construction time. update() still receives the runner every frame, which is
+   *  where the live stats come from. */
+  constructor(visible = true) {
     const style = document.createElement("style");
     style.textContent = STYLE;
     document.head.appendChild(style);
@@ -40867,19 +41147,32 @@ class Hud {
     root.innerHTML = `
       <div class="title">
         <h1>Learning to Walk</h1>
-        <p class="lede">Nobody programmed these humanoids to walk.</p>
+        <div class="deck"></div>
       </div>
       <dl class="stats"></dl>
-      <div class="progress">
-        <div class="bar"><i></i></div>
-        <div class="caption">&nbsp;</div>
-      </div>
       <div class="foot">
         <div class="badge hidden"></div>
-        <div class="note">&nbsp;</div>
       </div>`;
-    const lede = root.querySelector(".title .lede");
-    lede.textContent = walkers2 ? `Nobody programmed these humanoids to walk. All ${walkers2} of them are being scored at once; the ones that get furthest become the parents of the next generation.` : lede.textContent;
+    this.cards = buildCards();
+    const deck = root.querySelector(".deck");
+    this.cardEls = this.cards.map((card) => {
+      const el = document.createElement("div");
+      el.className = "card";
+      const h2 = document.createElement("h2");
+      const p2 = document.createElement("p");
+      h2.textContent = card.title;
+      p2.textContent = card.body;
+      el.append(h2, p2);
+      deck.appendChild(el);
+      return el;
+    });
+    this.arrivalEl = null;
+    this.deck = deck;
+    this.index = 0;
+    this.showing = null;
+    this.holding = false;
+    this.phaseAt = 0;
+    this.pending = null;
     const stats = root.querySelector(".stats");
     this.el = {
       generation: row(stats, "Generation", true),
@@ -40887,20 +41180,65 @@ class Hud {
       speed: row(stats, "Best speed"),
       walking: row(stats, "Getting somewhere"),
       alive: row(stats, "Still standing"),
-      bar: root.querySelector(".progress .bar i"),
-      caption: root.querySelector(".progress .caption"),
-      badge: root.querySelector(".foot .badge"),
-      note: root.querySelector(".foot .note")
+      badge: root.querySelector(".foot .badge")
     };
     document.body.appendChild(root);
     this.root = root;
     this.visible = visible;
   }
-  /** The one-off line: where the population started. Said out loud because the honest description of
-   *  this exhibit is "live evolution, warm-started", and a visitor who assumes every bot began from
-   *  nothing five minutes ago has been misled by omission. */
-  setSeedNote(text) {
-    this.el.note.textContent = text;
+  /** Interrupts the rotation with the arrival card, then hands back to it after one normal dwell.
+   *
+   *  Called on the one frame the injector reports a harvested band landing. It replaces the
+   *  bottom-right note that used to carry this, and it is the reason that note could be removed
+   *  rather than just relocated.
+   *
+   *  TAKES THE TIER, not just the count: the stand and shuffle beats both land nine, so the number
+   *  alone cannot tell the wall which of the three arrivals it is describing. One element is reused
+   *  across all three -- a beat replaces whatever the last one said rather than stacking beside it. */
+  announceArrival(count = 2, tier = "walk") {
+    if (!this.visible) {
+      return;
+    }
+    const card = buildArrivalCard(count, tier);
+    if (!this.arrivalEl) {
+      this.arrivalEl = document.createElement("div");
+      this.arrivalEl.className = "card";
+      this.arrivalEl.append(document.createElement("h2"), document.createElement("p"));
+      this.deck.appendChild(this.arrivalEl);
+    }
+    this.arrivalEl.firstChild.textContent = card.title;
+    this.arrivalEl.lastChild.textContent = card.body;
+    this.pending = this.arrivalEl;
+    if (this.holding && this.showing) {
+      this.showing.classList.remove("on");
+      this.holding = false;
+      this.phaseAt = performance.now();
+    }
+  }
+  /** Back to the top of the deck, arrival card retired.
+   *
+   *  restartCycle() goes through here so the second attract cycle tells the same story in the same
+   *  order as the first -- and so an arrival card from the previous run is not still on the wall
+   *  describing walkers that have just been thrown away. */
+  reset() {
+    this.index = 0;
+    this.pending = null;
+    if (this.arrivalEl) {
+      this.arrivalEl.classList.remove("on");
+    }
+    this._show(this.cardEls[0]);
+  }
+  /** @param {HTMLElement} el */
+  _show(el) {
+    if (this.showing && this.showing !== el) {
+      this.showing.classList.remove("on");
+    }
+    if (el) {
+      el.classList.add("on");
+    }
+    this.showing = el;
+    this.holding = true;
+    this.phaseAt = performance.now();
   }
   /** Per-frame refresh. Reads runner.stats -- the same object the bench's readouts poll -- so the
    *  wall and the lab can never disagree about what generation it is. */
@@ -40914,11 +41252,7 @@ class Hud {
     this.el.speed.textContent = s2.bestSpeed.toFixed(2) + " m/s";
     this.el.walking.textContent = s2.bandCounts[1] + s2.bandCounts[2] + " / " + runner2.cfg.populationSize;
     this.el.alive.textContent = s2.alive + " / " + runner2.cfg.batchSize;
-    const within = runner2.trialSteps ? Math.min(1, runner2.trialStep / runner2.trialSteps) : 0;
-    const done = (s2.batchIndex + (s2.trialIndex + within) / s2.trialCount) / s2.batchCount;
-    this.el.bar.style.width = (Math.min(1, Math.max(0, done)) * 100).toFixed(1) + "%";
-    const left = Math.max(0, (runner2.trialSteps - runner2.trialStep) * (runner2.dt || 0));
-    this.el.caption.textContent = s2.batchCount === 1 ? `Generation ${s2.generation} · ${left.toFixed(1)}s left in this round` : `Generation ${s2.generation} · scoring group ${s2.batchIndex + 1} of ${s2.batchCount}`;
+    this._advanceDeck();
     const badge = this.el.badge;
     if (world2 && world2.modified) {
       const bits = [];
@@ -40936,6 +41270,52 @@ class Hud {
     } else {
       badge.classList.add("hidden");
     }
+  }
+  /** Moves the deck on when the current card's time is up.
+   *
+   *  SEQUENTIAL, not a cross-fade. Every card sits in the same grid cell, so fading the next one in
+   *  while the last one is still fading out puts two headings on top of each other for the length of
+   *  the transition -- which on text reads as a smear rather than as a change. So the outgoing card
+   *  is taken to zero first and the incoming one only starts once it is gone, which is what fluid's
+   *  fader does with its explicit out-then-in sequence.
+   *
+   *  Driven off the render loop rather than off setTimeout so that a wall which stalls -- a long
+   *  wasm hitch, a backgrounded tab -- resumes where it left off instead of flushing a queue of
+   *  expired timers and strobing through four cards at once.
+   *
+   *  Touches the DOM only on the two frames where a phase actually changes. This runs sixty times a
+   *  second on a machine already CPU-bound on physics, so the common path is one subtraction. */
+  _advanceDeck() {
+    if (this.cardEls.length === 0) {
+      return;
+    }
+    if (!this.showing) {
+      this._show(this.cardEls[0]);
+      return;
+    }
+    const now = performance.now();
+    if (this.holding) {
+      if (now - this.phaseAt < CARD_TIMING.in + CARD_TIMING.stay) {
+        return;
+      }
+      this.showing.classList.remove("on");
+      this.holding = false;
+      this.phaseAt = now;
+      return;
+    }
+    if (now - this.phaseAt < CARD_TIMING.out) {
+      return;
+    }
+    if (this.pending) {
+      const el = this.pending;
+      this.pending = null;
+      this._show(el);
+      return;
+    }
+    if (this.showing !== this.arrivalEl) {
+      this.index = (this.index + 1) % this.cardEls.length;
+    }
+    this._show(this.cardEls[this.index]);
   }
 }
 const IDLE_SECONDS = 45;
@@ -41045,13 +41425,13 @@ const world = new World(demo.model);
 world.onModelReloaded(demo.model, demo.robots);
 const camera = new WallCamera(demo);
 camera.fitTo(demo.gridLayout);
-const hud = new Hud(showHud, runner.cfg.batchSize);
-hud.setSeedNote(seedNote);
+const hud = new Hud(showHud);
+console.info("[learning-to-walk] " + seedNote);
 demo.params.speed = DEFAULT_SPEED;
 const restartCycle = () => {
   world.reset(demo.model, demo.data, demo.robots);
   restart();
-  hud.setSeedNote(seedNote);
+  hud.reset();
 };
 const controller = createController({
   demo,
@@ -41076,7 +41456,7 @@ demo.evolutionSync = () => {
   controller.tick(dt);
   const arrival = injector.tick();
   if (arrival) {
-    hud.setSeedNote(arrival);
+    hud.announceArrival(arrival.seeded, arrival.tier);
   }
   cycleSeconds += dt;
   if (cycleSeconds >= CYCLE_SECONDS && controller.idleSeconds() >= CYCLE_QUIET_SECONDS) {
