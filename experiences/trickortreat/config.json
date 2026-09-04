@@ -1,0 +1,17 @@
+{
+  "id": "trickortreat",
+  "type": "web",
+  "title": "The Candy Route",
+  "description": "Four trick-or-treaters walk the same block four different ways, and only one of them can prove it found the shortest route.",
+  "long_description": "Visiting every house on a block once and ending up back home is the Traveling Salesperson Problem, and it is famously hard: with 12 houses there are already almost 20 million distinct routes, and every house you add multiplies that by another factor.<br><br>So four ghosts each take a different approach to the same block. <b>Wander</b> walks the houses in any old order. <b>Nearest neighbor</b> always hops to the closest house it hasn't visited yet, which is fast and lands about 25% over the best route. <b>2-opt</b> takes that route and unties every crossing until none are left. <b>Held&ndash;Karp</b> solves the small pieces once, reuses them to build up the whole route, and comes out provably perfect &mdash; but its work doubles with every house, so above 15 houses it doesn't even start.<br><br>From your phone, add houses and watch the exact solver drop out, or slow the ghosts down to follow one route step by step.",
+  "artist": "Emeline MacJanet",
+  "action_hints": [
+    "add or remove houses",
+    "slow the trick-or-treaters down",
+    "pause on a route",
+    "lay out a new block"
+  ],
+  "layout": "full",
+  "lifetime": 240,
+  "queueable": true
+}

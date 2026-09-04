@@ -1,10 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The Candy Route</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chewy&family=Nunito:wght@400;600;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<!-- The phone connection. Loaded in <head> so FootronMessaging exists by the
+     time the scene script at the bottom of the page runs. -->
+<script src="./footron-messaging.development.js"></script>
+
 <style>
 :root{
-  --k:0.67;            /* global chrome scale - raise toward 1 for bigger text */
+  /* Global chrome scale: every length in this file is written as
+     calc(<n>px * var(--k)), so this one number is the whole typography pass.
+
+     The standalone page ran at 0.67, sized for a laptop at arm's length. The
+     wall is read from across a room, and its resolution is not something this
+     file gets to know, so the steps below raise --k on a bigger display -- see
+     the min-width queries after this block. It has to stay unitless: a vw-based
+     clamp() here would be a number/length mix inside every one of those calcs,
+     which is invalid at computed-value time and drops the layout on the floor.
+
+     The canvas needs no equivalent. It is authored in a fixed 1000x640 world
+     and fitted to its box, so everything in the scene already scales. */
+  --k:0.67;
   --night:#150F2E; --night-2:#0D0921; --panel:#1C1440; --panel-2:#241A4F;
   --line:#372869; --line-soft:#2A1F55;
   --pumpkin:#FF8A3D; --candy:#FF5FA2; --mint:#7EE0A8; --violet:#A98BE8;
@@ -14,6 +36,14 @@
   --f-body:"Nunito","Segoe UI",system-ui,sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",monospace;
 }
+/* The chrome scale, stepped by display width. 1 is the size this page was
+   checked at on a 1920-wide screen; the wider steps keep the rail and the title
+   at the same apparent size on a larger wall, and the ceiling keeps them from
+   growing into the scene. */
+@media (min-width:1500px){ :root{--k:1} }
+@media (min-width:2300px){ :root{--k:1.2} }
+@media (min-width:3100px){ :root{--k:1.35} }
+
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
@@ -28,8 +58,8 @@ body{
 .stage{
   height:100vh; height:100dvh; display:grid; gap:calc(12px*var(--k)); padding:calc(12px*var(--k));
   grid-template-columns:calc(250px*var(--k)) minmax(0,1fr) calc(296px*var(--k));
-  grid-template-rows:minmax(0,1fr) auto;
-  grid-template-areas:"left viz right" "foot foot foot";
+  grid-template-rows:minmax(0,1fr);
+  grid-template-areas:"left viz right";
 }
 
 .card{
@@ -109,37 +139,6 @@ body{
 }
 #scene{flex:1; width:100%; min-height:0; display:block}
 
-.controls{
-  grid-area:foot; display:flex; align-items:center; gap:calc(10px*var(--k)); padding:calc(8px*var(--k)) calc(10px*var(--k));
-  background:linear-gradient(180deg,var(--panel-2),var(--panel));
-  border:1px solid var(--line); border-radius:var(--r);
-}
-.ctl-label{
-  font-family:var(--f-mono); font-size:calc(10.5px*var(--k)); letter-spacing:.14em;
-  text-transform:uppercase; color:var(--dim);
-}
-button{
-  font-family:var(--f-body); font-size:calc(13.5px*var(--k)); font-weight:600; color:var(--text);
-  background:#2C2059; border:1px solid var(--line); border-radius:calc(9px*var(--k));
-  padding:calc(8px*var(--k)) calc(15px*var(--k)); cursor:pointer; transition:background .18s, color .18s, border-color .18s;
-}
-button:hover{background:#3A2A6E; border-color:#54409B}
-button:focus-visible{outline:calc(2px*var(--k)) solid var(--pumpkin); outline-offset:calc(2px*var(--k))}
-button.on{background:var(--pumpkin); border-color:var(--pumpkin); color:var(--night-2)}
-button.icon{font-family:var(--f-mono); min-width:calc(38px*var(--k)); padding:calc(8px*var(--k)) 0; text-align:center; font-size:calc(15px*var(--k))}
-.seg{display:flex; border:1px solid var(--line); border-radius:calc(9px*var(--k)); overflow:hidden}
-.seg button{border:0; border-radius:0; padding:calc(8px*var(--k)) calc(13px*var(--k)); background:transparent; font-size:calc(12.5px*var(--k))}
-.seg button + button{border-left:1px solid var(--line)}
-.count{
-  font-family:var(--f-mono); font-size:calc(15px*var(--k)); font-weight:600; color:var(--moon);
-  min-width:calc(34px*var(--k)); text-align:center; font-variant-numeric:tabular-nums;
-}
-.spacer{flex:1}
-.keys{font-family:var(--f-mono); font-size:calc(11px*var(--k)); color:var(--dim)}
-.keys kbd{
-  background:#2C2059; border:1px solid var(--line); border-bottom-width:calc(2px*var(--k));
-  border-radius:calc(5px*var(--k)); padding:calc(2px*var(--k)) calc(6px*var(--k)); color:var(--muted); font-family:inherit; font-size:calc(10.5px*var(--k));
-}
 .sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
 
 @media (max-width:940px){
@@ -148,8 +147,8 @@ button.icon{font-family:var(--f-mono); min-width:calc(38px*var(--k)); padding:ca
 }
 @media (max-width:700px){
   .stage{
-    grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr) auto auto;
-    grid-template-areas:"viz" "right" "foot";
+    grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr) auto;
+    grid-template-areas:"viz" "right";
   }
   .mark{display:none}
   .rail .card:not(.caption){display:none}   /* narrow screens keep only the narration */
@@ -157,6 +156,9 @@ button.icon{font-family:var(--f-mono); min-width:calc(38px*var(--k)); padding:ca
 }
 @media (prefers-reduced-motion:reduce){ *{transition-duration:.01ms !important} }
 </style>
+</head>
+
+<body>
 
 <div class="stage">
 
@@ -205,32 +207,52 @@ button.icon{font-family:var(--f-mono); min-width:calc(38px*var(--k)); padding:ca
     </section>
   </aside>
 
-  <footer class="controls">
-    <span class="ctl-label">Houses</span>
-    <button class="icon" id="minus" aria-label="Fewer houses">&minus;</button>
-    <span class="count" id="n-count">12</span>
-    <button class="icon" id="plus" aria-label="More houses">+</button>
-    <span class="ctl-label" style="margin-left:12px">Speed</span>
-    <div class="seg" id="speeds">
-      <button data-s="0.65">Slow</button>
-      <button data-s="1" class="on">Normal</button>
-      <button data-s="1.9">Fast</button>
-    </div>
-    <button id="pause" style="margin-left:12px">Pause</button>
-    <button id="again">New block</button>
-    <span class="spacer"></span>
-    <span class="keys"><kbd>Space</kbd> pause &nbsp; <kbd>N</kbd> new &nbsp; <kbd>&larr;</kbd><kbd>&rarr;</kbd> houses</span>
-  </footer>
 </div>
 
 <script>
 (function(){
 "use strict";
 
+/* ---------------- phone connection ----------------
+ *
+ * Mounted before anything below touches the canvas. If the scene throws while
+ * setting itself up, the phone still connects -- otherwise a display bug shows
+ * up on the phone as "disconnected", with nothing to say which side the
+ * problem is on.
+ *
+ * handleMessage is a function declaration further down and so is hoisted, but
+ * the state it drives (S.houses, S.racers) does not exist until generate() runs
+ * at the bottom of this file, and mount() can deliver a message the moment it
+ * connects. So anything that arrives early is queued here and flushed there.
+ */
+var messagingReady = false;
+var pendingMessages = [];
+var client = new FootronMessaging.Messaging();
+client.mount();
+client.addMessageListener(function(message){
+  if (!messagingReady){ pendingMessages.push(message); return; }
+  handleMessage(message);
+});
+
 /* ---------------- constants ---------------- */
 var W = 1000, H = 640, BLOCK = 46;
-var MIN_N = 6, MAX_N = 24, EXACT_MAX = 15;
+var MIN_N = 6, MAX_N = 24, EXACT_MAX = 15, DEFAULT_N = 12;
+var MIN_SPEED = 0.65, MAX_SPEED = 1.9;
 var BAND = { x0: 88, x1: 912, y0: 118, y1: 420 };
+/*
+ * The scene is authored in a fixed 1000x640 world and contain-fitted, so on any
+ * box that isn't 25:16 there is a margin outside the world -- and the wall is
+ * not 25:16. Left alone that margin is a flat band of backdrop with a hard edge
+ * where the hills stop, which on a 1920x1080 window is about 100px along the
+ * bottom and on a wider display is a strip down each side instead.
+ *
+ * So the sky, the hills, the stars and the clouds are all generated and painted
+ * across the world padded by this much, and the margin fills with more night
+ * instead. Deliberately generous: it costs a few hundred extra stars a frame
+ * and covers any display the wall is likely to be, whereas coming up short
+ * puts the seam back.
+ */
+var PAD_X = 500, PAD_Y = 300;
 var PANEL = { x: 26, y: 436, w: 306, row: 31, pad: 21 };
 
 var COL = {
@@ -262,12 +284,12 @@ var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 var scene = document.getElementById("scene");
 var sctx  = scene.getContext("2d");
 function el(id){ return document.getElementById(id); }
-var view = { s:1, ox:0, oy:0, w:0, h:0 };
+var view = { s:1, ox:0, oy:0, w:0, h:0, overX:0, overY:0 };
 var dpr = Math.min(window.devicePixelRatio || 1, 2);
 
 /* ---------------- state ---------------- */
 var S = {
-  n: 12, houses: [], racers: [], cur: -1,
+  n: DEFAULT_N, houses: [], racers: [], cur: -1,
   stage: "scatter", t: 0, clock: 0, speed: 1, paused: false,
   plan: null,
   walk: { d:0, total:0, next:1, x:0, y:0, dir:1 },
@@ -479,10 +501,15 @@ function generate(){
 }
 
 function initSky(){
+  // 130 stars over 1000x430 was the density on the laptop; the count is scaled
+  // with the padded area so the sky looks the same wherever the world lands.
+  var sx0 = -PAD_X, sx1 = W + PAD_X, sy0 = -PAD_Y, sy1 = 430;
+  var count = Math.round(130 * ((sx1-sx0)*(sy1-sy0)) / (W*430));
   S.stars = [];
-  for (var i=0;i<130;i++) S.stars.push({ x:rnd(0,W), y:rnd(0,430), r:rnd(0.6,1.9), ph:rnd(0,6.28), sp:rnd(0.5,2.2) });
+  for (var i=0;i<count;i++) S.stars.push({ x:rnd(sx0,sx1), y:rnd(sy0,sy1), r:rnd(0.6,1.9), ph:rnd(0,6.28), sp:rnd(0.5,2.2) });
   S.clouds = [];
-  for (var c=0;c<4;c++) S.clouds.push({ x:rnd(-200,W), y:rnd(40,210), w:rnd(190,380), h:rnd(26,52), sp:rnd(3,9), a:rnd(0.05,0.13) });
+  var clouds = Math.round(4 * (sx1-sx0) / W);
+  for (var c=0;c<clouds;c++) S.clouds.push({ x:rnd(sx0,sx1), y:rnd(40-PAD_Y*0.4,210), w:rnd(190,380), h:rnd(26,52), sp:rnd(3,9), a:rnd(0.05,0.13) });
 }
 
 /* ---------------- stage machine ---------------- */
@@ -598,7 +625,7 @@ function update(dt){
   if (!reduced){
     for (i=0;i<S.clouds.length;i++){
       var c=S.clouds[i]; c.x += c.sp*dt;
-      if (c.x > W+260) c.x = -c.w-260;
+      if (c.x > W+PAD_X+60) c.x = -c.w-PAD_X-60;
     }
     S.batTimer -= dt;
     if (S.batTimer <= 0){
@@ -713,13 +740,20 @@ function fitScene(){
   scene.width = Math.round(view.w*dpr); scene.height = Math.round(view.h*dpr);
   var s = Math.min(view.w/W, view.h/H);
   view.s = s; view.ox = (view.w - W*s)/2; view.oy = (view.h - H*s)/2;
+  // The margin, converted back into world units and capped at what the
+  // backdrop was actually generated to cover.
+  view.overX = Math.min(view.ox/s, PAD_X);
+  view.overY = Math.min(view.oy/s, PAD_Y);
 }
 
 function drawSky(ctx){
   var g = ctx.createLinearGradient(0,0,0,H);
   g.addColorStop(0,"#0B0722"); g.addColorStop(0.45,"#1B1140");
   g.addColorStop(0.78,"#33205C"); g.addColorStop(1,"#452A63");
-  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  // Past 0 and H the gradient clamps to its end stops, so the padded area
+  // continues in the sky's own top and bottom colors.
+  ctx.fillStyle = g;
+  ctx.fillRect(-view.overX, -view.overY, W + view.overX*2, H + view.overY*2);
 
   for (var i=0;i<S.stars.length;i++){
     var st=S.stars[i];
@@ -765,15 +799,23 @@ function drawBat(ctx,b){
 }
 
 function drawGround(ctx){
-  var x;
+  // Both ridges are drawn across the padded box (see PAD_X/PAD_Y) rather than
+  // 0..W, so they reach the edge of the canvas on any display instead of ending
+  // at a straight line partway across. The profiles are unchanged, so the
+  // hillside through the world itself looks exactly as it did.
+  var x0 = -view.overX, x1 = W + view.overX, yb = H + view.overY;
+  function ridge(profile){
+    var x;
+    ctx.beginPath();
+    ctx.moveTo(x0, profile(x0));
+    for (x = x0 + 40; x < x1; x += 40) ctx.lineTo(x, profile(x));
+    ctx.lineTo(x1, profile(x1));
+    ctx.lineTo(x1, yb); ctx.lineTo(x0, yb); ctx.closePath(); ctx.fill();
+  }
   ctx.fillStyle = "#241645";
-  ctx.beginPath(); ctx.moveTo(0,470);
-  for (x=0;x<=W;x+=40) ctx.lineTo(x, 470 - Math.sin(x*0.008)*16 - Math.sin(x*0.021)*8);
-  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
+  ridge(function(x){ return 470 - Math.sin(x*0.008)*16 - Math.sin(x*0.021)*8; });
   ctx.fillStyle = "#2E1C51";
-  ctx.beginPath(); ctx.moveTo(0,520);
-  for (x=0;x<=W;x+=40) ctx.lineTo(x, 520 - Math.sin(x*0.011+2)*12);
-  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
+  ridge(function(x){ return 520 - Math.sin(x*0.011+2)*12; });
 }
 
 function drawTree(ctx,t){
@@ -1142,7 +1184,6 @@ function render(){
 
 /* ---------------- rail readouts ---------------- */
 function refreshStatic(){
-  el("n-count").textContent = S.n;
   el("bf-n").textContent = S.n;
   var routes = factorial(S.n-1)/2;
   el("bf-count").textContent = fmtInt(routes);
@@ -1160,30 +1201,74 @@ function frame(ts){
   render();
 }
 
-/* ---------------- controls ---------------- */
-function setN(n){ S.n = clamp(n, MIN_N, MAX_N); generate(); }
-el("plus").addEventListener("click", function(){ setN(S.n+1); });
-el("minus").addEventListener("click", function(){ setN(S.n-1); });
-el("again").addEventListener("click", function(){ generate(); });
-el("pause").addEventListener("click", function(){
-  S.paused = !S.paused;
-  this.textContent = S.paused ? "Resume" : "Pause";
-  this.className = S.paused ? "on" : "";
-});
-var speedBtns = document.querySelectorAll("#speeds button");
-for (var si=0; si<speedBtns.length; si++){
-  speedBtns[si].addEventListener("click", function(){
-    S.speed = parseFloat(this.getAttribute("data-s"));
-    for (var k=0;k<speedBtns.length;k++) speedBtns[k].className = "";
-    this.className = "on";
-  });
+/* ---------------- controls from the phone ----------------
+ *
+ * This is the whole of what the standalone page's bottom action bar did, and
+ * the message names below are exactly the ones the panel in
+ * experiences/trickortreat/controls/lib/index.js sends. The bar and the
+ * keyboard shortcuts it advertised are both gone from this page: the wall has
+ * no pointer and no keyboard, so nothing on it was ever touchable.
+ *
+ * Nothing is ever sent back the other way -- the wall only adds a listener --
+ * so the panel owns the state and seeds itself from the same defaults. That
+ * stays honest because the wall never moves these values on its own: it rolls
+ * one block into the next at the end of the finale without ever changing the
+ * house count, the speed, or whether it is paused.
+ */
+// Laying out a fresh block always starts it running. A new block frozen at t=0
+// is just a still with no way to tell from the wall that anything happened, so
+// anything that re-lays the block clears the pause -- and the panel mirrors
+// that in its own button.
+function newBlock(){
+  S.paused = false;
+  generate();
 }
-document.addEventListener("keydown", function(e){
-  if (e.key === " "){ e.preventDefault(); el("pause").click(); }
-  else if (e.key === "n" || e.key === "N") generate();
-  else if (e.key === "ArrowRight") setN(S.n+1);
-  else if (e.key === "ArrowLeft") setN(S.n-1);
-});
+
+function setN(n){
+  n = clamp(Math.round(n), MIN_N, MAX_N);
+  // A different house count is a different block either way -- but only when
+  // the number actually moved, or a slider dragged past a limit would keep
+  // restarting the run.
+  if (n === S.n) return;
+  S.n = n;
+  newBlock();
+}
+
+function handleMessage(message){
+  if (!message || typeof message !== "object") return;
+  switch (message.type){
+    case "houses":
+      setN(message.value);
+      break;
+
+    case "speed":
+      S.speed = clamp(message.value, MIN_SPEED, MAX_SPEED);
+      break;
+
+    case "pause":
+      S.paused = message.value === undefined ? !S.paused : !!message.value;
+      break;
+
+    case "newBlock":
+      newBlock();
+      break;
+
+    case "resume":
+      // Nobody is driving any more: back to the defaults and a fresh block,
+      // which is how the wall should look when it is left alone. Clearing the
+      // pause matters most -- a block left frozen stays frozen for whoever
+      // walks up next.
+      S.speed = 1;
+      S.n = DEFAULT_N;
+      newBlock();
+      break;
+
+    default:
+      console.warn("Unrecognized message type", message.type);
+  }
+}
+
+window.messageHandler = handleMessage;   // purely for local testing
 
 var ro = new ResizeObserver(function(){ fitScene(); });
 ro.observe(scene);
@@ -1192,5 +1277,13 @@ initSky();
 fitScene();
 generate();
 requestAnimationFrame(frame);
+
+// Everything handleMessage touches now exists, so it is safe to run anything
+// that arrived from the phone while this script was still starting up.
+messagingReady = true;
+for (var pm=0; pm<pendingMessages.length; pm++) handleMessage(pendingMessages[pm]);
 })();
 </script>
+
+</body>
+</html>
