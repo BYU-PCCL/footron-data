@@ -1,0 +1,1196 @@
+<title>The Candy Route</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chewy&family=Nunito:wght@400;600;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --k:0.67;            /* global chrome scale - raise toward 1 for bigger text */
+  --night:#150F2E; --night-2:#0D0921; --panel:#1C1440; --panel-2:#241A4F;
+  --line:#372869; --line-soft:#2A1F55;
+  --pumpkin:#FF8A3D; --candy:#FF5FA2; --mint:#7EE0A8; --violet:#A98BE8;
+  --moon:#FFE9BE; --text:#EEE7FF; --muted:#A292CF; --dim:#7A6AA6;
+  --r:calc(14px*var(--k));
+  --f-display:"Chewy","Comic Sans MS",cursive;
+  --f-body:"Nunito","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; overflow:hidden;
+  background:
+    radial-gradient(calc(1200px*var(--k)) calc(700px*var(--k)) at 78% -8%, #2B1D57 0%, transparent 62%),
+    radial-gradient(calc(900px*var(--k)) calc(600px*var(--k)) at 8% 108%, #241650 0%, transparent 60%),
+    var(--night);
+  color:var(--text); font-family:var(--f-body); font-size:calc(15px*var(--k)); line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.stage{
+  height:100vh; height:100dvh; display:grid; gap:calc(12px*var(--k)); padding:calc(12px*var(--k));
+  grid-template-columns:calc(250px*var(--k)) minmax(0,1fr) calc(296px*var(--k));
+  grid-template-rows:minmax(0,1fr) auto;
+  grid-template-areas:"left viz right" "foot foot foot";
+}
+
+.card{
+  background:linear-gradient(180deg, var(--panel-2), var(--panel));
+  border:1px solid var(--line); border-radius:var(--r);
+  padding:calc(14px*var(--k)) calc(16px*var(--k)); min-height:0;
+}
+.card h2{
+  margin:0 0 calc(10px*var(--k)); font-family:var(--f-mono); font-size:calc(11px*var(--k)); font-weight:600;
+  letter-spacing:.16em; text-transform:uppercase; color:var(--muted);
+  display:flex; align-items:baseline; gap:calc(8px*var(--k));
+}
+.card h2::after{content:""; flex:1; height:1px; background:var(--line-soft)}
+
+.mark{
+  grid-area:left; align-self:center; display:flex; align-items:center; gap:calc(12px*var(--k)); flex:none;
+  padding:calc(3px*var(--k)) calc(5px*var(--k));
+}
+.mark svg{
+  width:calc(74px*var(--k)); height:calc(86px*var(--k)); flex:none;
+  filter:drop-shadow(0 0 calc(10px*var(--k)) rgba(255,138,61,.55));
+}
+.mark h1{
+  font-family:var(--f-display); font-weight:400; font-size:calc(58px*var(--k)); line-height:1.05; text-align:right;
+  margin:0; color:var(--moon); text-shadow:0 0 calc(26px*var(--k)) rgba(255,138,61,.45);
+  text-wrap:balance;
+}
+.mark p{
+  margin:calc(4px*var(--k)) 0 0; font-size:calc(11px*var(--k));
+  color:var(--muted); line-height:1.35;
+}
+#subtitle {
+  font-size:calc(18px*var(--k)); text-align:right;
+}
+.mark span {
+  color: chocolate;
+  font-weight: bold;
+}
+
+.rail{grid-area:right; display:flex; flex-direction:column; gap:calc(12px*var(--k)); min-height:0; overflow:hidden}
+
+.ladder{width:100%; border-collapse:collapse; font-family:var(--f-mono); font-size:calc(12px*var(--k))}
+.ladder th{
+  text-align:left; font-weight:500; font-size:calc(10px*var(--k)); letter-spacing:.12em;
+  text-transform:uppercase; color:var(--dim); padding:0 0 calc(6px*var(--k)); border-bottom:1px solid var(--line-soft);
+}
+.ladder th:last-child,.ladder td:last-child{text-align:right}
+.ladder td{padding:calc(7px*var(--k)) 0; border-bottom:1px solid var(--line-soft); color:var(--muted)}
+.ladder tr:last-child td{border-bottom:0}
+.ladder .algo{
+  color:var(--text); font-family:var(--f-body); font-weight:600; font-size:calc(12.5px*var(--k));
+  display:flex; align-items:center; gap:calc(8px*var(--k));
+}
+.ladder .algo::before{
+  content:""; width:calc(7px*var(--k)); height:calc(7px*var(--k)); border-radius:50%; flex:none;
+  background:var(--swatch,transparent); opacity:.4; transition:opacity .3s, box-shadow .3s;
+}
+.ladder tr.live .algo{color:var(--swatch)}
+.ladder tr.live .algo::before{opacity:1; box-shadow:0 0 calc(9px*var(--k)) var(--swatch)}
+.ladder .perfect{color:var(--mint)}
+
+.brute{
+  margin:0; font-family:var(--f-mono); font-size:calc(11.5px*var(--k)); color:var(--dim); line-height:1.5;
+}
+.brute b{display:block; font-size:calc(15px*var(--k)); color:var(--candy); font-weight:600}
+
+.caption p{
+  margin:0; font-size:calc(21px*var(--k)); line-height:1.35; color:var(--moon); text-wrap:pretty;
+  min-height:calc(5 * 1.35em);   /* hold 5 lines so the cards below never jump */
+}
+.caption b{font-weight:800}
+
+.viz{
+  grid-area:viz; position:relative; min-height:0; border-radius:var(--r);
+  border:1px solid var(--line); overflow:hidden; background:var(--night-2);
+  display:flex; flex-direction:column;
+}
+#scene{flex:1; width:100%; min-height:0; display:block}
+
+.controls{
+  grid-area:foot; display:flex; align-items:center; gap:calc(10px*var(--k)); padding:calc(8px*var(--k)) calc(10px*var(--k));
+  background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  border:1px solid var(--line); border-radius:var(--r);
+}
+.ctl-label{
+  font-family:var(--f-mono); font-size:calc(10.5px*var(--k)); letter-spacing:.14em;
+  text-transform:uppercase; color:var(--dim);
+}
+button{
+  font-family:var(--f-body); font-size:calc(13.5px*var(--k)); font-weight:600; color:var(--text);
+  background:#2C2059; border:1px solid var(--line); border-radius:calc(9px*var(--k));
+  padding:calc(8px*var(--k)) calc(15px*var(--k)); cursor:pointer; transition:background .18s, color .18s, border-color .18s;
+}
+button:hover{background:#3A2A6E; border-color:#54409B}
+button:focus-visible{outline:calc(2px*var(--k)) solid var(--pumpkin); outline-offset:calc(2px*var(--k))}
+button.on{background:var(--pumpkin); border-color:var(--pumpkin); color:var(--night-2)}
+button.icon{font-family:var(--f-mono); min-width:calc(38px*var(--k)); padding:calc(8px*var(--k)) 0; text-align:center; font-size:calc(15px*var(--k))}
+.seg{display:flex; border:1px solid var(--line); border-radius:calc(9px*var(--k)); overflow:hidden}
+.seg button{border:0; border-radius:0; padding:calc(8px*var(--k)) calc(13px*var(--k)); background:transparent; font-size:calc(12.5px*var(--k))}
+.seg button + button{border-left:1px solid var(--line)}
+.count{
+  font-family:var(--f-mono); font-size:calc(15px*var(--k)); font-weight:600; color:var(--moon);
+  min-width:calc(34px*var(--k)); text-align:center; font-variant-numeric:tabular-nums;
+}
+.spacer{flex:1}
+.keys{font-family:var(--f-mono); font-size:calc(11px*var(--k)); color:var(--dim)}
+.keys kbd{
+  background:#2C2059; border:1px solid var(--line); border-bottom-width:calc(2px*var(--k));
+  border-radius:calc(5px*var(--k)); padding:calc(2px*var(--k)) calc(6px*var(--k)); color:var(--muted); font-family:inherit; font-size:calc(10.5px*var(--k));
+}
+.sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+
+@media (max-width:940px){
+  .stage{grid-template-columns:calc(224px*var(--k)) minmax(0,1fr) calc(250px*var(--k))}
+  .mark h1{font-size:calc(29px*var(--k))}
+}
+@media (max-width:700px){
+  .stage{
+    grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr) auto auto;
+    grid-template-areas:"viz" "right" "foot";
+  }
+  .mark{display:none}
+  .rail .card:not(.caption){display:none}   /* narrow screens keep only the narration */
+  .caption p{min-height:0}
+}
+@media (prefers-reduced-motion:reduce){ *{transition-duration:.01ms !important} }
+</style>
+
+<div class="stage">
+
+  <div class="mark">
+    <svg viewBox="6.5 2.6 21 24.4" aria-hidden="true">
+      <path d="M17 7c-1 0-1.6.5-2.2 1.1-1-.5-2.4-.6-3.6.1C8.6 9.7 7 12.9 7 17s1.6 7.3 4.2 8.8c1.4.8 2.9.5 3.9-.1.6.3 1.2.5 1.9.5s1.3-.2 1.9-.5c1 .6 2.5.9 3.9.1C25.4 24.3 27 21.1 27 17s-1.6-7.3-4.2-8.8c-1.2-.7-2.6-.6-3.6-.1C18.6 7.5 18 7 17 7z" fill="#FF8A3D"/>
+      <path d="M17 7.5c.3-1.6.9-3 2.4-3.6" stroke="#7EE0A8" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <path d="M13 15l2.2 1.6L13 18.2zM21 15l-2.2 1.6L21 18.2z" fill="#2A1443"/>
+      <path d="M13.2 21.4c1.2-.9 2.4.4 3.8.4s2.6-1.3 3.8-.4c-.8 1.6-2.2 2.4-3.8 2.4s-3-.8-3.8-2.4z" fill="#2A1443"/>
+    </svg>
+    <div>
+      <h1>The Candy Route</h1>
+      <p id="subtitle">Traveling Salesperson Problem:<br><span>Halloween edition</span></p>
+    </div>
+  </div>
+
+  <main class="viz">
+    <canvas id="scene"></canvas>
+    <p class="sr" aria-live="polite" id="live-region"></p>
+  </main>
+
+  <aside class="rail">
+    <section class="card caption">
+      <h2>Right now</h2>
+      <p id="caption-text">Warming up the pumpkins&hellip;</p>
+    </section>
+
+    <section class="card">
+      <h2>Cost of being sure</h2>
+      <table class="ladder">
+        <thead><tr><th>Strategy</th><th>Time</th><th>Route</th></tr></thead>
+        <tbody>
+          <tr data-algo="wander" style="--swatch:#FF5FA2"><td class="algo">Any old order</td><td>O(n)</td><td>pot luck</td></tr>
+          <tr data-algo="greedy" style="--swatch:#A98BE8"><td class="algo">Nearest neighbor</td><td>O(n&sup2;)</td><td>~25% over</td></tr>
+          <tr data-algo="twoopt" style="--swatch:#FF8A3D"><td class="algo">2-opt untangling</td><td>O(n&sup2;)/pass</td><td>~5% over</td></tr>
+          <tr style="--swatch:#6E5C99"><td class="algo">Christofides</td><td>O(n&sup3;)</td><td>&le;1.5&times; best</td></tr>
+          <tr data-algo="exact" style="--swatch:#7EE0A8"><td class="algo">Held&ndash;Karp</td><td>O(n&sup2;&middot;2&#8319;)</td><td class="perfect">perfect</td></tr>
+          <tr style="--swatch:#6E5C99"><td class="algo">Every route</td><td>O(n!)</td><td class="perfect">perfect</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Checking every route</h2>
+      <p class="brute"><b id="bf-count">0</b>routes through <span id="bf-n">12</span> houses &middot; <span id="bf-time">&mdash;</span> to check them all at a billion per second</p>
+    </section>
+  </aside>
+
+  <footer class="controls">
+    <span class="ctl-label">Houses</span>
+    <button class="icon" id="minus" aria-label="Fewer houses">&minus;</button>
+    <span class="count" id="n-count">12</span>
+    <button class="icon" id="plus" aria-label="More houses">+</button>
+    <span class="ctl-label" style="margin-left:12px">Speed</span>
+    <div class="seg" id="speeds">
+      <button data-s="0.65">Slow</button>
+      <button data-s="1" class="on">Normal</button>
+      <button data-s="1.9">Fast</button>
+    </div>
+    <button id="pause" style="margin-left:12px">Pause</button>
+    <button id="again">New block</button>
+    <span class="spacer"></span>
+    <span class="keys"><kbd>Space</kbd> pause &nbsp; <kbd>N</kbd> new &nbsp; <kbd>&larr;</kbd><kbd>&rarr;</kbd> houses</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- constants ---------------- */
+var W = 1000, H = 640, BLOCK = 46;
+var MIN_N = 6, MAX_N = 24, EXACT_MAX = 15;
+var BAND = { x0: 88, x1: 912, y0: 118, y1: 420 };
+var PANEL = { x: 26, y: 436, w: 306, row: 31, pad: 21 };
+
+var COL = {
+  night2:"#0D0921", pumpkin:"#FF8A3D", candy:"#FF5FA2", mint:"#7EE0A8",
+  violet:"#A98BE8", moon:"#FFE9BE", muted:"#A292CF", dim:"#7A6AA6"
+};
+var HOUSE_HUES = [
+  {wall:"#6E4C8F", roof:"#48305F", trim:"#B79BDD"},
+  {wall:"#3E7C8C", roof:"#28545F", trim:"#95D2DE"},
+  {wall:"#C4667F", roof:"#8B4058", trim:"#F3AFC1"},
+  {wall:"#C08B45", roof:"#8A5D2E", trim:"#EFCA92"},
+  {wall:"#5F8C6A", roof:"#3C5D45", trim:"#A6D4B1"},
+  {wall:"#8A6FB0", roof:"#5C4780", trim:"#CBBAE8"}
+];
+var CANDY_COLORS = ["#FF8A3D","#FF5FA2","#7EE0A8","#FFE9BE","#A98BE8"];
+
+var RACER_DEFS = [
+  { key:"wander", name:"WANDER",  label:"Wander",          o:"O(n)",        color:"#FF5FA2", body:"#FFD4E7" },
+  { key:"greedy", name:"GREEDY",  label:"Nearest neighbor", o:"O(n²)",  color:"#A98BE8", body:"#E4DAFB" },
+  { key:"twoopt", name:"UNTANGLE",label:"2-opt untangling", o:"O(n²)/pass", color:"#FF8A3D", body:"#FFE0C6" },
+  { key:"exact",  name:"PERFECT", label:"Held–Karp",   o:"O(n²·2ⁿ)", color:"#7EE0A8", body:"#D6F7E4" }
+];
+
+var TIME = { scatter:1.5, walk:5.2, finale:4.6, flash:0.3 };
+
+var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------------- dom ---------------- */
+var scene = document.getElementById("scene");
+var sctx  = scene.getContext("2d");
+function el(id){ return document.getElementById(id); }
+var view = { s:1, ox:0, oy:0, w:0, h:0 };
+var dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+/* ---------------- state ---------------- */
+var S = {
+  n: 12, houses: [], racers: [], cur: -1,
+  stage: "scatter", t: 0, clock: 0, speed: 1, paused: false,
+  plan: null,
+  walk: { d:0, total:0, next:1, x:0, y:0, dir:1 },
+  particles: [], stars: [], trees: [], bats: [], clouds: [], batTimer: 3
+};
+
+/* ---------------- helpers ---------------- */
+function rnd(a,b){ return a + Math.random()*(b-a); }
+function pick(a){ return a[(Math.random()*a.length)|0]; }
+function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+function ease(t){ return t<0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2; }
+
+function raw(i,j){ var a=S.houses[i], b=S.houses[j]; return Math.hypot(a.x-b.x, a.y-b.y); }
+function tourLength(t){
+  var s=0; for (var i=0;i<t.length;i++) s += raw(t[i], t[(i+1)%t.length]); return s;
+}
+function blocks(v){ return v/BLOCK; }
+function reverse(t,i,j){ while(i<j){ var x=t[i]; t[i]=t[j]; t[j]=x; i++; j--; } }
+
+function fmtInt(v){
+  if (!isFinite(v)) return "∞";
+  if (v >= 1e15) return v.toExponential(2).replace("e+"," × 10^");
+  return Math.round(v).toLocaleString("en-US");
+}
+function factorial(n){ var f=1; for(var i=2;i<=n;i++) f*=i; return f; }
+function fmtDuration(sec){
+  if (sec < 1e-3) return (sec*1e6).toFixed(0)+" µs";
+  if (sec < 1) return (sec*1e3).toFixed(0)+" ms";
+  if (sec < 90) return sec.toFixed(1)+" seconds";
+  if (sec < 5400) return (sec/60).toFixed(1)+" minutes";
+  if (sec < 172800) return (sec/3600).toFixed(1)+" hours";
+  var y = sec/31557600;
+  if (y < 1) return (sec/86400).toFixed(1)+" days";
+  if (y < 1e6) return fmtInt(y)+" years";
+  if (y < 1.38e10) return (y/1e6).toFixed(1)+" million years";
+  return (y/1.38e10).toPrecision(3)+"× the age of the universe";
+}
+
+/* ---------------- solvers ---------------- */
+function randomTour(){
+  var idx=[], i;
+  for (i=1;i<S.n;i++) idx.push(i);
+  for (i=idx.length-1;i>0;i--){ var j=(Math.random()*(i+1))|0, t=idx[i]; idx[i]=idx[j]; idx[j]=t; }
+  return [0].concat(idx);
+}
+
+function greedyTour(){
+  var inT=[], t=[0], i;
+  for (i=0;i<S.n;i++) inT.push(i===0);
+  while (t.length < S.n){
+    var cur=t[t.length-1], best=-1, bd=Infinity;
+    for (i=0;i<S.n;i++){
+      if (inT[i]) continue;
+      var d=raw(cur,i);
+      if (d<bd){ bd=d; best=i; }
+    }
+    inT[best]=true; t.push(best);
+  }
+  return t;
+}
+
+function twoOptSequence(start){
+  var t = start.slice(), moves = [], n = t.length, guard = 0;
+  while (guard++ < 400){
+    var best=null, bd=-1e-7;
+    for (var i=0;i<n-1;i++){
+      for (var j=i+2;j<n;j++){
+        if (i===0 && j===n-1) continue;
+        var a=t[i], b=t[i+1], c=t[j], d2=t[(j+1)%n];
+        var delta = (raw(a,c)+raw(b,d2)) - (raw(a,b)+raw(c,d2));
+        if (delta < bd){ bd=delta; best={ i:i+1, j:j }; }
+      }
+    }
+    if (!best) break;
+    reverse(t, best.i, best.j);
+    moves.push(best);
+  }
+  return { tour:t, moves:moves };
+}
+
+function heldKarpTour(){
+  var n = S.n;
+  if (n > EXACT_MAX) return null;
+  var m = n-1, FULL = 1<<m, d=[], i, j, k;
+  for (i=0;i<n;i++){ d[i]=[]; for (j=0;j<n;j++) d[i][j]=raw(i,j); }
+  var dp = new Float64Array(FULL*m).fill(Infinity);
+  var par = new Int8Array(FULL*m).fill(-1);
+  for (k=0;k<m;k++) dp[(1<<k)*m + k] = d[0][k+1];
+  for (var set=1; set<FULL; set++){
+    for (k=0;k<m;k++){
+      if (!(set & (1<<k))) continue;
+      var cur = dp[set*m + k];
+      if (cur === Infinity) continue;
+      for (var nx=0; nx<m; nx++){
+        if (set & (1<<nx)) continue;
+        var ns = set | (1<<nx), v = cur + d[k+1][nx+1];
+        if (v < dp[ns*m + nx]){ dp[ns*m + nx] = v; par[ns*m + nx] = k; }
+      }
+    }
+  }
+  var bestK=-1, bestV=Infinity;
+  for (k=0;k<m;k++){
+    var v2 = dp[(FULL-1)*m + k] + d[k+1][0];
+    if (v2 < bestV){ bestV = v2; bestK = k; }
+  }
+
+  // walk the parent pointers back from (set, endpoint) to home
+  function pathTo(st, kk){
+    var out = [];
+    while (kk >= 0){ out.push(kk+1); var p = par[st*m + kk]; st ^= (1<<kk); kk = p; }
+    out.reverse();
+    return [0].concat(out);
+  }
+
+  // for every subproblem size, keep the best partial path to each endpoint —
+  // this is literally what the dp table holds, sampled for display
+  var bestSet = [], bestVal = [], sz, Lv;
+  for (i=0;i<=m;i++){
+    bestSet.push(new Int32Array(m).fill(-1));
+    bestVal.push(new Float64Array(m).fill(Infinity));
+  }
+  for (set=1; set<FULL; set++){
+    sz = popcount(set);
+    for (k=0;k<m;k++){
+      if (!(set & (1<<k))) continue;
+      var vv = dp[set*m + k];
+      if (vv < bestVal[sz][k]){ bestVal[sz][k] = vv; bestSet[sz][k] = set; }
+    }
+  }
+  var layers = [];
+  for (Lv=1; Lv<=m; Lv++){
+    var ends = [];
+    for (k=0;k<m;k++) if (bestSet[Lv][k] >= 0) ends.push({ k:k, v:bestVal[Lv][k] });
+    ends.sort(function(a,b){ return a.v - b.v; });
+    var paths = [];
+    for (i=0;i<ends.length && i<7;i++) paths.push(pathTo(bestSet[Lv][ends[i].k], ends[i].k));
+    layers.push(paths);
+  }
+
+  return { tour: pathTo(FULL-1, bestK), layers: layers };
+}
+
+function popcount(v){
+  v = v - ((v>>1) & 0x55555555);
+  v = (v & 0x33333333) + ((v>>2) & 0x33333333);
+  return ((v + (v>>4) & 0x0F0F0F0F) * 0x01010101) >> 24;
+}
+
+/* ---------------- neighborhood ---------------- */
+function generate(){
+  var n = S.n, pts = [{ x:W/2, y:566 }];
+  var minD = clamp(1150/Math.sqrt(n), 62, 190), guard = 0;
+  while (pts.length < n && guard < 30000){
+    guard++;
+    var p = { x: rnd(BAND.x0, BAND.x1), y: rnd(BAND.y0, BAND.y1) }, ok = true;
+    for (var q=0;q<pts.length;q++){
+      if (Math.hypot(p.x-pts[q].x, p.y-pts[q].y) < minD){ ok=false; break; }
+    }
+    if (ok) pts.push(p);
+    if (guard % 1500 === 0) minD *= 0.86;
+  }
+
+  S.houses = pts.map(function(p,i){
+    return {
+      x:p.x, y:p.y, home:i===0, hue:HOUSE_HUES[i%HOUSE_HUES.length],
+      w: i===0 ? 78 : rnd(56,72), h: i===0 ? 60 : rnd(44,56),
+      appear:-1, lit:0, pop:0
+    };
+  });
+
+  S.trees = [];
+  for (var t=0;t<22;t++){
+    var tp = { x:rnd(30,W-30), y:rnd(150,610), s:rnd(0.7,1.35), ph:rnd(0,6.28) };
+    if (tp.x < PANEL.x + PANEL.w + 26 && tp.y > PANEL.y - 14) continue;
+    var clear = true;
+    for (var h=0;h<S.houses.length;h++){
+      if (Math.hypot(tp.x-S.houses[h].x, tp.y-S.houses[h].y) < 78){ clear=false; break; }
+    }
+    if (clear) S.trees.push(tp);
+  }
+
+  var greedy = greedyTour();
+  var opt = twoOptSequence(greedy);
+  var exact = heldKarpTour();
+
+  S.racers = RACER_DEFS.map(function(def){
+    var r = {
+      key:def.key, name:def.name, label:def.label, o:def.o,
+      color:def.color, body:def.body,
+      tour:null, len:0, shown:null, done:false, available:true, moves:null
+    };
+    if (def.key === "wander") r.tour = randomTour();
+    if (def.key === "greedy") r.tour = greedy;
+    if (def.key === "twoopt"){ r.tour = opt.tour; r.moves = opt.moves; }
+    if (def.key === "exact"){
+      r.available = exact !== null;
+      r.tour = exact ? exact.tour : null;
+      r.layers = exact ? exact.layers : null;
+    }
+    if (r.tour) r.len = tourLength(r.tour);
+    return r;
+  });
+
+  S.particles = [];
+  S.cur = -1;
+  S.plan = null;
+  setStage("scatter");
+  refreshStatic();
+}
+
+function initSky(){
+  S.stars = [];
+  for (var i=0;i<130;i++) S.stars.push({ x:rnd(0,W), y:rnd(0,430), r:rnd(0.6,1.9), ph:rnd(0,6.28), sp:rnd(0.5,2.2) });
+  S.clouds = [];
+  for (var c=0;c<4;c++) S.clouds.push({ x:rnd(-200,W), y:rnd(40,210), w:rnd(190,380), h:rnd(26,52), sp:rnd(3,9), a:rnd(0.05,0.13) });
+}
+
+/* ---------------- stage machine ---------------- */
+function racer(){ return S.cur >= 0 ? S.racers[S.cur] : null; }
+
+var LINES = {
+  scatter: "One block, __N__ houses, four ghosts — each with a different idea.",
+  wander:  "<b>Wander:</b> any order will do. It just walks.",
+  greedy:  "<b>Nearest neighbor:</b> always hop to the closest house left.",
+  twoopt:  "<b>2-opt:</b> every crossing is a detour. Snip, reconnect, repeat.",
+  exact:   "<b>Held–Karp:</b> solve the small pieces once, reuse them to build the whole route.",
+  walk:    "__NAME__ walks it."
+};
+
+function setStage(st){
+  S.stage = st; S.t = 0;
+  var r = racer();
+  var txt;
+  if (st === "scatter") txt = LINES.scatter.replace("__N__", S.n);
+  else if (st === "plan") txt = LINES[r.key];
+  else if (st === "walk") txt = LINES.walk.replace("__NAME__", "<b style=\"color:" + r.color + "\">" + r.label + "</b>");
+  else txt = finaleLine();
+  el("caption-text").innerHTML = txt;
+  el("live-region").textContent = el("caption-text").textContent;
+
+  var rows = document.querySelectorAll(".ladder tr[data-algo]");
+  for (var i=0;i<rows.length;i++){
+    var live = r && st !== "finale" && rows[i].getAttribute("data-algo") === r.key;
+    rows[i].className = live ? "live" : "";
+  }
+}
+
+function finaleLine(){
+  var run = S.racers.filter(function(r){ return r.done; });
+  if (run.length < 2) return "Same houses, different plans.";
+  var lens = run.map(function(r){ return r.len; });
+  var worst = Math.max.apply(null, lens), best = Math.min.apply(null, lens);
+  var pct = ((worst/best - 1) * 100).toFixed(0);
+  return "Same houses — and <b>" + pct + "% more walking</b> between worst and best.";
+}
+
+function nextRacer(){
+  S.cur++;
+  while (S.cur < S.racers.length && !S.racers[S.cur].available) S.cur++;
+  if (S.cur >= S.racers.length){ S.cur = -1; setStage("finale"); return; }
+  startPlan();
+}
+
+function startPlan(){
+  var r = racer();
+  S.plan = { display:[r.tour[0]], closed:false, step:0, timer:0, mi:0, move:null, sub:"build", flickTour:null };
+  if (r.key === "greedy") S.plan.rays = [];
+  if (r.key === "twoopt"){
+    S.plan.display = greedyOf().slice();
+    S.plan.closed = true; S.plan.sub = "flash";
+    S.plan.flash = clamp(2.2/Math.max(1, r.moves.length), 0.1, TIME.flash);
+  }
+  if (r.key === "exact"){
+    S.plan.display = null; S.plan.closed = true; S.plan.sub = "grow";
+    S.plan.layer = 1;
+    S.plan.layerTime = clamp(2.1/Math.max(1, r.layers.length), 0.1, 0.22);
+  }
+  setStage("plan");
+  if (r.key === "exact") setExactCaption(1, r.layers.length);
+}
+
+function setExactCaption(L, total){
+  el("caption-text").innerHTML =
+    "<b>Held–Karp:</b> shortest way to cover <b style=\"color:#7EE0A8\">" +
+    L + " of " + total + "</b> houses, kept for every endpoint.";
+  el("live-region").textContent = el("caption-text").textContent;
+}
+function greedyOf(){
+  for (var i=0;i<S.racers.length;i++) if (S.racers[i].key === "greedy") return S.racers[i].tour;
+  return S.racers[0].tour;
+}
+
+function startWalk(){
+  var r = racer();
+  S.walk = { d:0, total:r.len, next:1, x:S.houses[0].x, y:S.houses[0].y, dir:1 };
+  for (var i=0;i<S.houses.length;i++) S.houses[i].lit = 0;
+  r.shown = 0;
+  setStage("walk");
+}
+
+function spawnCandy(h, color){
+  var count = reduced ? 3 : 7;
+  for (var i=0;i<count;i++){
+    S.particles.push({
+      x:h.x, y:h.y-h.h*0.5, vx:rnd(-52,52), vy:rnd(-130,-60),
+      life:1, col: Math.random()<0.4 ? color : pick(CANDY_COLORS),
+      rot:rnd(0,6.28), spin:rnd(-6,6), sz:rnd(4,8)
+    });
+  }
+}
+
+/* ---------------- update ---------------- */
+function update(dt){
+  S.clock += dt;
+  var i, sp = S.speed, r = racer();
+
+  for (i=S.particles.length-1;i>=0;i--){
+    var p=S.particles[i];
+    p.vy += 330*dt; p.x += p.vx*dt; p.y += p.vy*dt;
+    p.rot += p.spin*dt; p.life -= dt*1.15;
+    if (p.life <= 0) S.particles.splice(i,1);
+  }
+  for (i=0;i<S.houses.length;i++){
+    var h=S.houses[i];
+    if (h.pop > 0) h.pop = Math.max(0, h.pop - dt*2.6);
+    if (h.lit > 0 && h.lit < 1) h.lit = Math.min(1, h.lit + dt*2.2);
+  }
+  if (!reduced){
+    for (i=0;i<S.clouds.length;i++){
+      var c=S.clouds[i]; c.x += c.sp*dt;
+      if (c.x > W+260) c.x = -c.w-260;
+    }
+    S.batTimer -= dt;
+    if (S.batTimer <= 0){
+      S.batTimer = rnd(5,11);
+      var dir = Math.random()<0.5 ? 1 : -1;
+      S.bats.push({ x: dir>0?-40:W+40, y:rnd(60,250), dir:dir, sp:rnd(120,210), ph:rnd(0,6.28), amp:rnd(14,34) });
+    }
+    for (i=S.bats.length-1;i>=0;i--){
+      var b=S.bats[i]; b.x += b.sp*b.dir*dt;
+      if (b.x < -80 || b.x > W+80) S.bats.splice(i,1);
+    }
+  }
+
+  S.t += dt;
+
+  if (S.stage === "scatter"){
+    var per = (TIME.scatter/sp)/S.n;
+    for (i=0;i<S.houses.length;i++){
+      if (S.houses[i].appear < 0 && S.t > per*i) S.houses[i].appear = 0;
+      if (S.houses[i].appear >= 0 && S.houses[i].appear < 1) S.houses[i].appear = Math.min(1, S.houses[i].appear + dt*4);
+    }
+    if (S.t > TIME.scatter/sp + 0.4) nextRacer();
+
+  } else if (S.stage === "plan"){
+    S.plan.timer += dt;
+    if (r.key === "wander" || r.key === "greedy"){
+      var step = r.key === "wander" ? Math.min(0.07, 1.1/S.n) : Math.min(0.19, 2.7/S.n);
+      step /= sp;
+      if (S.plan.timer >= step){
+        S.plan.timer = 0;
+        S.plan.step++;
+        if (S.plan.step < S.n){
+          S.plan.display.push(r.tour[S.plan.step]);
+          S.houses[r.tour[S.plan.step]].pop = 1;
+        } else {
+          S.plan.closed = true;
+          if (S.plan.step > S.n) startWalk();
+        }
+      }
+    } else if (r.key === "twoopt"){
+      var flash = S.plan.flash/sp;
+      if (S.plan.sub === "flash"){
+        if (S.plan.mi >= r.moves.length){
+          if (S.plan.timer > 0.7/sp) startWalk();
+        } else {
+          S.plan.move = r.moves[S.plan.mi];
+          S.plan.sub = "old"; S.plan.timer = 0;
+        }
+      } else if (S.plan.sub === "old" && S.plan.timer >= flash){
+        reverse(S.plan.display, S.plan.move.i, S.plan.move.j);
+        S.plan.sub = "new"; S.plan.timer = 0;
+      } else if (S.plan.sub === "new" && S.plan.timer >= flash){
+        S.plan.mi++; S.plan.sub = "flash"; S.plan.timer = 0; S.plan.move = null;
+      }
+    } else if (r.key === "exact"){
+      if (S.plan.sub === "grow"){
+        if (S.plan.timer >= S.plan.layerTime/sp){
+          S.plan.timer = 0;
+          S.plan.layer++;
+          if (S.plan.layer > r.layers.length){
+            S.plan.sub = "found";
+            S.plan.display = r.tour;
+            el("caption-text").innerHTML =
+              "<b style=\"color:#7EE0A8\">Provably the shortest route</b> — and not one full route was ever walked.";
+            el("live-region").textContent = el("caption-text").textContent;
+          } else {
+            setExactCaption(S.plan.layer, r.layers.length);
+          }
+        }
+      } else if (S.plan.timer > 0.9/sp) startWalk();
+    }
+
+  } else if (S.stage === "walk"){
+    var speedPx = S.walk.total / (TIME.walk/sp);
+    S.walk.d += speedPx*dt;
+    r.shown = blocks(Math.min(S.walk.d, S.walk.total));
+    var acc=0, done=false, t=r.tour, n=t.length;
+    for (i=0;i<n;i++){
+      var a=S.houses[t[i]], b2=S.houses[t[(i+1)%n]];
+      var seg = Math.hypot(b2.x-a.x, b2.y-a.y);
+      if (S.walk.d <= acc+seg){
+        var f = seg===0 ? 0 : (S.walk.d-acc)/seg;
+        S.walk.x = a.x + (b2.x-a.x)*f;
+        S.walk.y = a.y + (b2.y-a.y)*f;
+        S.walk.dir = b2.x >= a.x ? 1 : -1;
+        var nxt = (i+1)%n;
+        if (f > 0.93 && S.walk.next === nxt && nxt !== 0){
+          var hh = S.houses[t[nxt]];
+          hh.lit = 0.01; hh.pop = 1;
+          spawnCandy(hh, r.color);
+          S.walk.next = (i+2)%n;
+        }
+        done = true; break;
+      }
+      acc += seg;
+    }
+    if (!done){
+      S.walk.x = S.houses[0].x; S.walk.y = S.houses[0].y;
+      r.done = true; r.shown = blocks(r.len);
+      nextRacer();
+    }
+
+  } else if (S.stage === "finale"){
+    if (S.t > TIME.finale/sp) generate();
+  }
+}
+
+/* ---------------- scene drawing ---------------- */
+function fitScene(){
+  var b = scene.getBoundingClientRect();
+  view.w = Math.max(1,b.width); view.h = Math.max(1,b.height);
+  scene.width = Math.round(view.w*dpr); scene.height = Math.round(view.h*dpr);
+  var s = Math.min(view.w/W, view.h/H);
+  view.s = s; view.ox = (view.w - W*s)/2; view.oy = (view.h - H*s)/2;
+}
+
+function drawSky(ctx){
+  var g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,"#0B0722"); g.addColorStop(0.45,"#1B1140");
+  g.addColorStop(0.78,"#33205C"); g.addColorStop(1,"#452A63");
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+
+  for (var i=0;i<S.stars.length;i++){
+    var st=S.stars[i];
+    ctx.globalAlpha = (reduced ? 0.8 : 0.55+0.45*Math.sin(S.clock*st.sp+st.ph)) * 0.9;
+    ctx.fillStyle = "#FFF6E0";
+    ctx.beginPath(); ctx.arc(st.x, st.y, st.r, 0, 6.2832); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  var mx=862, my=96, r=42;
+  var mg = ctx.createRadialGradient(mx,my,r*0.6,mx,my,r*4.2);
+  mg.addColorStop(0,"rgba(255,233,190,0.28)"); mg.addColorStop(1,"rgba(255,233,190,0)");
+  ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mx,my,r*4.2,0,6.2832); ctx.fill();
+  ctx.fillStyle = "#FFF2D2"; ctx.beginPath(); ctx.arc(mx,my,r,0,6.2832); ctx.fill();
+  ctx.fillStyle = "rgba(214,192,150,0.55)";
+  var cr=[[-15,-11,8],[9,6,11],[-6,17,5],[19,-16,4]];
+  for (i=0;i<cr.length;i++){ ctx.beginPath(); ctx.arc(mx+cr[i][0],my+cr[i][1],cr[i][2],0,6.2832); ctx.fill(); }
+
+  for (i=0;i<S.clouds.length;i++){
+    var c=S.clouds[i];
+    ctx.globalAlpha = c.a; ctx.fillStyle = "#B49BE0";
+    ctx.beginPath(); ctx.ellipse(c.x,c.y,c.w/2,c.h/2,0,0,6.2832); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(c.x+c.w*0.22,c.y+8,c.w/3,c.h/2.4,0,0,6.2832); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawBat(ctx,b){
+  var flap = Math.sin(S.clock*11+b.ph);
+  var y = b.y + Math.sin(S.clock*1.6+b.ph)*b.amp;
+  ctx.save(); ctx.translate(b.x,y); ctx.scale(b.dir,1);
+  ctx.fillStyle = "#160E2E";
+  ctx.beginPath();
+  ctx.moveTo(0,0);
+  ctx.quadraticCurveTo(-11,-7-flap*8,-22,-1-flap*5);
+  ctx.quadraticCurveTo(-14,3,-7,5);
+  ctx.lineTo(0,3); ctx.lineTo(7,5);
+  ctx.quadraticCurveTo(14,3,22,-1-flap*5);
+  ctx.quadraticCurveTo(11,-7-flap*8,0,0);
+  ctx.fill();
+  ctx.beginPath(); ctx.ellipse(0,1,4,5,0,0,6.2832); ctx.fill();
+  ctx.restore();
+}
+
+function drawGround(ctx){
+  var x;
+  ctx.fillStyle = "#241645";
+  ctx.beginPath(); ctx.moveTo(0,470);
+  for (x=0;x<=W;x+=40) ctx.lineTo(x, 470 - Math.sin(x*0.008)*16 - Math.sin(x*0.021)*8);
+  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = "#2E1C51";
+  ctx.beginPath(); ctx.moveTo(0,520);
+  for (x=0;x<=W;x+=40) ctx.lineTo(x, 520 - Math.sin(x*0.011+2)*12);
+  ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
+}
+
+function drawTree(ctx,t){
+  var sway = reduced ? 0 : Math.sin(S.clock*0.9+t.ph)*2.2;
+  ctx.save(); ctx.translate(t.x,t.y); ctx.scale(t.s,t.s);
+  ctx.strokeStyle = "#150D2C"; ctx.lineWidth = 4; ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(0,0); ctx.lineTo(sway*0.5,-26);
+  ctx.moveTo(sway*0.4,-18); ctx.lineTo(-9+sway,-32);
+  ctx.moveTo(sway*0.4,-20); ctx.lineTo(10+sway,-34);
+  ctx.stroke(); ctx.restore();
+}
+
+function drawHouse(ctx,h,scale){
+  var w=h.w*scale, ht=h.h*scale;
+  var bx=h.x-w/2, by=h.y-ht, roofH=ht*0.62;
+  ctx.fillStyle = "rgba(10,6,24,0.45)";
+  ctx.beginPath(); ctx.ellipse(h.x,h.y+3,w*0.62,7*scale,0,0,6.2832); ctx.fill();
+  ctx.fillStyle = h.hue.wall;
+  ctx.fillRect(bx,by,w,ht);
+  ctx.fillStyle = h.hue.roof;
+  ctx.beginPath();
+  ctx.moveTo(bx-w*0.13,by+2); ctx.lineTo(h.x,by-roofH); ctx.lineTo(bx+w*1.13,by+2);
+  ctx.closePath(); ctx.fill();
+
+  var lit=h.lit;
+  if (lit > 0){
+    var gg = ctx.createRadialGradient(h.x,by+ht*0.35,2,h.x,by+ht*0.35,w*1.5);
+    gg.addColorStop(0,"rgba(255,190,90,"+(0.30*lit)+")"); gg.addColorStop(1,"rgba(255,190,90,0)");
+    ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(h.x,by+ht*0.35,w*1.5,0,6.2832); ctx.fill();
+  }
+  ctx.fillStyle = lit > 0 ? "rgba(255,201,107,"+(0.35+0.65*lit)+")" : "rgba(30,22,60,0.95)";
+  var ww=w*0.19, wh=ht*0.24;
+  ctx.fillRect(bx+w*0.14, by+ht*0.22, ww, wh);
+  ctx.fillRect(bx+w*0.67, by+ht*0.22, ww, wh);
+  ctx.fillStyle = h.hue.roof;
+  ctx.fillRect(bx+w*0.40, h.y-ht*0.5, w*0.2, ht*0.5);
+  ctx.fillStyle = h.hue.trim;
+  ctx.beginPath(); ctx.arc(bx+w*0.55, h.y-ht*0.26, 1.8*scale, 0, 6.2832); ctx.fill();
+
+  var px=bx+w*1.02, py=h.y-6*scale;
+  ctx.fillStyle = lit > 0 ? "#FFA556" : "#B4622C";
+  ctx.beginPath(); ctx.ellipse(px,py,8*scale,7*scale,0,0,6.2832); ctx.fill();
+  ctx.strokeStyle = "#4B7C4F"; ctx.lineWidth = 2*scale;
+  ctx.beginPath(); ctx.moveTo(px,py-7*scale); ctx.lineTo(px+2*scale,py-11*scale); ctx.stroke();
+  if (lit > 0){
+    ctx.fillStyle = "rgba(60,25,10,0.9)";
+    ctx.beginPath(); ctx.arc(px,py+1*scale,2*scale,0,6.2832); ctx.fill();
+  }
+  if (h.home){
+    ctx.fillStyle = COL.mint; ctx.textAlign = "center";
+    ctx.font = "600 " + (13*scale) + 'px "IBM Plex Mono", monospace';
+    ctx.fillText("HOME", h.x, h.y + 20*scale);
+  }
+}
+
+function strokeTour(ctx, t, closed, color, width, alpha, glow){
+  if (!t || t.length < 2) return;
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = color; ctx.lineWidth = width;
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  ctx.shadowColor = glow ? color : "transparent";
+  ctx.shadowBlur = glow ? 14 : 0;
+  ctx.beginPath();
+  ctx.moveTo(S.houses[t[0]].x, S.houses[t[0]].y);
+  for (var i=1;i<t.length;i++) ctx.lineTo(S.houses[t[i]].x, S.houses[t[i]].y);
+  if (closed) ctx.closePath();
+  ctx.stroke();
+  ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+}
+
+function drawRoutes(ctx){
+  var i, r = racer();
+
+  if (S.stage === "finale"){
+    var best = Infinity;
+    for (i=0;i<S.racers.length;i++) if (S.racers[i].done) best = Math.min(best, S.racers[i].len);
+    for (i=0;i<S.racers.length;i++){
+      var f = S.racers[i];
+      if (!f.done) continue;
+      var win = f.len === best;
+      strokeTour(ctx, f.tour, true, f.color, win ? 4.5 : 2.5, win ? 0.95 : 0.26, win);
+    }
+    return;
+  }
+
+  for (i=0;i<S.racers.length;i++){
+    var o = S.racers[i];
+    if (!o.done || i === S.cur) continue;
+    strokeTour(ctx, o.tour, true, o.color, 2.5, 0.16, false);
+  }
+  if (!r) return;
+
+  if (S.stage === "plan"){
+    if (r.key === "exact" && S.plan.sub === "grow"){
+      var Li = clamp(S.plan.layer, 1, r.layers.length);
+      if (Li > 1){
+        var prev = r.layers[Li-2];
+        for (i=0;i<prev.length;i++) strokeTour(ctx, prev[i], false, r.color, 2, 0.10, false);
+      }
+      var lay = r.layers[Li-1];
+      for (i=0;i<lay.length;i++){
+        strokeTour(ctx, lay[i], false, r.color, 2.6, 0.5, false);
+        var endH = S.houses[lay[i][lay[i].length-1]];
+        ctx.globalAlpha = 0.85; ctx.fillStyle = r.color;
+        ctx.beginPath(); ctx.arc(endH.x, endH.y, 4.5, 0, 6.2832); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      return;
+    }
+    var t = S.plan.display;
+    strokeTour(ctx, t, S.plan.closed, r.color, 4.5, 0.92, true);
+    if (r.key === "twoopt" && S.plan.move){
+      var m = S.plan.move, n = t.length;
+      var hot = S.plan.sub === "old";
+      var col = hot ? COL.candy : COL.mint;
+      var edges = [m.i-1, m.j];
+      ctx.globalAlpha = 1; ctx.strokeStyle = col; ctx.lineWidth = 7;
+      ctx.shadowColor = col; ctx.shadowBlur = 22; ctx.lineCap = "round";
+      for (i=0;i<2;i++){
+        var a = S.houses[t[edges[i]]], b = S.houses[t[(edges[i]+1)%n]];
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+    }
+    if (r.key === "greedy" && S.plan.step > 0 && S.plan.step < S.n){
+      var from = S.houses[r.tour[S.plan.step-1]];
+      var fade = clamp(1 - S.plan.timer/(Math.min(0.19,2.7/S.n)/S.speed), 0, 1);
+      var chosen = r.tour[S.plan.step];
+      var inTour = {};
+      for (i=0;i<=S.plan.step;i++) inTour[r.tour[i]] = true;
+      ctx.setLineDash([5,7]);
+      for (i=0;i<S.n;i++){
+        if (inTour[i] && i !== chosen) continue;
+        var isC = i === chosen;
+        ctx.globalAlpha = fade * (isC ? 1 : 0.26);
+        ctx.strokeStyle = isC ? COL.mint : r.color;
+        ctx.lineWidth = isC ? 3 : 1.4;
+        ctx.beginPath(); ctx.moveTo(from.x,from.y); ctx.lineTo(S.houses[i].x,S.houses[i].y); ctx.stroke();
+      }
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+    }
+
+  } else if (S.stage === "walk"){
+    strokeTour(ctx, r.tour, true, r.color, 3, 0.26, false);
+    var acc=0, t2=r.tour, n2=t2.length;
+    ctx.strokeStyle = r.color; ctx.lineWidth = 5;
+    ctx.shadowColor = r.color; ctx.shadowBlur = 15;
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(S.houses[t2[0]].x, S.houses[t2[0]].y);
+    for (i=0;i<n2;i++){
+      var a2=S.houses[t2[i]], b3=S.houses[t2[(i+1)%n2]];
+      var seg=Math.hypot(b3.x-a2.x,b3.y-a2.y);
+      if (S.walk.d >= acc+seg){ ctx.lineTo(b3.x,b3.y); acc += seg; }
+      else { ctx.lineTo(S.walk.x, S.walk.y); break; }
+    }
+    ctx.stroke(); ctx.shadowBlur = 0;
+
+  }
+}
+
+function drawGhost(ctx, x, y, dir, bodyCol, bucketCol, scale){
+  ctx.save();
+  ctx.translate(x,y); ctx.scale(dir*scale, scale);
+  ctx.fillStyle = bodyCol;
+  ctx.beginPath();
+  ctx.moveTo(-14,6);
+  ctx.arc(0,-2,14,Math.PI,0);
+  ctx.lineTo(14,8);
+  ctx.quadraticCurveTo(10,16,6,8);
+  ctx.quadraticCurveTo(2,16,-2,8);
+  ctx.quadraticCurveTo(-6,16,-10,8);
+  ctx.quadraticCurveTo(-12,12,-14,6);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = "#2A1443";
+  ctx.beginPath(); ctx.ellipse(-5,-3,2.4,3.2,0,0,6.2832); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(5,-3,2.4,3.2,0,0,6.2832); ctx.fill();
+  ctx.fillStyle = bucketCol;
+  ctx.beginPath(); ctx.moveTo(12,2); ctx.lineTo(24,2); ctx.lineTo(22,13); ctx.lineTo(14,13);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = bucketCol; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(18,2,6,Math.PI,0); ctx.stroke();
+  ctx.restore();
+}
+
+function drawWalker(ctx){
+  if (S.stage !== "walk") return;
+  var r = racer();
+  var bob = reduced ? 0 : Math.sin(S.clock*8)*4;
+  var x = S.walk.x, y = S.walk.y - 26 + bob;
+  var g = ctx.createRadialGradient(x,y,4,x,y,54);
+  g.addColorStop(0, hexA(r.color, 0.32)); g.addColorStop(1, hexA(r.color, 0));
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x,y,54,0,6.2832); ctx.fill();
+  drawGhost(ctx, x, y, S.walk.dir, r.body, r.color, 1);
+}
+
+function hexA(hex, a){
+  var n = parseInt(hex.slice(1), 16);
+  return "rgba(" + ((n>>16)&255) + "," + ((n>>8)&255) + "," + (n&255) + "," + a + ")";
+}
+
+function drawParticles(ctx){
+  for (var i=0;i<S.particles.length;i++){
+    var p=S.particles[i];
+    ctx.save(); ctx.globalAlpha = clamp(p.life,0,1);
+    ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+    ctx.fillStyle = p.col; ctx.fillRect(-p.sz/2,-p.sz/3,p.sz,p.sz*0.66);
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+
+function drawScoreboard(ctx){
+  var rows = S.racers.length;
+  var h = PANEL.pad + rows*PANEL.row + 10;
+  ctx.fillStyle = "rgba(11,7,28,0.66)";
+  roundRect(ctx, PANEL.x, PANEL.y, PANEL.w, h, 12); ctx.fill();
+  ctx.strokeStyle = "rgba(55,40,105,0.85)"; ctx.lineWidth = 1;
+  roundRect(ctx, PANEL.x, PANEL.y, PANEL.w, h, 12); ctx.stroke();
+
+  ctx.textAlign = "right"; ctx.textBaseline = "alphabetic";
+  ctx.font = '500 9px "IBM Plex Mono", monospace';
+  ctx.fillStyle = COL.dim;
+  ctx.fillText("BLOCKS WALKED", PANEL.x+PANEL.w-14, PANEL.y+15);
+
+  var scaleMax = 0, best = Infinity, k;
+  for (k=0;k<S.racers.length;k++){
+    var rr = S.racers[k];
+    if (!rr.available) continue;
+    if (rr.done){ scaleMax = Math.max(scaleMax, rr.len); best = Math.min(best, rr.len); }
+    else if (k === S.cur) scaleMax = Math.max(scaleMax, rr.len);
+  }
+
+  for (var i=0;i<rows;i++){
+    var r = S.racers[i];
+    var y = PANEL.y + PANEL.pad + i*PANEL.row + 16;
+    var active = i === S.cur;
+    var alpha = !r.available ? 0.3 : (r.done ? 1 : (active ? 1 : 0.4));
+
+    ctx.globalAlpha = alpha;
+    var pulse = active && !reduced ? 1 + Math.sin(S.clock*6)*0.06 : 1;
+    drawGhost(ctx, PANEL.x+30, y-5, 1, r.available ? r.body : "#5A4C82", r.color, 0.5*pulse);
+
+    ctx.textAlign = "left";
+    ctx.font = '600 12px "IBM Plex Mono", monospace';
+    ctx.fillStyle = r.color;
+    ctx.fillText(r.name, PANEL.x+52, y);
+    var nameW = ctx.measureText(r.name).width;
+    ctx.font = '400 9.5px "IBM Plex Mono", monospace';
+    ctx.globalAlpha = alpha*0.6;
+    ctx.fillText(r.o, PANEL.x+52+nameW+8, y);
+    ctx.globalAlpha = alpha;
+
+    ctx.textAlign = "right";
+    if (!r.available){
+      ctx.font = '500 12px "IBM Plex Mono", monospace';
+      ctx.fillStyle = COL.dim;
+      ctx.fillText("needs n ≤ " + EXACT_MAX, PANEL.x+PANEL.w-14, y);
+    } else if (r.shown === null){
+      ctx.font = '600 20px "IBM Plex Mono", monospace';
+      ctx.fillStyle = "rgba(162,146,207,0.45)";
+      ctx.fillText("––", PANEL.x+PANEL.w-14, y+2);
+    } else {
+      ctx.font = '600 21px "IBM Plex Mono", monospace';
+      ctx.fillStyle = r.color;
+      if (active){ ctx.shadowColor = r.color; ctx.shadowBlur = 12; }
+      ctx.fillText(r.shown.toFixed(1), PANEL.x+PANEL.w-14, y+2);
+      ctx.shadowBlur = 0;
+    }
+
+    if (r.available && r.shown !== null && scaleMax > 0){
+      var bw = (PANEL.w-66) * clamp((r.done ? r.len : S.walk.d)/scaleMax, 0, 1);
+      ctx.globalAlpha = alpha*0.55;
+      ctx.fillStyle = r.color;
+      roundRect(ctx, PANEL.x+52, y+6, Math.max(bw,2), 3, 1.5); ctx.fill();
+    }
+
+    if (S.stage === "finale" && r.done && r.len === best){
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = COL.moon;
+      star(ctx, PANEL.x+13, y-4, 5);
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+function star(ctx,cx,cy,rad){
+  ctx.beginPath();
+  for (var i=0;i<10;i++){
+    var a = Math.PI/5*i - Math.PI/2, rr = i%2 ? rad*0.45 : rad;
+    ctx.lineTo(cx+Math.cos(a)*rr, cy+Math.sin(a)*rr);
+  }
+  ctx.closePath(); ctx.fill();
+}
+
+function drawBadges(ctx){
+  var r = racer();
+  if (!r || S.stage === "scatter") return;
+  var t = (S.stage === "plan" && S.plan.display) ? S.plan.display : r.tour;
+  if (!t || (S.stage === "plan" && r.key === "exact" && S.plan.sub === "grow")) return;
+  ctx.font = '600 13px "IBM Plex Mono", monospace';
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  for (var k=1;k<t.length;k++){
+    var h = S.houses[t[k]];
+    var bx = h.x + h.w*0.5 + 4, by = h.y - h.h*1.45;
+    ctx.fillStyle = "rgba(11,7,28,0.85)";
+    ctx.beginPath(); ctx.arc(bx,by,11,0,6.2832); ctx.fill();
+    ctx.strokeStyle = hexA(r.color, h.lit > 0 ? 0.95 : 0.45);
+    ctx.lineWidth = 1.6; ctx.stroke();
+    ctx.fillStyle = h.lit > 0 ? r.color : "rgba(162,146,207,0.75)";
+    ctx.fillText(String(k), bx, by+0.5);
+  }
+  ctx.textBaseline = "alphabetic";
+}
+
+function drawFinale(ctx){
+  if (S.stage !== "finale") return;
+  var a = clamp(S.t*2, 0, 1);
+  ctx.globalAlpha = a; ctx.textAlign = "center";
+  ctx.fillStyle = COL.moon;
+  ctx.font = '400 44px Chewy, cursive';
+  ctx.shadowColor = "rgba(255,138,61,0.6)"; ctx.shadowBlur = 26;
+  ctx.fillText("Buckets full!", W/2, 120);
+  ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+}
+
+function render(){
+  var ctx = sctx, i;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,view.w,view.h);
+  ctx.fillStyle = COL.night2; ctx.fillRect(0,0,view.w,view.h);
+  ctx.setTransform(dpr*view.s,0,0,dpr*view.s, dpr*view.ox, dpr*view.oy);
+
+  drawSky(ctx);
+  for (i=0;i<S.bats.length;i++) drawBat(ctx, S.bats[i]);
+  drawGround(ctx);
+  for (i=0;i<S.trees.length;i++) drawTree(ctx, S.trees[i]);
+
+  drawRoutes(ctx);
+
+  var order = S.houses.map(function(_,idx){ return idx; })
+    .sort(function(a,b){ return S.houses[a].y - S.houses[b].y; });
+  for (i=0;i<order.length;i++){
+    var h = S.houses[order[i]];
+    if (h.appear < 0) continue;
+    var s = ease(clamp(h.appear,0,1)) * (1 + h.pop*0.09);
+    if (s <= 0.02) continue;
+    drawHouse(ctx, h, s);
+  }
+
+  drawBadges(ctx);
+  drawParticles(ctx);
+  drawWalker(ctx);
+  drawScoreboard(ctx);
+  drawFinale(ctx);
+}
+
+/* ---------------- rail readouts ---------------- */
+function refreshStatic(){
+  el("n-count").textContent = S.n;
+  el("bf-n").textContent = S.n;
+  var routes = factorial(S.n-1)/2;
+  el("bf-count").textContent = fmtInt(routes);
+  el("bf-time").textContent = fmtDuration(routes/1e9);
+}
+
+/* ---------------- loop ---------------- */
+var last = 0;
+function frame(ts){
+  requestAnimationFrame(frame);
+  if (!last) last = ts;
+  var dt = Math.min((ts-last)/1000, 0.05);
+  last = ts;
+  if (!S.paused) update(dt);
+  render();
+}
+
+/* ---------------- controls ---------------- */
+function setN(n){ S.n = clamp(n, MIN_N, MAX_N); generate(); }
+el("plus").addEventListener("click", function(){ setN(S.n+1); });
+el("minus").addEventListener("click", function(){ setN(S.n-1); });
+el("again").addEventListener("click", function(){ generate(); });
+el("pause").addEventListener("click", function(){
+  S.paused = !S.paused;
+  this.textContent = S.paused ? "Resume" : "Pause";
+  this.className = S.paused ? "on" : "";
+});
+var speedBtns = document.querySelectorAll("#speeds button");
+for (var si=0; si<speedBtns.length; si++){
+  speedBtns[si].addEventListener("click", function(){
+    S.speed = parseFloat(this.getAttribute("data-s"));
+    for (var k=0;k<speedBtns.length;k++) speedBtns[k].className = "";
+    this.className = "on";
+  });
+}
+document.addEventListener("keydown", function(e){
+  if (e.key === " "){ e.preventDefault(); el("pause").click(); }
+  else if (e.key === "n" || e.key === "N") generate();
+  else if (e.key === "ArrowRight") setN(S.n+1);
+  else if (e.key === "ArrowLeft") setN(S.n-1);
+});
+
+var ro = new ResizeObserver(function(){ fitScene(); });
+ro.observe(scene);
+
+initSky();
+fitScene();
+generate();
+requestAnimationFrame(frame);
+})();
+</script>
