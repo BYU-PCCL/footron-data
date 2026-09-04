@@ -12,10 +12,9 @@
 //
 //   { type: "pause",   value: bool }
 //   { type: "speed",   value: 0..1 }            simulation rate, 1x .. 8x
-//   { type: "camera",  value: "arena" | "champion" }
+//   { type: "camera",  value: "arena" | "champion" }   champion = last generation's best
 //   { type: "orbit",   dx: -1..1, dy: -1..1 }   relative drag, normalised screen units
 //   { type: "zoom",    value: -1..1 }           relative; positive is closer
-//   { type: "push",    strength: 0..1 }
 //   { type: "gravity", value: 0..1 }            0 = 0.15x earth, 1 = 1.6x
 //   { type: "slope",   value: -1..1 }           positive is downhill ahead
 //   { type: "wind",    value: -1..1 }
@@ -94,21 +93,30 @@ const padStyle = css`
   opacity: 0.75;
 `;
 
-const pushStyle = css`
-  height: 56px;
-  font-size: 1rem;
-  font-weight: 600;
-`;
+/** What "Put everything back" means, and what every control starts at.
+ *
+ *  ONE list, used for both, because the reset button is the only place the two could disagree -- and
+ *  a disagreement there is invisible until somebody presses it. These mirror what the wall's own
+ *  release() restores: 0.29 is ~3x on its 1..8 mapping, 0.59 is ~1.0x earth on its 0.15..1.6 one.
+ *  Move one of those mappings and this has to move with it. */
+const DEFAULTS = {
+  paused: false,
+  speed: 0.29,
+  follow: false,
+  gravity: 0.59,
+  slope: 0,
+  wind: 0,
+};
 
 const ControlsComponent = () => {
   const { sendMessage } = useMessaging();
 
-  const [paused, setPaused] = useState(false);
-  const [speed, setSpeed] = useState(0.29); // ~3x, the wall's idle rate
-  const [follow, setFollow] = useState(false);
-  const [gravity, setGravity] = useState(0.59); // ~1.0x earth on the wall's 0.15..1.6 mapping
-  const [slope, setSlope] = useState(0);
-  const [wind, setWind] = useState(0);
+  const [paused, setPaused] = useState(DEFAULTS.paused);
+  const [speed, setSpeed] = useState(DEFAULTS.speed);
+  const [follow, setFollow] = useState(DEFAULTS.follow);
+  const [gravity, setGravity] = useState(DEFAULTS.gravity);
+  const [slope, setSlope] = useState(DEFAULTS.slope);
+  const [wind, setWind] = useState(DEFAULTS.wind);
 
   // One message per animation frame, not one per pointermove. A drag on a phone fires well over a
   // hundred move events a second and the wall only redraws sixty times, so the rest are socket
@@ -193,6 +201,31 @@ const ControlsComponent = () => {
     [send]
   );
 
+  // "Put everything back": tell the wall, and move this panel's controls back to match it.
+  //
+  // Both halves are needed. Without the message the wall keeps the visitor's gravity and slope;
+  // without the local reset the sliders go on showing values the wall is no longer using, so the
+  // next drag starts from a lie and jumps.
+  //
+  // The queued message is DROPPED first. queue() holds one message until the next animation frame,
+  // so a visitor who drags a slider and immediately taps this would otherwise have that pending
+  // value delivered after the release and quietly undo it.
+  const putEverythingBack = useCallback(() => {
+    if (frame.current) {
+      cancelAnimationFrame(frame.current);
+      frame.current = 0;
+    }
+    pending.current = null;
+
+    send({ type: "release" });
+    setPaused(DEFAULTS.paused);
+    setSpeed(DEFAULTS.speed);
+    setFollow(DEFAULTS.follow);
+    setGravity(DEFAULTS.gravity);
+    setSlope(DEFAULTS.slope);
+    setWind(DEFAULTS.wind);
+  }, [send]);
+
   // Deltas are normalised against the pad's own size, so the wall never has to know anything about
   // the phone's screen.
   const drag = useRef(null);
@@ -230,19 +263,6 @@ const ControlsComponent = () => {
         Sixteen humanoids are being scored on the wall right now. Make life harder for them and see
         which gaits survive it.
       </p>
-
-      <div className="group">
-        <span className="label">Interfere</span>
-        <Button
-          css={pushStyle}
-          fullWidth
-          variant="contained"
-          color="secondary"
-          onClick={() => send({ type: "push", strength: 1 })}
-        >
-          Shove one over
-        </Button>
-      </div>
 
       <div className="group">
         <span className="label">Ground tilt</span>
@@ -306,7 +326,7 @@ const ControlsComponent = () => {
             color="primary"
             onClick={() => setCamera(true)}
           >
-            Follow leader
+            {"Follow last gen's best"}
           </Button>
         </div>
         <div
@@ -358,7 +378,7 @@ const ControlsComponent = () => {
         <Button
           fullWidth
           style={{ marginTop: 8 }}
-          onClick={() => send({ type: "release" })}
+          onClick={putEverythingBack}
         >
           Put everything back
         </Button>

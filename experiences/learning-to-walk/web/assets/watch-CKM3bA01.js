@@ -40503,8 +40503,9 @@ const WALL_EVO_CONFIG = {
   // reset is a real generational step, and the counter advances every ten seconds.
   //
   // SIXTEEN, not a hundred. A 4x4 grid is small enough that a visitor can watch individual bodies
-  // rather than a crowd, and it is what makes "shove one over" legible -- the shoved one is a
-  // sixteenth of the arena instead of a hundredth. Three things fall out of being small, all good:
+  // rather than a crowd, which is also what makes an arrival legible: nine harvested genomes landing
+  // at once is half the arena changing, where nine of a hundred would be nothing. Three things fall
+  // out of being small, all good:
   //
   //   - 16 is INSIDE the 31 collision bits, so every robot gets a private bit and isolation is a
   //     property of the masks again. At a hundred the bits wrapped and isolation degraded to a
@@ -40755,6 +40756,11 @@ class World {
    *  shove that lands on a robot already lying still is an interaction that visibly does nothing --
    *  the visitor concludes the button is broken rather than that the bot was already down.
    *
+   *  NOTHING CALLS THIS. "Shove one over" was removed from the phone panel, so the message that
+   *  reached it no longer exists on either side of the protocol. Kept because it is a self-contained
+   *  World capability with its own tests, and re-adding a `push` case to src/watch/footron.js plus a
+   *  button to controls/lib/index.js is all it would take to bring the shove back.
+   *
    *  @returns {number} the robot index shoved, or -1 if the whole arena is already down
    */
   push(model, data, robots, strength = 1, fallHeight = 0.8) {
@@ -40888,15 +40894,30 @@ class WallCamera {
     this.radius = this.baseRadius;
     this.drift = true;
   }
-  /** The bot to follow: furthest forward this trial among those still on their feet.
+  /** The bot to follow: the winner of the generation that just finished.
    *
-   *  Read off the GA's own live accumulator rather than a separate measurement, so the camera is
-   *  always on the bot the score is about. Falls back to the previous choice while every robot is
-   *  down, which is most of the arena for most of a trial early in a run -- re-picking every frame
-   *  would make the camera jitter between corpses.
+   *  nextGeneration writes the top-ranked elite into population[0], so GENOME INDEX 0 is last
+   *  generation's champion, and it holds that meaning for the whole of the current generation.
+   *  `members` maps an arena slot to a genome index, so the slot is found rather than assumed --
+   *  they coincide on the wall, where one batch holds the entire population, but assuming it would
+   *  quietly aim the camera at whichever body happened to be first on the grid under any other
+   *  batching.
+   *
+   *  A FIXED SUBJECT IS THE POINT. This used to re-pick every frame -- furthest forward among those
+   *  still standing -- which cut between bodies several times a trial as they overtook one another
+   *  and fell. That shows a scoreboard. Staying on one body, including while it falls over, shows a
+   *  gait, which is the thing this mode exists for.
    */
   pickChampion(runner2, robots, data) {
-    if (!runner2.forward || robots.length === 0) {
+    if (robots.length === 0) {
+      return this.followed;
+    }
+    const elite = Array.isArray(runner2.members) ? runner2.members.indexOf(0) : -1;
+    if (runner2.generation > 0 && elite >= 0 && robots[elite]) {
+      this.followed = elite;
+      return this.followed;
+    }
+    if (!runner2.forward) {
       return this.followed;
     }
     const xpos = data.xpos;
@@ -41328,7 +41349,7 @@ const num = (v, lo, hi, fallback = lo) => {
   return Number.isFinite(n2) ? Math.min(hi, Math.max(lo, n2)) : fallback;
 };
 const lerp = (a2, b, t2) => a2 + (b - a2) * t2;
-function createController({ demo: demo2, runner: runner2, world: world2, camera: camera2, restart: restart2, defaultSpeed }) {
+function createController({ demo: demo2, world: world2, camera: camera2, restart: restart2, defaultSpeed }) {
   let idle = 0;
   let released = true;
   const release = () => {
@@ -41360,15 +41381,6 @@ function createController({ demo: demo2, runner: runner2, world: world2, camera:
         break;
       case "zoom":
         camera2.zoom(num(message.value, -1, 1, 0));
-        break;
-      case "push":
-        world2.push(
-          demo2.model,
-          demo2.data,
-          demo2.robots,
-          num(message.strength, 0, 1, 1),
-          runner2.cfg.fallHeight
-        );
         break;
       case "gravity":
         world2.setGravityScale(demo2.model, lerp(0.15, 1.6, num(message.value, 0, 1, 0.53)));
@@ -41435,7 +41447,6 @@ const restartCycle = () => {
 };
 const controller = createController({
   demo,
-  runner,
   world,
   camera,
   restart: restartCycle,
