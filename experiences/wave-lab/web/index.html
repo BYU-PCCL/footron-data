@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Wave Lab — a beach you can rebuild</title>
+<!-- Inline so the page pulls in nothing but its own modules, and so a browser
+     does not log a 404 for /favicon.ico — which the headless checks treat as a
+     page error, correctly, since they cannot tell a harmless one from a real one. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230d3a5c'/%3E%3Cpath d='M0 20c4 0 4-5 8-5s4 5 8 5 4-5 8-5 4 5 8 5v12H0z' fill='%2338bab2'/%3E%3Cpath d='M0 25c4 0 4-4 8-4s4 4 8 4 4-4 8-4 4 4 8 4v7H0z' fill='%23eedfb4'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="stage"></canvas>
+
+<div id="ui">
+  <div class="panel" id="controls">
+    <header>
+      <h1>Wave&nbsp;Lab</h1>
+      <button id="collapse" title="Collapse panel (H)">–</button>
+    </header>
+
+    <div class="body">
+      <div class="group-title">The swell</div>
+      <label class="slider"><span>Wave height</span>
+        <input type="range" data-p="amplitude" min="0.05" max="1.15" step="0.01" value="0.55">
+        <output></output></label>
+      <label class="slider"><span>Frequency</span>
+        <input type="range" data-p="frequency" min="0.03" max="0.2" step="0.001" value="0.095">
+        <output></output></label>
+      <label class="slider"><span>Direction</span>
+        <input type="range" data-p="angle" min="-55" max="55" step="1" value="0">
+        <output></output></label>
+      <label class="slider"><span>Chop</span>
+        <input type="range" data-p="chop" min="0" max="1" step="0.01" value="0.35">
+        <output></output></label>
+      <label class="slider"><span>Wind</span>
+        <input type="range" data-p="wind" min="0" max="1" step="0.01" value="0.25">
+        <output></output></label>
+
+      <div class="group-title">The beach</div>
+      <label class="slider"><span>Tide</span>
+        <input type="range" data-p="tide" min="-1.6" max="1.6" step="0.01" value="0">
+        <output></output></label>
+      <label class="slider"><span>Sand drift</span>
+        <input type="range" data-p="erosion" min="0" max="1" step="0.01" value="0.4">
+        <output></output></label>
+      <label class="slider"><span>Time speed</span>
+        <input type="range" data-p="speed" min="0.25" max="4" step="0.05" value="1">
+        <output></output></label>
+
+      <div class="group-title">Coastline</div>
+      <div class="chips" id="presets">
+        <button data-preset="classic" class="on">Classic</button>
+        <button data-preset="sandbar">Sandbars</button>
+        <button data-preset="coves">Coves</button>
+        <button data-preset="reef">Reef</button>
+        <button data-preset="pier">Pier</button>
+        <button data-preset="jetty">Jetties</button>
+        <button data-preset="flat">Flats</button>
+      </div>
+
+      <div class="group-title">Light</div>
+      <div class="chips" id="themes">
+        <button data-theme="day" class="on">Midday</button>
+        <button data-theme="sunset">Sunset</button>
+        <button data-theme="night">Moonlight</button>
+      </div>
+
+      <div class="group-title">Demonstrations</div>
+      <div class="chips" id="lessons">
+        <button data-lesson="shoal">Shoaling</button>
+        <button data-lesson="rip">Rip current</button>
+        <button data-lesson="groin">Groin trap</button>
+        <button data-lesson="refract">Refraction</button>
+        <button data-lesson="surge">Storm surge</button>
+        <button data-lesson="reefbreak">Reef break</button>
+        <button data-lesson="pierscour">Pier scour</button>
+      </div>
+
+      <div class="group-title">Weather presets</div>
+      <div class="chips" id="moods">
+        <button data-mood="glassy">Glassy</button>
+        <button data-mood="surf">Surf's up</button>
+        <button data-mood="storm">Storm</button>
+        <button data-mood="tsunami" class="hot">Rogue wave</button>
+      </div>
+
+      <div class="chips wide">
+        <button id="btn-pause">Pause <kbd>space</kbd></button>
+        <button id="btn-calm">Flatten sea</button>
+        <button id="btn-reset">Reset beach <kbd>R</kbd></button>
+        <button id="btn-depth">Depth map <kbd>D</kbd></button>
+        <button id="btn-flow">Currents <kbd>F</kbd></button>
+        <button id="btn-sound">Sound <kbd>S</kbd></button>
+        <button id="btn-section">Cross-section <kbd>X</kbd></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel tools" id="tools">
+    <button data-tool="raise" class="on"><i>⛰</i><span>Pile sand</span><kbd>1</kbd></button>
+    <button data-tool="dig"><i>🕳</i><span>Dig</span><kbd>2</kbd></button>
+    <button data-tool="toy"><i>🏐</i><span>Drop toys</span><kbd>3</kbd></button>
+    <button data-tool="prop"><i>⛱</i><span>Beach stuff</span><kbd>4</kbd></button>
+    <div class="brush">
+      <span>Brush</span>
+      <input type="range" id="brush" min="3" max="34" step="1" value="12">
+    </div>
+  </div>
+
+  <canvas id="section"></canvas>
+
+  <div class="panel" id="report">
+    <div class="cap">breaker height</div>
+    <div class="big"><span id="r-height">–</span><em>m</em></div>
+    <div class="rows">
+      <div><span>period</span><b id="r-period">–</b></div>
+      <div><span>from</span><b id="r-dir">–</b></div>
+      <div><span>breaking</span><b id="r-break">–</b></div>
+      <div><span>swash</span><b id="r-swash">–</b></div>
+    </div>
+  </div>
+
+  <div class="panel" id="lesson-card">
+    <button id="lesson-close">×</button>
+    <h2 id="lesson-title"></h2>
+    <p id="lesson-body"></p>
+  </div>
+
+  <div id="hint">drag on the beach to sculpt · scroll to resize brush · <kbd>H</kbd> hides the panels</div>
+  <div id="stats"></div>
+</div>
+
+<!-- The wall's phone-controls client. Plain script, not a module: it is a UMD
+     build that defines globalThis.FootronMessaging, and src/footron.js treats
+     its absence as "no phone controls" rather than as an error. -->
+<script src="vendor/footron-messaging.min.js"></script>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

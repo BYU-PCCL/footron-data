@@ -18,7 +18,12 @@ experiences = [
   "leaves",
   "live-dashboard",
   "snowflake",
-  "trickortreat"
+  "trickortreat",
+  "wave-lab",
+  "barnsley-fern",
+  "alg-infect",
+  "neural-net-vis",
+  "learning-to-walk"
 ]
 
 [game]

@@ -1,0 +1,19 @@
+{
+  "id": "learning-to-walk",
+  "type": "web",
+  "title": "Learning to Walk",
+  "description": "Nobody told these humanoids how to walk. Sixteen of them are being scored on the wall right now — that is the entire generation, all at once — and the ones that get furthest become the parents of the next. Walking is hard enough that most of them fall over in the first second — which is the point. Nothing here is animation, and nothing here is a recording: every stagger is physics, and every improvement was found by a search that is still running while you watch it.",
+  "long_description": "Each humanoid is driven by a genome — thirty-eight numbers describing how its hips, knees and ankles should swing against each other. Two constraints are baked in to make the search tractable: the arms and upper trunk are locked rigid, so the only thing being evolved is the legs, and the left side is a mirror of the right, so a gait is symmetric by construction rather than by luck. That is why they look stiff-armed — the arms are held, not evolved. A generation works like this: all sixteen bodies are dropped into the arena together, given ten seconds to get as far as they can, and scored on how long they stayed upright and how much ground they covered. Everything on the wall is one generation, so nothing is hidden offscreen. The best are then copied, mixed and slightly mutated, and the whole thing runs again — about once every ten seconds.<br><br>That is the entire algorithm. There is no model of what a leg is for, no example of a person walking, and nothing that rewards looking graceful — only distance and staying up. Everything that looks like a gait was found by a search that started from noise.<br><br>A walk takes hundreds of generations to find, and this exhibit only has a few minutes, so it cheats exactly once. The first five generations are entirely random and nothing out there can walk — that part is real, and worth waiting through. Then two survivors of a run that was left going overnight are dropped in, one that strides and one that barely shuffles, and everything after that is this population deciding what to do with them. Watch their gait spread through the arena — and watch how often something the search turned up on its own beats both of them.<br><br>From your phone you can make it harder. Tilt the ground, thin out gravity, turn a wind on, or simply shove one of them over, and watch which gaits survive being treated that way.",
+  "artist": "Richard",
+  "action_hints": [
+    "shove a walker over and see if it gets going again",
+    "tilt the ground uphill and watch the good gaits stop working",
+    "turn gravity down until they start bounding",
+    "follow the leader with the camera",
+    "start a new generation zero and watch it climb again"
+  ],
+  "layout": "full",
+  "lifetime": 300,
+  "load_time": 8,
+  "queueable": true
+}

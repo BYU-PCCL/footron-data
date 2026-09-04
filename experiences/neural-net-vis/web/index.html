@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inside a Neural Network</title>
+    <link rel="icon" href="data:," />
+    <style>
+      /* Painted before any JS loads so there is never a white flash on the wall. */
+      html,
+      body {
+        margin: 0;
+        background: #050510;
+      }
+    </style>
+    <script type="module" crossorigin src="./assets/index-CWMQ3-Js.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-fEAn4UlL.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- The wall's phone-controls client. Plain script, not a module: it is a UMD
+         build that defines globalThis.FootronMessaging, and src/input/phone.ts
+         treats its absence as "no phone controls" rather than as an error. -->
+    <script src="./footron-messaging.development.js"></script>
+  </body>
+</html>
