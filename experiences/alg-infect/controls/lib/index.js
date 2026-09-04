@@ -117,6 +117,12 @@ const containerStyle = css`
   .dpad .left { grid-column: 1; grid-row: 2; }
   .dpad .right { grid-column: 3; grid-row: 2; }
   .dpad .down { grid-column: 2; grid-row: 3; }
+  /* every arrow is the same glyph: left and right are the up arrow turned, so a phone
+     can't swap them for its emoji triangles (U+25C0/25B6 have an emoji presentation) */
+  .dpad .arrow { display: inline-block; line-height: 1; }
+  .dpad .left .arrow { transform: rotate(-90deg); }
+  .dpad .right .arrow { transform: rotate(90deg); }
+  .dpad .down .arrow { transform: rotate(180deg); }
   .dpad .hub {
     grid-column: 2;
     grid-row: 2;
@@ -186,17 +192,17 @@ const ControlsComponent = () => {
       </div>
       <div className="dpad">
         <Button type="button" disableRipple className="up" onClick={() => press("up")}>
-          ▲
+          <span className="arrow">▲</span>
         </Button>
         <Button type="button" disableRipple className="left" onClick={() => press("left")}>
-          ◀
+          <span className="arrow">▲</span>
         </Button>
         <div className="hub">AIM</div>
         <Button type="button" disableRipple className="right" onClick={() => press("right")}>
-          ▶
+          <span className="arrow">▲</span>
         </Button>
         <Button type="button" disableRipple className="down" onClick={() => press("down")}>
-          ▼
+          <span className="arrow">▲</span>
         </Button>
       </div>
       <Button
