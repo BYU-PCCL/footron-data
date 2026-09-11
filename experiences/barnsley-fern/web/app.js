@@ -218,24 +218,19 @@ const BAND = { top: 0.01, h: 0.98, w: 0.60 };
  * One number, so it is one number to dial back. */
 const GROW = 1.5;
 
-/* The fern does not sit centred any more -- it is pulled towards the left,
- * which is the side the writing is on, so the picture and the reading are one
- * block and the right of the sheet opens up behind the legend.
+/* PULL slides the fern left, towards the side the writing is on, as a
+ * fraction of the room layout() measures in front of it -- 0 leaves the
+ * picture centred on the sheet, 1 takes all the room there is. It is 0: the
+ * fern is centred, and the legend reads over the sheet behind it.
  *
- * How far it can go is not a number anyone can pick in advance. Footron's
- * launcher paints its "Scan to" QR card over the bottom-left corner (README:
- * a little over 250px, taller than a row of text), and that card is a fixed
- * size in pixels while the fern scales with the sheet -- so the room in front
- * of it is worth hundreds of pixels on a 4K wall and almost nothing in a small
- * window. Worse, the fern's leftmost ink is low, exactly where the card is.
- *
- * So layout() measures instead: it walks the plant's own silhouette and slides
- * it until the ink is about to touch either the card's keep-out or the left
- * edge, whichever it reaches first. PULL is the fraction of that room to take,
- * 0 leaving the fern centred and 1 taking all of it. The keep-out applies off
- * the wall too, where no card is drawn, so a local preview is framed the same
- * as the wall it is being authored for. */
-const PULL = 1;
+ * The measuring is kept because the room is not a number anyone can pick in
+ * advance. Footron's launcher paints its "Scan to" QR card over the
+ * bottom-left corner (README: a little over 250px, taller than a row of
+ * text), and that card is a fixed size in pixels while the fern scales with
+ * the sheet -- so the room in front of it is worth hundreds of pixels on a 4K
+ * wall and almost nothing in a small window. pullRoom() walks the plant's own
+ * silhouette to find it; at PULL 0 nothing is taken. */
+const PULL = 0;
 
 /* The card's keep-out, and the air kept in front of it. The pad is doing two
  * jobs: it is the visible gap between the ink and the card, and it is the
