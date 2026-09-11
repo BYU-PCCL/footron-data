@@ -474,12 +474,6 @@ const WaveLabControls = () => {
           New beach
         </Button>
       </div>
-
-      <Typography variant="body2" css={hintStyle}>
-        Leave it alone for 45 seconds and the wall goes back to running the surf
-        by itself, so there is nothing here you can leave it stuck in and nothing
-        to hand back when you are done.
-      </Typography>
     </div>
   );
 };
