@@ -21,12 +21,12 @@
     </p>
   </header>
 
-  <!-- The clock reads local to whatever the camera is over, not UTC: a wall
-       showing 03:00 above a sunlit Pacific is a puzzle, and the terminator drawn
-       across the picture is already telling everyone what time it is there. -->
+  <!-- Three clocks, west to east, filled in by src/hud.js from its own list of
+       cities — the markup deliberately holds none of them. A "+1" beside a time
+       means that city has already crossed into the next day, as it does for
+       Tokyo through most of this one. -->
   <div class="hud hud-top-right">
-    <div id="clock" class="clock">00:00</div>
-    <div id="clock-label" class="clock-label">local</div>
+    <div id="clocks" class="clocks"></div>
     <div class="airborne"><span id="airborne">0</span> <span class="airborne-label">aircraft airborne</span></div>
   </div>
 

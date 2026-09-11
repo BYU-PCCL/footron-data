@@ -79,17 +79,52 @@ h1 {
   line-height: 1.4;
 }
 
-/* ---------- clock ---------- */
+/* ---------- clocks ---------- */
 
 .hud-top-right { top: var(--pad); right: var(--pad); text-align: right; }
 
-.clock {
-  font: 500 clamp(30px, 3.4vw, 52px)/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+/* City against time, right-aligned as a pair so the digits form one column and
+   the eye can drop straight down them. Baseline-aligned, because a small label
+   centred against 38px of numeral floats. */
+.clocks {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  justify-content: end;
+  align-items: baseline;
+  column-gap: 16px;
+  row-gap: 7px;
 }
 
-.clock-label { color: var(--ink-3); font-size: 11px; letter-spacing: 0.18em; margin-top: 4px; }
+.clock-city {
+  color: var(--ink-3);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.clock-time {
+  font: 500 clamp(24px, 2.5vw, 38px)/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+/* The next-day marker, in a column of its own so an empty one still holds the
+   digits in place. Raised towards the top of the numerals the way a timetable
+   sets it, but by `top` rather than by `vertical-align`, which does nothing to a
+   grid cell. Sized in rem, not em, so it does not inherit the clock's own
+   clamp() and shrink away on a narrow wall. */
+.clock-day {
+  color: var(--ink-3);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  min-width: 1.5em;
+  margin-left: -8px;
+  text-align: left;
+  position: relative;
+  top: -0.85em;
+}
 
 .airborne {
   margin-top: 10px;

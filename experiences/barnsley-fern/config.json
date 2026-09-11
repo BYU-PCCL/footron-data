@@ -1,0 +1,25 @@
+{
+  "id": "barnsley-fern",
+  "type": "web",
+  "title": "Barnsley's Fern",
+  "description": "One point, four rules, and a weighted die. Each throw picks a rule, the rule moves the point, and the point is marked where it lands. Nothing draws a leaf — the fern is just everywhere the walk can go. Points are tinted by the rule that placed them, so the self-similarity is visible: the amber and teal halves are entire ferns folded into single leaflets. Five knobs on your phone reach into the matrices themselves — curl the stem, change how hard each step shrinks, twist and resize the leaflets, reweight the dice — and the plant redraws while you hold them, with the coefficients you are moving listed beside it.",
+  "action_hints": [
+    "tap a named plant and watch the fern on the wall become a different one",
+    "curl the stem over until the fern is a fiddlehead",
+    "hold a knob and watch the matrices on the wall move with it",
+    "grow the bottom leaflets until they rival the whole plant",
+    "reweight the dice — same shape, but the points go somewhere else",
+    "roll a random plant, then put Barnsley's own numbers back"
+  ],
+  "layout": "full",
+  "lifetime": 300,
+  "queueable": true,
+  "unlisted": false,
+  "tags": [
+    "math",
+    "fractal",
+    "generative",
+    "interactive",
+    "visualization"
+  ]
+}

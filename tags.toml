@@ -16,7 +16,12 @@ experiences = [
   "gradient-descent",
   "twindragon",
   "live-dashboard",
-  "snowflake"
+  "snowflake",
+  "trickortreat",
+  "barnsley-fern",
+  "alg-infect",
+  "neural-net-vis",
+  "learning-to-walk"
 ]
 
 [game]
