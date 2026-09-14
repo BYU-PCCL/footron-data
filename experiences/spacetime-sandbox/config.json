@@ -1,0 +1,16 @@
+{
+  "id": "spacetime-sandbox",
+  "type": "web",
+  "title": "Spacetime Sandbox",
+  "description": "Gravity is not a force but the shape of spacetime. Drop stars and black holes onto a plate of space, throw asteroids and light past them, and watch falling turn out to be going straight.",
+  "long_description": "The plate is a real embedding of curved space: every well is Flamm's paraboloid, the ruling stains with the true gravitational redshift, and light bends exactly twice as far as matter does, the way Eddington measured in 1919. Two stars swinging round each other stir the sheet into gravitational waves, and the last plate rolls time up into a cone where a thrown ball is literally a straight line.",
+  "artist": "Boston Sharp",
+  "action_hints": [
+    "tap the pad on your phone to drop a star",
+    "drag to throw an asteroid or a beam of light",
+    "turn the dial to pack the star tighter"
+  ],
+  "layout": "full",
+  "lifetime": 600,
+  "queueable": true
+}
