@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quotes</title>
+
+<!-- Display fonts. Special Elite is the typewriter face; Caveat is the
+     handwriting used for the attribution, so the marginalia and the rough.js
+     doodles read as the same pen. Both name real fallbacks after them, because
+     the kiosk is not guaranteed to reach fonts.googleapis.com and a missing
+     webfont has to degrade to a readable page rather than to nothing. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Caveat:wght@500;600&display=swap">
+
+<style>
+  :root {
+    --paper:     #f4ece0;
+    --paper-dim: #e7dbc9;
+    --ink:       #2f2419;
+    --ink-soft:  #9a8872;   /* marginalia, caret, attribution */
+    --accent:    #c2452d;   /* the red pen: doodles and emphasis */
+    --marker:    #f6d976;   /* highlighter yellow */
+
+    /* One size rules the page. Everything else is a ratio of it, so the whole
+       quote scales with the wall in one move. */
+    --f-quote: clamp(26px, 3.45vw, 78px);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Special Elite", "Courier New", Courier, monospace;
+    -webkit-font-smoothing: antialiased;
+    cursor: none;              /* nothing on the wall is clickable */
+  }
+
+  /* Paper: a warm vignette plus a faint fibre speckle, so the field behind the
+     type is not a flat block of colour under the projector. */
+  #paper {
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(120% 90% at 50% 40%, rgba(255,255,255,.55) 0%, rgba(255,255,255,0) 55%),
+      radial-gradient(130% 110% at 50% 50%, rgba(0,0,0,0) 45%, rgba(74,54,32,.16) 100%),
+      repeating-linear-gradient(115deg, rgba(120,95,60,.035) 0 2px, rgba(0,0,0,0) 2px 6px),
+      var(--paper);
+  }
+
+  /* The doodle overlay sits above the paper and under nothing -- the marks are
+     allowed to cross the type, which is what makes them read as annotations. */
+  #doodles { position: fixed; inset: 0; z-index: 3; pointer-events: none; }
+  .doodle { opacity: .95; }
+  .doodle-ambient { opacity: .5; }
+
+  /* ---------------------------------------------------------------- stage */
+  #stage {
+    position: fixed; inset: 0; z-index: 2;
+    display: flex; align-items: center; justify-content: center;
+    padding: 6vh 9vw;
+  }
+  #quote {
+    font-size: var(--f-quote);     /* the starting point; fit() scales from it */
+    line-height: 1.62;
+    text-align: left;
+    transition: opacity 900ms ease;
+  }
+  #quote.out { opacity: 0; }
+
+  /* One line in the file is one line on the wall: white-space:pre keeps the
+     spacing exactly as written and refuses to wrap, and quote.js sizes the type
+     so that it fits. A quote too long to fit even at the floor size gets
+     .wrapping and is allowed to break after all. */
+  .line { white-space: pre; }
+  #quote.wrapping .line { white-space: pre-wrap; }
+  .line.gap { height: .7em; }
+
+  .attribution {
+    margin-top: .85em;
+    font-family: "Caveat", "Special Elite", cursive;
+    font-size: .68em;
+    color: var(--ink-soft);
+    letter-spacing: .01em;
+  }
+  .attrib-dash { color: var(--ink-soft); }
+
+  /* ------------------------------------------------------------ the type */
+  /* Every character is in the DOM from the start and only opacity is flipped,
+     so the line breaks never move while the quote is being typed. */
+  .ch {
+    display: inline-block;
+    opacity: 0;
+    /* The per-character tilt is set inline at build time; this transition is
+       only the ink landing. */
+    transition: opacity 90ms linear;
+  }
+  .ch.sp { display: inline; }        /* keep the line-break opportunity */
+  .ch.on { opacity: 1; }
+
+  .seg { position: relative; }
+  .seg.nowrap { white-space: nowrap; }
+
+  /* The caret is one element that jumps to the last character typed, rather
+     than a character of its own -- it never disturbs the layout. */
+  #caret {
+    position: fixed; top: 0; left: 0; z-index: 4;
+    background: var(--ink-soft);   /* width and height come from the character */
+    opacity: 0;
+    border-radius: 1px;
+  }
+  #caret.lit { opacity: .55; animation: blink 900ms steps(1, end) infinite; }
+  @keyframes blink { 0%, 55% { opacity: .55; } 56%, 100% { opacity: 0; } }
+
+  /* =======================================================================
+     EFFECTS -- the CSS half
+     Every class below is reachable from a quote file by its bare name:
+     `[like this](glow)`. Add a `.fx-<name>` rule here and it is immediately
+     usable. They all key off `.on`, which quote.js adds the instant the marked
+     run has finished typing.
+     ===================================================================== */
+
+  /* glow -- a warm lamp under the word, breathing. */
+  .fx-glow.on {
+    color: #a8371f;
+    animation: glow 2.6s ease-in-out infinite;
+  }
+  @keyframes glow {
+    0%, 100% { text-shadow: 0 0 0 rgba(194,69,45,0); }
+    50%      { text-shadow: 0 0 .5em rgba(214,120,45,.75), 0 0 1.1em rgba(214,120,45,.35); }
+  }
+
+  /* swell -- the word arrives a size too big and settles back. */
+  .fx-swell { display: inline-block; transform-origin: 50% 85%; }
+  .fx-swell.on { animation: swell 900ms cubic-bezier(.22,1.3,.36,1) both; }
+  @keyframes swell {
+    0%   { transform: scale(1); }
+    38%  { transform: scale(1.22) rotate(-1.5deg); }
+    100% { transform: scale(1.07) rotate(0deg); }
+  }
+
+  /* wobble -- a slow, permanent shimmy. Use it sparingly. */
+  .fx-wobble { display: inline-block; transform-origin: 50% 90%; }
+  .fx-wobble.on { animation: wobble 2.2s ease-in-out infinite; }
+  @keyframes wobble {
+    0%, 100% { transform: rotate(-2deg) translateY(0); }
+    50%      { transform: rotate(2deg) translateY(-.04em); }
+  }
+
+  /* shimmer -- a band of light sweeping through the letterforms.
+     The characters have to go back to plain inline for this one: the gradient
+     is painted on the run and clipped to the text inside it, and an
+     inline-block character is its own box rather than text the clip can reach.
+     Going inline also makes the per-character tilt inert, which is the price
+     of the effect. */
+  .fx-shimmer .ch { display: inline; }
+  .fx-shimmer.on {
+    background-image: linear-gradient(100deg,
+      var(--ink) 0%, var(--ink) 38%,
+      var(--accent) 48%, #e08a3c 53%, var(--accent) 58%,
+      var(--ink) 68%, var(--ink) 100%);
+    background-size: 280% 100%;
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent;
+    animation: shimmer 3.4s ease-in-out infinite;
+  }
+  @keyframes shimmer {
+    0%   { background-position: 130% 0; }
+    100% { background-position: -30% 0; }
+  }
+
+  /* highlight -- a marker pen swiped behind the word, drawn on left to right
+     and left sitting there. The band is rotated a touch so the ends do not
+     line up with the baseline. */
+  .fx-highlight { position: relative; }
+  .fx-highlight::before {
+    content: "";
+    position: absolute;
+    left: -.18em; right: -.18em; top: .08em; bottom: -.02em;
+    background: var(--marker);
+    border-radius: .35em .5em .4em .45em;
+    transform: rotate(-.7deg) scaleX(0);
+    transform-origin: left center;
+    z-index: -1;
+    opacity: .85;
+  }
+  .fx-highlight.on::before {
+    animation: swipe 520ms cubic-bezier(.3,.9,.4,1) both;
+  }
+  @keyframes swipe {
+    0%   { transform: rotate(-.7deg) scaleX(0); }
+    100% { transform: rotate(-.7deg) scaleX(1); }
+  }
+
+  /* ------------------------------------------------------------- failures */
+  /* No devtools on the kiosk, so a script error has to say so on the wall. */
+  #error {
+    display: none;
+    position: fixed; inset: auto 0 0 0; z-index: 9;
+    background: #7a1d10; color: #ffe9e2;
+    font: 14px/1.5 ui-monospace, Consolas, monospace;
+    padding: 12px 16px; white-space: pre-wrap;
+  }
+</style>
+</head>
+
+<body>
+  <div id="paper"></div>
+  <div id="stage"><div id="quote"></div></div>
+  <svg id="doodles" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div id="caret"></div>
+  <div id="error"></div>
+
+<script>
+function showError(message) {
+    console.error(message);
+    var el = document.getElementById('error');
+    el.textContent = String(message);
+    el.style.display = 'block';
+}
+window.addEventListener('error', function (e) {
+    showError((e.error && e.error.stack) || e.message || String(e));
+});
+</script>
+
+<script src="./rough.js"></script>
+<script src="./doodles.js"></script>
+<script src="./quote.js"></script>
+
+<script>
+(function () {
+    'use strict';
+
+    /* How many text<n>.txt files to look for. Drop a text2.txt next to this
+       page and it joins the rotation on the next load -- nothing to register. */
+    var MAX_FILES = 12;
+    var HOLD_MS = 7000;        /* how long a finished quote sits before the next */
+
+    /* Shown when the files cannot be fetched at all, which is what happens if
+       this page is opened straight off disk (file://) instead of over http. */
+    var FALLBACK = [
+        '“You’ve gotta [dance](swell circle) like there’s nobody watching,',
+        'Love like you’ll [never](glow) be hurt,',
+        'Sing like there’s nobody listening,',
+        'And live like it’s [heaven on earth](highlight underline).”'
+    ].join('\n');
+
+    var quoteEl = document.getElementById('quote');
+    var caretEl = document.getElementById('caret');
+    var sources = [];
+    var index = 0;
+    var holdTimer = null;
+
+    function load(name) {
+        return fetch(name, { cache: 'no-cache' })
+            .then(function (r) { return r.ok ? r.text() : null; })
+            .catch(function () { return null; });
+    }
+
+    /* Probe for the quote files once at startup, stopping at the first gap --
+       text1, text2, text3 and so on, no list to keep in step. */
+    function discover() {
+        var found = [];
+        function probe(n) {
+            if (n > MAX_FILES) { return Promise.resolve(found); }
+            return load('text' + n + '.txt').then(function (text) {
+                if (!text || !text.trim()) { return found; }
+                found.push(text);
+                return probe(n + 1);
+            });
+        }
+        return probe(1);
+    }
+
+    function show(src) {
+        clearTimeout(holdTimer);
+        Doodles.wipe(true);
+        quoteEl.classList.remove('out');
+        Quote.play(quoteEl, caretEl, src, function () {
+            Doodles.ambient();
+            holdTimer = setTimeout(next, HOLD_MS);
+        });
+    }
+
+    function next() {
+        if (sources.length < 2) { index = 0; } else { index = (index + 1) % sources.length; }
+        quoteEl.classList.add('out');
+        Quote.stop();
+        setTimeout(function () { show(sources[index]); }, 950);
+    }
+
+    /* One owner for resize: the type has to be re-fitted to the new stage
+       before the doodles are redrawn onto the words. */
+    var resizeTimer = null;
+    window.addEventListener('resize', function () {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function () {
+            Quote.refit();
+            Doodles.redraw();
+        }, 160);
+    });
+
+    /* Authoring keys: space finishes the quote now, N moves on, R restarts. */
+    document.addEventListener('keydown', function (e) {
+        if (e.code === 'Space') { e.preventDefault(); Quote.skip(); }
+        else if (e.key === 'n' || e.key === 'N') { clearTimeout(holdTimer); next(); }
+        else if (e.key === 'r' || e.key === 'R') { clearTimeout(holdTimer); show(sources[index]); }
+    });
+
+    /* The fonts have to be in before anything is measured: the whole point of
+       laying the text out before typing it is that the geometry is final, and
+       it is not final while Courier is still standing in for Special Elite.
+       document.fonts.ready alone is not enough -- with no text on the page yet
+       there is nothing for it to wait on, so the faces are requested by hand. */
+    function fontsIn() {
+        if (!document.fonts) { return Promise.resolve(); }
+        return Promise.all([
+            document.fonts.load('1em "Special Elite"'),
+            document.fonts.load('1em "Caveat"')
+        ]).catch(function () { /* offline kiosk: fall back and carry on */ })
+          .then(function () { return document.fonts.ready; });
+    }
+
+    Promise.all([discover(), fontsIn()])
+        .then(function (results) {
+            sources = results[0];
+            if (!sources.length) { sources = [FALLBACK]; }
+            Doodles.init(document.getElementById('doodles'));
+            show(sources[0]);
+        })
+        .catch(showError);
+})();
+</script>
+</body>
+</html>
