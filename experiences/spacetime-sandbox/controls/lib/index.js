@@ -364,7 +364,9 @@ const ControlsComponent = () => {
   const lastSentRef = useRef(0);
   const pendingRef = useRef(null);
   const placeRef = useRef(place);
-  const drawRef = useRef(() => {});
+  // Null rather than a no-op: footron-web's eslint refuses an empty function,
+  // and the ref is assigned on every render before the frame loop starts.
+  const drawRef = useRef(null);
 
   placeRef.current = place;
 
@@ -577,7 +579,7 @@ const ControlsComponent = () => {
   useEffect(() => {
     let frame = 0;
     const tick = () => {
-      drawRef.current();
+      if (drawRef.current) drawRef.current();
       frame = window.requestAnimationFrame(tick);
     };
     frame = window.requestAnimationFrame(tick);
