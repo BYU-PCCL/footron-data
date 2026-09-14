@@ -201,10 +201,16 @@ const containerStyle = css`
     min-height: 180px;
     position: relative;
   }
+  /* Absolutely positioned rather than height: 100%: a percentage height in a
+     flex-grown box is not definite on iOS Safari, so the canvas fell back to
+     its default 2:1 aspect and sat as a wide rectangle above a dark gap. */
   .pad canvas {
-    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
+    display: block;
     touch-action: none;
   }
 
@@ -471,9 +477,13 @@ const ControlsComponent = () => {
 
     // What is actually on the plate, as the wall last described it. This is
     // the authoritative picture; everything below it is only feedback.
-    const plate = plateRef.current;
-    if (plate) {
-      for (const body of plate.bodies) {
+    // Named `mirror`, not `plate`: `plate` is the background colour above, and
+    // a `const` of the same name here would shadow it for the whole function
+    // -- which is how the pad once painted itself with whatever fill the
+    // previous frame ended on, grey, then white, then black.
+    const mirror = plateRef.current;
+    if (mirror) {
+      for (const body of mirror.bodies) {
         const bx = cx + body.x * r;
         const by = cy - body.z * r;
         const br = Math.max(5, body.r * r);
@@ -507,7 +517,7 @@ const ControlsComponent = () => {
           ctx.lineWidth = 1;
         }
       }
-      for (const clock of plate.clocks) {
+      for (const clock of mirror.clocks) {
         const gx = cx + clock.x * r;
         const gy = cy - clock.z * r;
         ctx.beginPath();
