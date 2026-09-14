@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Learning to Walk</title>
+    <meta name="description" content="Humanoids evolving a walking gait, live, in MuJoCo." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="icon" type="image/png" href="./assets/favicon-BC978tFc.png" />
+
+    <!--
+      Failure has to be VISIBLE. The wall runs in footron-web-shell with no devtools and nobody
+      standing at a keyboard, so an uncaught error would otherwise be indistinguishable from a slow
+      load, and stay that way for the rest of the slot. This is installed before any other script so
+      that it can also catch a failure in the module that draws everything else.
+    -->
+    <script>
+      window.addEventListener("error", (e) => showFatal(e.message, e.filename, e.lineno));
+      window.addEventListener("unhandledrejection", (e) =>
+        showFatal((e.reason && e.reason.message) || String(e.reason), "", ""));
+
+      function showFatal(message, file, line) {
+        let el = document.getElementById("fatal");
+        if (!el) {
+          el = document.createElement("pre");
+          el.id = "fatal";
+          document.body && document.body.appendChild(el);
+        }
+        if (el) { el.textContent += `${message}\n${file}${line ? ":" + line : ""}\n\n`; }
+      }
+
+      // Object.hasOwn landed in Chrome 93, which is exactly the Chromium the wall's Electron 14
+      // shell carries -- no margin at all, and MuJoCo's Emscripten glue calls it. Nine bytes of
+      // insurance against the whole exhibit failing on a browser it nominally supports.
+      if (!Object.hasOwn) {
+        Object.hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(Object(o), k);
+      }
+    </script>
+
+    <style>
+      html, body {
+        margin: 0; padding: 0; width: 100%; height: 100%;
+        overflow: hidden; background: #1a2733;
+      }
+      /* No pointer on the wall, and a stray arrow parked mid-screen is very hard to explain. */
+      body { cursor: none; touch-action: none; -webkit-user-select: none; user-select: none; }
+      canvas { display: block; }
+
+      #fatal {
+        position: fixed; inset: 0; z-index: 9999; margin: 0; padding: 4vh 4vw;
+        background: rgba(120, 10, 10, 0.94); color: #fff; overflow: auto;
+        font: 500 clamp(14px, 1.1vw, 30px)/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+        white-space: pre-wrap;
+      }
+      #fatal:empty { display: none; }
+
+      /*
+        The deployed build's identity, bottom-right. The wall is updated by copying a tree into
+        footron-data, and "is the new build actually up" is otherwise unanswerable without a
+        keyboard. Bottom-LEFT is unavailable: Footron's launcher paints its QR card there.
+      */
+      #build-marker {
+        position: fixed; right: 6px; bottom: 4px; z-index: 10;
+        font: 400 11px/1 ui-monospace, monospace; color: rgba(255, 255, 255, 0.22);
+        pointer-events: none;
+      }
+      body.nohud #build-marker { display: none; }
+    </style>
+    <script type="module" crossorigin src="./assets/watch-CKM3bA01.js"></script>
+  </head>
+
+  <body>
+    <pre id="fatal"></pre>
+    <div id="build-marker">learning-to-walk</div>
+
+    <!--
+      UMD, so a plain script tag is all it needs and an absent file leaves the phone protocol inert
+      rather than breaking the page. See watch-public/vendor/README.md.
+    -->
+    <script src="./vendor/footron-messaging.min.js"></script>
+
+    <script>
+      // ?nohud strips the overlays for capturing config.json's thumb.jpg and wide.jpg. The HUD hides
+      // itself; the build marker is plain HTML, so it is hidden here.
+      if (new URLSearchParams(location.search).has("nohud")) {
+        document.body.classList.add("nohud");
+      }
+    </script>
+  </body>
+</html>
