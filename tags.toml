@@ -23,7 +23,8 @@ experiences = [
   "barnsley-fern",
   "alg-infect",
   "neural-net-vis",
-  "learning-to-walk"
+  "learning-to-walk",
+  "spacetime-sandbox"
 ]
 
 [game]
