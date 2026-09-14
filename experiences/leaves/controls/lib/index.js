@@ -22,27 +22,37 @@ import SkipNextIcon from "@material-ui/icons/SkipNext";
 /*
  * Phone controls for `leaves` (Wasatch Fall).
  *
- * This panel is the ONLY way to drive the scene. The wall page carries no
- * buttons and no sliders at all -- the standalone version's bottom action bar
- * and its `C` controls panel were both stripped out of
- * experiences/leaves/web/index.html, because the wall has no pointer and
- * nothing on it is touchable. Every control the standalone page had lives here
- * instead, and the message names below are exactly the `case` labels in that
- * file's handleMessage().
+ * This panel is the ONLY way to drive the scene. It is the standalone demo's
+ * pop-out controls panel and its bottom action bar, moved onto the phone: the
+ * wall page carries no buttons and no sliders at all, because the wall has no
+ * pointer and nothing on it is touchable. The message names below are exactly
+ * the `case` labels in experiences/leaves/web/index.html's handleMessage().
+ *
+ * Three things the demo panel had are deliberately not here:
+ *
+ *   The "Show" section -- pigment bars, grid position map, flat colour
+ *   comparison, performance readout. Those are instruments for judging the
+ *   rendering technique, not things to hand a passer-by.
+ *
+ *   "Loop into a new season". The wall is unattended, so it always loops; there
+ *   is nothing to switch.
+ *
+ *   Leaf density. The old hillside build drew ~9,600 leaves and this one draws
+ *   a single leaf, so there is no density to set.
  *
  * The wall never sends anything back -- it mounts a Messaging client and only
  * adds a listener. So this panel is write-only and owns its own copy of the
  * state, seeded from the wall's defaults. That stays honest because the wall
  * never changes these values on its own: it rolls one season into the next
- * without ever pausing, so `playing` cannot drift out from under us. The two
- * places it DOES force a value are `replay` and `newWoods`, which both call
+ * without ever pausing, so `playing` cannot drift out from under us. The three
+ * places it DOES force a value are `replay` and `newLeaf`, which both call
  * setPlaying(true) on the wall -- mirrored below -- and `resume`, which resets
  * everything to defaults.
  */
 
-// The wall's starting values: model.js DEFAULT_CONTROLS, plus speed and density,
-// which are renderer settings the model has no field for and which the wall
-// holds in its own CTL object at 1x.
+// The wall's starting values: model.js DEFAULT_CONTROLS, plus speed, which is
+// how fast the clock runs rather than anything the model takes, and which the
+// wall holds in its own CTL object at the demo's 1.5x.
 const DEFAULTS = {
   temp: 0,
   cloud: 25,
@@ -50,23 +60,22 @@ const DEFAULTS = {
   winterPrecip: 1,
   precip: 1,
   latitude: 40.65,
-  speed: 1,
-  density: 1,
+  speed: 1.5,
 };
 
 const times = (v) => v.toFixed(2) + " ×";
 
 /*
- * Ranges and steps are the standalone page's sliders, and they match the
- * CTL_RANGE table the wall clamps against -- so the panel cannot ask for a
- * value the wall will silently reel back in, and the number shown on the phone
- * is always the number the model got.
+ * Ranges and steps are the demo panel's sliders, and they match the CTL_RANGE
+ * table the wall clamps against -- so the panel cannot ask for a value the wall
+ * will silently reel back in, and the number shown on the phone is always the
+ * number the model got.
  *
- * Order is not the standalone page's. The three settings named in
- * config.json's action_hints ("make the autumn colder or warmer", "clear the
- * clouds for brighter reds", "bring the wind up") come first, so that someone
- * who picked up the phone because of a hint on the wall finds that control
- * without scrolling. The remaining three are the slower, less legible knobs.
+ * Order is not the demo panel's. The three settings named in config.json's
+ * action_hints ("make the autumn colder or warmer", "clear the clouds for
+ * brighter reds", "bring the wind up") come first, so that someone who picked
+ * up the phone because of a hint on the wall finds that control without
+ * scrolling. The remaining three are the slower, less legible knobs.
  */
 const ENVIRONMENT = [
   {
@@ -121,10 +130,9 @@ const ENVIRONMENT = [
   },
 ];
 
-// Not weather: these two are the clock and the renderer, which is why the panel
-// keeps them in their own sections rather than in the list above.
+// Not weather: this one is the clock, which is why the panel keeps it in its
+// own section rather than in the list above.
 const SPEED = { msg: "speed", label: "Speed", min: 0.25, max: 6, step: 0.25, format: times };
-const DENSITY = { msg: "density", label: "Leaf density", min: 0.3, max: 1.6, step: 0.05, format: times };
 
 const containerStyle = css`
   padding: 16px;
@@ -177,7 +185,7 @@ const containerStyle = css`
 
 // One labelled slider. `spec` is a row out of the tables above, so the range,
 // the step and the readout format all travel together and cannot drift apart.
-const SettingRow = ({ spec, value, onChange, onChangeCommitted }) => (
+const SettingRow = ({ spec, value, onChange }) => (
   <div className="setting">
     <label>
       <span>{spec.label}</span>
@@ -189,7 +197,6 @@ const SettingRow = ({ spec, value, onChange, onChangeCommitted }) => (
       step={spec.step}
       value={value}
       onChange={onChange}
-      onChangeCommitted={onChangeCommitted}
     />
   </div>
 );
@@ -200,27 +207,13 @@ const ControlsComponent = () => {
 
   const { sendMessage } = useMessaging();
 
-  // Everything except density: write it through as it moves, so the hillside
-  // answers under your thumb. These are cheap on the wall -- a field write plus,
-  // on day 0 only, one re-seeded environment day.
+  // Every slider writes through as it moves, so the leaf answers under your
+  // thumb. These are all cheap on the wall -- a field write plus, on day 0
+  // only, one re-seeded environment day. Nothing here rebuilds the scene.
   const setLive = useCallback(
     async (msg, value) => {
       setValues((prev) => ({ ...prev, [msg]: value }));
       await sendMessage({ type: msg, value });
-    },
-    [sendMessage]
-  );
-
-  // Density is the exception. On the wall it runs buildScene(), which lays out
-  // every tree and all ~9,600 leaves from scratch, so it moves on release only:
-  // dragging it live would rebuild the whole hillside on every pointermove.
-  const setDensityLocal = useCallback((event, value) => {
-    setValues((prev) => ({ ...prev, density: value }));
-  }, []);
-
-  const commitDensity = useCallback(
-    async (event, value) => {
-      await sendMessage({ type: "density", value });
     },
     [sendMessage]
   );
@@ -246,13 +239,13 @@ const ControlsComponent = () => {
     await sendMessage({ type: "replay" });
   }, [sendMessage]);
 
-  const newWoods = useCallback(async () => {
+  const newLeaf = useCallback(async () => {
     setPlaying(true);
-    await sendMessage({ type: "newWoods" });
+    await sendMessage({ type: "newLeaf" });
   }, [sendMessage]);
 
-  // Hands the wall back: defaults, full density, playing. The wall's `resume`
-  // resets all eight values, so the panel resets all eight too.
+  // Hands the wall back: defaults, playing. The wall's `resume` resets all
+  // seven values, so the panel resets all seven too.
   const resume = useCallback(async () => {
     setValues(DEFAULTS);
     setPlaying(true);
@@ -263,10 +256,10 @@ const ControlsComponent = () => {
     <div css={containerStyle}>
       <p>
         <b>
-          Every leaf on this hillside is simulated one autumn day at a time.
-          Cold nights build the reds, sunlight makes them brighter, and wind
-          only carries off leaves the tree has already let go. Change the
-          weather and watch the season answer.
+          This leaf is simulated one autumn day at a time. Cold nights build the
+          reds, sunlight makes them brighter, and wind only carries off a leaf
+          the tree has already let go. Change the weather and watch the season
+          answer.
         </b>
       </p>
 
@@ -305,18 +298,11 @@ const ControlsComponent = () => {
         />
       ))}
 
-      <div className="head">Hillside</div>
+      <div className="head">This leaf</div>
 
-      <SettingRow
-        spec={DENSITY}
-        value={values.density}
-        onChange={setDensityLocal}
-        onChangeCommitted={commitDensity}
-      />
-
-      <Box display="flex" flexWrap="wrap" mt={2} style={{ gap: "8px" }}>
-        <Button variant="contained" color="primary" onClick={newWoods}>
-          New hillside
+      <Box display="flex" flexWrap="wrap" style={{ gap: "8px" }}>
+        <Button variant="contained" color="primary" onClick={newLeaf}>
+          New leaf
         </Button>
         <Button variant="outlined" onClick={replay}>
           Replay season
