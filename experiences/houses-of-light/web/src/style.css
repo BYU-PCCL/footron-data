@@ -24,6 +24,13 @@
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   --ribbon-h: 4.6vh;
+
+  /* The bottom-left corner is not ours. Footron's launcher paints its "Scan to"
+     QR card there, with the action_hints from config.json beside it — 300x300
+     plus 32 of padding, in fixed pixels, so it does not scale with the wall.
+     Everything anchored to the bottom-left starts to the right of it. */
+  --qr-keepout: 332px;
+  --gutter: calc(var(--qr-keepout) + 1.4vw);
 }
 
 * { box-sizing: border-box; }
@@ -69,44 +76,32 @@ html, body {
    rather than a cut, which is the difference between "slideshow" and "film". */
 .plate-img {
   position: absolute; inset: 0;
+  overflow: hidden;
   opacity: 0;
-  will-change: transform, opacity;
-  transform-origin: var(--ox, 50%) var(--oy, 42%);
+  /* The plate itself only fades and unmasks; the travel happens on the child,
+     so there is no transform here to give an origin to. */
+  will-change: opacity;
 }
 
 /* The wall is 2736x1216 — 2.25:1 — and not one of these photographs is that
-   wide; the median is 4:3. Filling the frame with `cover` would therefore crop
-   a fifth off the top of every slide and cut the spire off a quarter of them
-   outright, which on a piece about these buildings is the one thing that must
-   not happen.
-   So the photograph is shown whole, and the empty width either side is filled
-   with a blurred, dimmed, over-scaled copy of the same image. The wall stays
-   full-bleed, the colour bleeding outward is the picture's own, and nothing is
-   cropped. */
-.plate-back {
-  position: absolute; inset: 0;
-  background-size: cover;
-  background-position: center;
-  /* Overscanned before blurring so the blur does not fade out at the edges. */
-  transform: scale(1.28);
-  /* Bright enough to read as the photograph continuing outward rather than as
-     black bars either side of it, but still clearly behind: the blur and a
-     gentle knock-down in brightness keep the sharp image dominant, and the
-     lifted saturation is what makes the sides feel like they belong to the
-     picture instead of being grey. */
-  filter: blur(68px) saturate(1.5) brightness(0.72);
-}
+   wide; the median is 4:3. Filling the frame therefore leaves a lot of the
+   picture outside it: a 4:3 photograph shows only 59% of its height at a time.
+   So the frame is filled and then travelled across — the slide holds the whole
+   width and pans from the top of the photograph to the bottom over its life,
+   so everything is seen, and nothing is letterboxed.
 
-.plate-front {
-  position: absolute; inset: 0;
-  background-size: contain;
-  background-position: center;
+   The panning element is sized in JS to the photograph's own proportions and
+   moved with a transform, which the compositor can do on its own; animating
+   background-position instead would repaint a 2736x1216 layer every frame. */
+.plate-pan {
+  position: absolute;
+  top: 0; left: 0;
+  /* width/height and the travel are set per slide in slideshow.js */
+  background-size: 100% 100%;
   background-repeat: no-repeat;
+  will-change: transform;
 }
 
-/* The bloom: the incoming slide is revealed through a radial mask centred on
-   the spire, so the light appears to open outward from the brightest point of
-   the building rather than the middle of the screen. */
 .plate-img.blooming {
   -webkit-mask-image: radial-gradient(circle at var(--bx, 50%) var(--by, 30%),
                         #000 0%, #000 var(--r, 0%), transparent calc(var(--r, 0%) + 26%));
@@ -119,22 +114,20 @@ html, body {
 .plate::after {
   content: ""; position: absolute; inset: 0; pointer-events: none;
   background:
-    /* Floor for the caption. */
-    linear-gradient(to top, rgba(7,8,12,0.95) 0%, rgba(7,8,12,0.82) 9%,
-                    rgba(7,8,12,0.46) 22%, rgba(7,8,12,0) 46%),
-    /* A symmetric vignette, not a left-hand scrim. The old rule shaded only the
-       left — written when the photograph filled the frame and the caption sat
-       on top of it — and against a bright blurred surround that one dark edge
-       was most of why the sides read as bars. Shading both edges equally reads
-       as a lens vignette instead, and the caption gets its contrast from the
-       floor gradient above and its own text-shadow. */
-    radial-gradient(118% 104% at 50% 48%,
-                    rgba(7,8,12,0) 54%, rgba(7,8,12,0.42) 100%);
+    /* The caption is back on top of the photograph now that the frame is
+       filled, so it needs a floor under it again — bottom-weighted, because
+       these photographs are usually bright at the top and busy at the bottom. */
+    linear-gradient(to top, rgba(7,8,12,0.95) 0%, rgba(7,8,12,0.84) 9%,
+                    rgba(7,8,12,0.52) 24%, rgba(7,8,12,0) 50%),
+    linear-gradient(to right, rgba(7,8,12,0.52) 0%, rgba(7,8,12,0) 34%),
+    /* A light vignette to settle the edges of a full-bleed frame. */
+    radial-gradient(122% 110% at 50% 48%,
+                    rgba(7,8,12,0) 62%, rgba(7,8,12,0.30) 100%);
 }
 
 .caption {
   position: absolute;
-  left: 4.4vw; bottom: calc(var(--ribbon-h) + 4.2vh);
+  left: var(--gutter); bottom: calc(var(--ribbon-h) + 4.2vh);
   max-width: 46vw;
   z-index: 3;
   text-shadow: 0 2px 26px rgba(0,0,0,0.85);
@@ -214,7 +207,7 @@ html, body {
    always naming the photographer and the licence. */
 #credit {
   position: fixed;
-  left: 4.4vw; bottom: calc(var(--ribbon-h) + 1.1vh);
+  left: var(--gutter); bottom: calc(var(--ribbon-h) + 1.1vh);
   z-index: 9;
   font-family: var(--mono);
   font-size: 1.0vh;

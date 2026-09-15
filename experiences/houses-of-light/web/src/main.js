@@ -151,15 +151,21 @@ function setPalette(pal) {
   root.setProperty("--glow-3", pal[2] || pal[1] || pal[0]);
 }
 
+/* The two sources are used on different terms, so they are credited
+ * differently rather than being given one house format that would imply the
+ * Church's photographs are freely licensed like the rest. */
 function setCredit(image) {
   const el = document.getElementById("credit");
   const who = (image.credit || "").replace(/\s+/g, " ").trim();
-  el.textContent = [
-    image.title.replace(/^File:/, ""),
-    who ? `© ${who}` : null,
-    image.license,
-    "via Wikimedia Commons",
-  ].filter(Boolean).join("  ·  ");
+  const parts = image.from === "church"
+    ? [image.title.replace(/^Church Media:\s*/, ""),
+       "© Intellectual Reserve, Inc.",
+       "churchofjesuschrist.org"]
+    : [image.title.replace(/^File:/, ""),
+       who ? `© ${who}` : null,
+       image.license,
+       "via Wikimedia Commons"];
+  el.textContent = parts.filter(Boolean).join("  ·  ");
   el.classList.add("show");
 }
 
