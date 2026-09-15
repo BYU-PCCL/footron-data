@@ -88,8 +88,13 @@ html, body {
   background-size: cover;
   background-position: center;
   /* Overscanned before blurring so the blur does not fade out at the edges. */
-  transform: scale(1.18);
-  filter: blur(54px) saturate(1.35) brightness(0.42);
+  transform: scale(1.28);
+  /* Bright enough to read as the photograph continuing outward rather than as
+     black bars either side of it, but still clearly behind: the blur and a
+     gentle knock-down in brightness keep the sharp image dominant, and the
+     lifted saturation is what makes the sides feel like they belong to the
+     picture instead of being grey. */
+  filter: blur(68px) saturate(1.5) brightness(0.72);
 }
 
 .plate-front {
@@ -114,9 +119,17 @@ html, body {
 .plate::after {
   content: ""; position: absolute; inset: 0; pointer-events: none;
   background:
-    linear-gradient(to top, rgba(7,8,12,0.97) 0%, rgba(7,8,12,0.90) 9%,
-                    rgba(7,8,12,0.62) 22%, rgba(7,8,12,0) 50%),
-    linear-gradient(to right, rgba(7,8,12,0.62) 0%, rgba(7,8,12,0) 42%);
+    /* Floor for the caption. */
+    linear-gradient(to top, rgba(7,8,12,0.95) 0%, rgba(7,8,12,0.82) 9%,
+                    rgba(7,8,12,0.46) 22%, rgba(7,8,12,0) 46%),
+    /* A symmetric vignette, not a left-hand scrim. The old rule shaded only the
+       left — written when the photograph filled the frame and the caption sat
+       on top of it — and against a bright blurred surround that one dark edge
+       was most of why the sides read as bars. Shading both edges equally reads
+       as a lens vignette instead, and the caption gets its contrast from the
+       floor gradient above and its own text-shadow. */
+    radial-gradient(118% 104% at 50% 48%,
+                    rgba(7,8,12,0) 54%, rgba(7,8,12,0.42) 100%);
 }
 
 .caption {
