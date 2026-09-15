@@ -1,0 +1,271 @@
+/* Houses of Light — Footron wall stylesheet.
+ *
+ * Two rules shape everything here. The wall is large and seen from across a
+ * room, so type is set in viewport units and never drops below roughly 18px of
+ * apparent size. And nothing is ever pure white on pure black: the photographs
+ * carry the brightness, and the furniture around them sits low so it does not
+ * compete with a lit spire.
+ */
+
+:root {
+  --ink: #07080c;
+  --paper: rgba(255, 250, 244, 0.92);
+  --dim: rgba(255, 250, 244, 0.46);
+  --faint: rgba(255, 250, 244, 0.22);
+
+  /* Overwritten per slide from the photograph's own palette. The fallback is a
+     warm limestone, which is what most of these buildings are. */
+  --glow: #caa478;
+  --glow-2: #6d7f9b;
+  --glow-3: #2a2f3c;
+
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  --sans: ui-sans-serif, -apple-system, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --ribbon-h: 4.6vh;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0; width: 100%; height: 100%;
+  background: var(--ink);
+  overflow: hidden;
+  cursor: none;
+  color: var(--paper);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------------------------------------------------------------- ambient */
+
+/* Three slow radial washes tinted from the current photograph. They sit behind
+   everything and cross-fade on their own timer, which is what keeps a static
+   slide from feeling frozen while the Ken Burns drift is still ramping up. */
+#ambient {
+  position: fixed; inset: -10%;
+  z-index: 0;
+  background:
+    radial-gradient(60% 55% at 18% 22%, var(--glow) 0%, transparent 62%),
+    radial-gradient(55% 60% at 82% 72%, var(--glow-2) 0%, transparent 66%),
+    radial-gradient(90% 90% at 50% 50%, var(--glow-3) 0%, transparent 80%);
+  opacity: 0.30;
+  filter: blur(60px) saturate(1.25);
+  transition: opacity 2.4s ease;
+  will-change: opacity;
+}
+
+/* ------------------------------------------------------------- the stage */
+
+#stage { position: fixed; inset: 0; z-index: 1; }
+
+/* ----------------------------------------------------------- the plates */
+
+.plate { position: absolute; inset: 0; overflow: hidden; }
+
+/* Each slide is its own element so the outgoing one can keep drifting while
+   the incoming one opens over it — a cross-fade between two moving images
+   rather than a cut, which is the difference between "slideshow" and "film". */
+.plate-img {
+  position: absolute; inset: 0;
+  opacity: 0;
+  will-change: transform, opacity;
+  transform-origin: var(--ox, 50%) var(--oy, 42%);
+}
+
+/* The wall is 2736x1216 — 2.25:1 — and not one of these photographs is that
+   wide; the median is 4:3. Filling the frame with `cover` would therefore crop
+   a fifth off the top of every slide and cut the spire off a quarter of them
+   outright, which on a piece about these buildings is the one thing that must
+   not happen.
+   So the photograph is shown whole, and the empty width either side is filled
+   with a blurred, dimmed, over-scaled copy of the same image. The wall stays
+   full-bleed, the colour bleeding outward is the picture's own, and nothing is
+   cropped. */
+.plate-back {
+  position: absolute; inset: 0;
+  background-size: cover;
+  background-position: center;
+  /* Overscanned before blurring so the blur does not fade out at the edges. */
+  transform: scale(1.18);
+  filter: blur(54px) saturate(1.35) brightness(0.42);
+}
+
+.plate-front {
+  position: absolute; inset: 0;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* The bloom: the incoming slide is revealed through a radial mask centred on
+   the spire, so the light appears to open outward from the brightest point of
+   the building rather than the middle of the screen. */
+.plate-img.blooming {
+  -webkit-mask-image: radial-gradient(circle at var(--bx, 50%) var(--by, 30%),
+                        #000 0%, #000 var(--r, 0%), transparent calc(var(--r, 0%) + 26%));
+  mask-image: radial-gradient(circle at var(--bx, 50%) var(--by, 30%),
+                #000 0%, #000 var(--r, 0%), transparent calc(var(--r, 0%) + 26%));
+}
+
+/* A soft floor under the caption. Temple photographs are usually bright at the
+   top and busy at the bottom, so the scrim is bottom-weighted and asymmetric. */
+.plate::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    linear-gradient(to top, rgba(7,8,12,0.97) 0%, rgba(7,8,12,0.90) 9%,
+                    rgba(7,8,12,0.62) 22%, rgba(7,8,12,0) 50%),
+    linear-gradient(to right, rgba(7,8,12,0.62) 0%, rgba(7,8,12,0) 42%);
+}
+
+.caption {
+  position: absolute;
+  left: 4.4vw; bottom: calc(var(--ribbon-h) + 4.2vh);
+  max-width: 46vw;
+  z-index: 3;
+  text-shadow: 0 2px 26px rgba(0,0,0,0.85);
+}
+
+.cap-eyebrow {
+  font-family: var(--mono);
+  font-size: 1.05vh;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 1.5vh;
+}
+
+.cap-name {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 6.4vh;
+  line-height: 1.02;
+  letter-spacing: -0.012em;
+  margin: 0 0 1.5vh;
+}
+
+.cap-meta {
+  font-size: 1.85vh;
+  line-height: 1.55;
+  color: var(--dim);
+  max-width: 34vw;
+}
+.cap-meta b { color: var(--paper); font-weight: 500; }
+.cap-meta .sep { color: var(--faint); padding: 0 0.7em; }
+
+/* Words arrive a line at a time rather than all at once; at wall scale a block
+   of text appearing whole reads as a pop, and staggered lines read as calm. */
+.rise { opacity: 0; transform: translateY(0.9em); }
+.rise.in { opacity: 1; transform: none;
+  transition: opacity 1s ease, transform 1.1s cubic-bezier(.16,1,.3,1); }
+
+/* ------------------------------------------------------------------ floor */
+
+#floor {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  height: calc(var(--ribbon-h) + 7vh);
+  z-index: 7;
+  pointer-events: none;
+  background: linear-gradient(to top,
+    rgba(7,8,12,0.94) 0%, rgba(7,8,12,0.80) 38%,
+    rgba(7,8,12,0.42) 68%, rgba(7,8,12,0) 100%);
+}
+
+/* ------------------------------------------------------- chronology ribbon */
+
+#ribbon {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  width: 100%; height: var(--ribbon-h);
+  z-index: 8;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------ corner globe */
+
+#miniglobe {
+  position: fixed;
+  right: 3.4vw; bottom: calc(var(--ribbon-h) + 3.4vh);
+  width: 17vh; height: 17vh;
+  z-index: 8;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+  pointer-events: none;
+}
+#miniglobe.show { opacity: 0.92; }
+
+/* ------------------------------------------------------------ attribution */
+
+/* Every photograph here is used under a licence that asks for credit, so the
+   credit is part of the piece and not an afterthought — always on screen,
+   always naming the photographer and the licence. */
+#credit {
+  position: fixed;
+  left: 4.4vw; bottom: calc(var(--ribbon-h) + 1.1vh);
+  z-index: 9;
+  font-family: var(--mono);
+  font-size: 1.0vh;
+  letter-spacing: 0.12em;
+  color: var(--faint);
+  max-width: 52vw;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  opacity: 0; transition: opacity 1s ease;
+}
+#credit.show { opacity: 1; }
+
+#piece-title {
+  position: fixed;
+  right: 3.4vw; top: 4vh;
+  z-index: 9;
+  font-family: var(--mono);
+  font-size: 1.05vh;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--faint);
+  opacity: 0; transition: opacity 1.2s ease;
+}
+#piece-title.show { opacity: 1; }
+
+/* ------------------------------------------------------------------- boot */
+
+#boot {
+  position: fixed; inset: 0; z-index: 20;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 3vh;
+  background: var(--ink);
+  transition: opacity 1.4s ease;
+}
+#boot.gone { opacity: 0; pointer-events: none; }
+
+/* A spire, drawn in CSS: a slim shaft with a lit point at the top. */
+.boot-mark {
+  width: 2px; height: 12vh;
+  background: linear-gradient(to top, transparent, var(--glow));
+  position: relative;
+}
+.boot-mark::after {
+  content: ""; position: absolute; top: -0.6vh; left: 50%;
+  width: 0.9vh; height: 0.9vh; margin-left: -0.45vh;
+  border-radius: 50%;
+  background: var(--glow);
+  box-shadow: 0 0 3vh 0.6vh var(--glow);
+  animation: pulse 2.6s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.45; transform: scale(0.9); }
+  50%      { opacity: 1;    transform: scale(1.15); }
+}
+.boot-text {
+  font-family: var(--mono); font-size: 1.2vh;
+  letter-spacing: 0.4em; text-transform: uppercase; color: var(--dim);
+}
+
+/* Registering the bloom radius as a real custom property is what lets it be
+   animated. Without an @property declaration the browser treats `--r` as an
+   opaque string and the mask would snap from 0% to its end value. */
+@property --r {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
