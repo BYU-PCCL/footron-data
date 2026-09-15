@@ -12,6 +12,7 @@
 #   wobble     slow permanent shimmy
 #   shimmer    band of light sweeping through the letters
 #   highlight  marker pen swiped on behind the word
+#   script     written out by hand in WindSong rather than typed
 #
 # DOODLES (rough.js, in doodles.js -- add a case to MARKS to add one):
 #   circle     hand-drawn ellipse round the run

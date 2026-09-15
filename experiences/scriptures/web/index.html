@@ -12,7 +12,7 @@
      webfont has to degrade to a readable page rather than to nothing. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Caveat:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Caveat:wght@500;600&family=WindSong:wght@400;500&display=swap">
 
 <style>
   :root {
@@ -20,8 +20,14 @@
     --paper-dim: #e7dbc9;
     --ink:       #2f2419;
     --ink-soft:  #9a8872;   /* marginalia, caret, attribution */
-    --accent:    #c2452d;   /* the red pen: doodles and emphasis */
-    --marker:    #f6d976;   /* highlighter yellow */
+
+    /* The two pens. Both are re-rolled per verse from PALETTES below, so these
+       are only what the page opens with before the first verse is dealt. */
+    --accent:      #e352bc;              /* doodles, shimmer, lit words   */
+    --accent-deep: #a81f96;              /* the same pen pressed harder   */
+    --glow-near:   rgba(227,82,188,.75); /* the lamp under a glowing word */
+    --glow-far:    rgba(227,82,188,.32);
+    --marker:      #f6d976;              /* highlighter                   */
 
     /* One size rules the page. Everything else is a ratio of it, so the whole
        quote scales with the wall in one move. */
@@ -58,8 +64,18 @@
   .doodle-ambient { opacity: .5; }
 
   /* ---------------------------------------------------------------- stage */
+  /* A column down the middle of the wall: half of it wide, all of it tall.
+     The height has to come from the viewport and not from the text -- a stage
+     left to take its height from its contents is measured by fit() as whatever
+     the previous size happened to leave behind, so every re-fit shrinks the
+     type again and the quote ratchets down to the floor size. */
   #stage {
-    position: fixed; inset: 0; z-index: 2;
+    position: fixed;
+    top: 0; bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50%;
+    z-index: 2;
     display: flex; align-items: center; justify-content: center;
     padding: 6vh 9vw;
   }
@@ -78,6 +94,12 @@
   .line { white-space: pre; }
   #quote.wrapping .line { white-space: pre-wrap; }
   .line.gap { height: .7em; }
+
+  /* Each letter is its own inline-block, and a line may be broken between any
+     two of them -- so a wrapped quote would otherwise split words down the
+     middle. quote.js puts the letters of a word inside one of these, leaving
+     the spaces between words as the only places a line can break. */
+  .word { white-space: nowrap; }
 
   .attribution {
     margin-top: .85em;
@@ -125,21 +147,23 @@
 
   /* glow -- a warm lamp under the word, breathing. */
   .fx-glow.on {
-    color: #a8371f;
+    color: var(--accent-deep);
     animation: glow 2.6s ease-in-out infinite;
   }
   @keyframes glow {
-    0%, 100% { text-shadow: 0 0 0 rgba(194,69,45,0); }
-    50%      { text-shadow: 0 0 .5em rgba(214,120,45,.75), 0 0 1.1em rgba(214,120,45,.35); }
+    0%, 100% { text-shadow: 0 0 0 rgba(0,0,0,0); }
+    50%      { text-shadow: 0 0 .5em var(--glow-near), 0 0 1.1em var(--glow-far); }
   }
 
-  /* swell -- the word arrives a size too big and settles back. */
+  /* swell -- the word arrives a size too big and settles back. It has to settle
+     all the way back: a transform does not reflow the line, so a run left
+     standing at 1.07 overprints the words either side of it. */
   .fx-swell { display: inline-block; transform-origin: 50% 85%; }
   .fx-swell.on { animation: swell 900ms cubic-bezier(.22,1.3,.36,1) both; }
   @keyframes swell {
     0%   { transform: scale(1); }
     38%  { transform: scale(1.22) rotate(-1.5deg); }
-    100% { transform: scale(1.07) rotate(0deg); }
+    100% { transform: scale(1) rotate(0deg); }
   }
 
   /* wobble -- a slow, permanent shimmy. Use it sparingly. */
@@ -160,7 +184,7 @@
   .fx-shimmer.on {
     background-image: linear-gradient(100deg,
       var(--ink) 0%, var(--ink) 38%,
-      var(--accent) 48%, #e08a3c 53%, var(--accent) 58%,
+      var(--accent) 48%, var(--accent-deep) 53%, var(--accent) 58%,
       var(--ink) 68%, var(--ink) 100%);
     background-size: 280% 100%;
     -webkit-background-clip: text; background-clip: text;
@@ -171,6 +195,24 @@
     0%   { background-position: 130% 0; }
     100% { background-position: -30% 0; }
   }
+
+  /* script -- the word written out by hand in WindSong instead of typed.
+     The letters drop back to plain inline so the script joins up rather than
+     standing as a row of separately tilted inline-blocks, and the line-height
+     is pinned so the taller face does not push its line open. */
+  .fx-script, .fx-windsong {
+    font-family: "WindSong", "Caveat", cursive;
+    /* WindSong sets a very small x-height for its em, so it has to be set
+       roughly twice the size of the typewriter face to read as the same size,
+       and its line-height pinned back down so the tall loops do not push the
+       line it sits in open. */
+    font-size: 2.1em;
+    font-weight: 500;
+    line-height: .62;
+    letter-spacing: .01em;
+    padding: 0 .16em;   /* the swashes need room either side */
+  }
+  .fx-script .ch, .fx-windsong .ch { display: inline; }
 
   /* highlight -- a marker pen swiped behind the word, drawn on left to right
      and left sitting there. The band is rotated a touch so the ends do not
@@ -234,24 +276,64 @@ window.addEventListener('error', function (e) {
 (function () {
     'use strict';
 
-    /* How many text<n>.txt files to look for. Drop a text2.txt next to this
-       page and it joins the rotation on the next load -- nothing to register. */
-    var MAX_FILES = 12;
+    /* The rotation is every scripture<n>.txt sitting next to this page. Drop a
+       scripture31.txt in and it joins on the next load -- nothing to register.
+       They are probed a block at a time rather than one at a time, so a hole in
+       the numbering does not cut the rotation short: only a whole empty block
+       ends the search. */
+    var MAX_FILES = 200;
+    var PROBE_BLOCK = 10;
     var HOLD_MS = 7000;        /* how long a finished quote sits before the next */
 
     /* Shown when the files cannot be fetched at all, which is what happens if
        this page is opened straight off disk (file://) instead of over http. */
     var FALLBACK = [
-        '“You’ve gotta [dance](swell circle) like there’s nobody watching,',
-        'Love like you’ll [never](glow) be hurt,',
-        'Sing like there’s nobody listening,',
-        'And live like it’s [heaven on earth](highlight underline).”'
+        '“Wherefore, my beloved brethren, [pray](glow) unto the Father',
+        'with all the [energy of heart](underline),',
+        'that ye may be filled with [this love](highlight),',
+        'which he hath bestowed upon all who are',
+        'true followers of his Son, Jesus Christ.”',
+        '',
+        '-- Moroni 7:48'
     ].join('\n');
+
+    /* Two pens per verse. They are listed in pairs rather than drawn from two
+       separate lists, so the marker never lands next to a colour it fights. */
+    var PALETTES = [
+        { accent: '#e352bc', marker: '#f6d976' },   /* magenta  / butter  */
+        { accent: '#c2452d', marker: '#f6d976' },   /* red pen  / butter  */
+        { accent: '#1f7a8c', marker: '#ffd2a6' },   /* teal     / peach   */
+        { accent: '#3b56c4', marker: '#ffe08a' },   /* indigo   / amber   */
+        { accent: '#7b3fc4', marker: '#dcea94' },   /* violet   / lime    */
+        { accent: '#2e7d4f', marker: '#ffd0e2' },   /* forest   / rose    */
+        { accent: '#cf6a1f', marker: '#c3e6f7' }    /* burnt orange / sky */
+    ];
+
+    /* Deals a pair onto the root element, where the doodles read it (the pen
+       pulls --accent at the moment it draws) and every effect that carries
+       colour picks it up. The glow is light rather than ink, so it gets the
+       accent darkened for the letterforms and the plain accent at two
+       strengths for the halo. */
+    function dealColours() {
+        var p = PALETTES[Math.floor(Math.random() * PALETTES.length)];
+        var n = parseInt(p.accent.slice(1), 16);
+        var r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+        var rgb = r + ',' + g + ',' + b;
+        var root = document.documentElement.style;
+        root.setProperty('--accent', p.accent);
+        root.setProperty('--accent-deep', 'rgb(' + Math.round(r * 0.72) + ',' +
+                                                   Math.round(g * 0.72) + ',' +
+                                                   Math.round(b * 0.72) + ')');
+        root.setProperty('--glow-near', 'rgba(' + rgb + ',.75)');
+        root.setProperty('--glow-far',  'rgba(' + rgb + ',.32)');
+        root.setProperty('--marker', p.marker);
+    }
 
     var quoteEl = document.getElementById('quote');
     var caretEl = document.getElementById('caret');
     var sources = [];
-    var index = 0;
+    var index = -1;            /* what is on the wall now; -1 before the first */
+    var bag = [];              /* verses not yet drawn this pass through */
     var holdTimer = null;
 
     function load(name) {
@@ -260,23 +342,51 @@ window.addEventListener('error', function (e) {
             .catch(function () { return null; });
     }
 
-    /* Probe for the quote files once at startup, stopping at the first gap --
-       text1, text2, text3 and so on, no list to keep in step. */
+    /* Probe for the verse files once at startup: scripture1, scripture2 and so
+       on, a block of them per round trip, until a block comes back empty. */
     function discover() {
         var found = [];
-        function probe(n) {
-            if (n > MAX_FILES) { return Promise.resolve(found); }
-            return load('text' + n + '.txt').then(function (text) {
-                if (!text || !text.trim()) { return found; }
-                found.push(text);
-                return probe(n + 1);
+        function block(start) {
+            if (start > MAX_FILES) { return Promise.resolve(found); }
+            var names = [];
+            for (var n = start; n < start + PROBE_BLOCK && n <= MAX_FILES; n++) {
+                names.push('scripture' + n + '.txt');
+            }
+            return Promise.all(names.map(load)).then(function (texts) {
+                var any = false;
+                for (var i = 0; i < texts.length; i++) {
+                    if (texts[i] && texts[i].trim()) { found.push(texts[i]); any = true; }
+                }
+                return any ? block(start + PROBE_BLOCK) : found;
             });
         }
-        return probe(1);
+        return block(1);
+    }
+
+    /* Which verse goes up next. Random, but drawn from a bag: every verse is
+       shown once before any is shown a second time, and the bag never opens on
+       the verse that just finished, so nothing repeats back to back. */
+    function draw() {
+        if (sources.length < 2) { return 0; }
+        if (!bag.length) {
+            for (var i = 0; i < sources.length; i++) { bag.push(i); }
+            for (var j = bag.length - 1; j > 0; j--) {
+                var k = Math.floor(Math.random() * (j + 1));
+                var swap = bag[j]; bag[j] = bag[k]; bag[k] = swap;
+            }
+            /* draw() takes from the end, so that is the one to move. */
+            var last = bag.length - 1;
+            if (bag[last] === index) {
+                var other = Math.floor(Math.random() * last);
+                bag[last] = bag[other]; bag[other] = index;
+            }
+        }
+        return bag.pop();
     }
 
     function show(src) {
         clearTimeout(holdTimer);
+        dealColours();
         Doodles.wipe(true);
         quoteEl.classList.remove('out');
         Quote.play(quoteEl, caretEl, src, function () {
@@ -286,22 +396,42 @@ window.addEventListener('error', function (e) {
     }
 
     function next() {
-        if (sources.length < 2) { index = 0; } else { index = (index + 1) % sources.length; }
+        index = draw();
         quoteEl.classList.add('out');
         Quote.stop();
         setTimeout(function () { show(sources[index]); }, 950);
     }
 
     /* One owner for resize: the type has to be re-fitted to the new stage
-       before the doodles are redrawn onto the words. */
+       before the doodles are redrawn onto the words.
+
+       This watches the stage rather than the window, because a window resize
+       event is not the only way the stage can change size -- the viewport a
+       browser reports in the first frames is not always the one it settles on,
+       and a fit measured against that early value would otherwise stay wrong
+       for the life of the quote. */
     var resizeTimer = null;
-    window.addEventListener('resize', function () {
+    function restage() {
         clearTimeout(resizeTimer);
         resizeTimer = setTimeout(function () {
             Quote.refit();
             Doodles.redraw();
         }, 160);
-    });
+    }
+    if (window.ResizeObserver) {
+        new ResizeObserver(restage).observe(document.getElementById('stage'));
+    } else {
+        window.addEventListener('resize', restage);
+    }
+
+    /* The same for a face that lands late. Startup waits for the fonts before
+       anything is measured, but a slow or re-tried fetch can still deliver one
+       after a quote is already laid out -- and a quote fitted against fallback
+       metrics is a quote whose doodles are drawn around words that have since
+       moved. Re-fitting and redrawing costs nothing when nothing changed. */
+    if (document.fonts) {
+        document.fonts.addEventListener('loadingdone', restage);
+    }
 
     /* Authoring keys: space finishes the quote now, N moves on, R restarts. */
     document.addEventListener('keydown', function (e) {
@@ -319,7 +449,8 @@ window.addEventListener('error', function (e) {
         if (!document.fonts) { return Promise.resolve(); }
         return Promise.all([
             document.fonts.load('1em "Special Elite"'),
-            document.fonts.load('1em "Caveat"')
+            document.fonts.load('1em "Caveat"'),
+            document.fonts.load('500 1em "WindSong"')
         ]).catch(function () { /* offline kiosk: fall back and carry on */ })
           .then(function () { return document.fonts.ready; });
     }
@@ -327,9 +458,20 @@ window.addEventListener('error', function (e) {
     Promise.all([discover(), fontsIn()])
         .then(function (results) {
             sources = results[0];
-            if (!sources.length) { sources = [FALLBACK]; }
+            if (!sources.length) {
+                /* One verse and no rotation is exactly what a reader sees when
+                   the files could not be fetched at all, so say which it is
+                   rather than letting it look like a stuck rotation. */
+                sources = [FALLBACK];
+                showError('No scripture*.txt files could be read, so this is the ' +
+                          'built-in verse and nothing will rotate.\n' +
+                          'The page has to be served over http: opened straight ' +
+                          'off disk (file://) the browser refuses to fetch them.\n' +
+                          'From this folder:  python -m http.server 8000');
+            }
             Doodles.init(document.getElementById('doodles'));
-            show(sources[0]);
+            index = draw();
+            show(sources[index]);
         })
         .catch(showError);
 })();

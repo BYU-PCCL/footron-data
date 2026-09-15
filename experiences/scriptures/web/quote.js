@@ -141,6 +141,12 @@ var Quote = (function () {
             segs.push(seg);
 
             var text = run.text;
+            /* Every character is its own inline-block, and a line may be broken
+             * between any two of them -- which is how a quote long enough to
+             * wrap ended up splitting words down the middle. So the letters of
+             * a word go inside a .word span of their own, which is nowrap: the
+             * only break opportunities left are the spaces between words. */
+            var wordEl = null;
             for (var c = 0; c < text.length; c++) {
                 var ch = text[c];
                 var chEl = document.createElement('span');
@@ -150,13 +156,20 @@ var Quote = (function () {
                     /* Left inline (not inline-block) so the line can still
                      * break here, and left untilted -- a space has no ink. */
                     chEl.classList.add('sp');
+                    segEl.appendChild(chEl);
+                    wordEl = null;
                 } else {
                     /* The type bar never hits square. */
                     chEl.style.transform =
                         'translateY(' + (Math.random() * 1.6 - 0.8).toFixed(2) + 'px) ' +
                         'rotate(' + (Math.random() * 2.2 - 1.1).toFixed(2) + 'deg)';
+                    if (!wordEl) {
+                        wordEl = document.createElement('span');
+                        wordEl.className = 'word';
+                        segEl.appendChild(wordEl);
+                    }
+                    wordEl.appendChild(chEl);
                 }
-                segEl.appendChild(chEl);
                 chars.push({
                     el: chEl,
                     ch: ch,

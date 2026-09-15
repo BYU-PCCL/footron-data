@@ -31,7 +31,11 @@ var Doodles = (function () {
         resize();
     }
 
+    /* The stage is observed for resizes from the first frame, which is before
+       init() has been given the overlay -- so both entry points have to be
+       willing to do nothing until there is an SVG to draw on. */
     function resize() {
+        if (!svg) { return; }
         var w = window.innerWidth, h = window.innerHeight;
         svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
         svg.setAttribute('width', w);
@@ -196,6 +200,7 @@ var Doodles = (function () {
     /* Same seeds, new geometry: after a resize the marks have to land on the
      * words again, but they should be recognisably the same marks. */
     function redraw() {
+        if (!svg) { return; }
         resize();
         wipe(false);
         for (var i = 0; i < drawn.length; i++) {
