@@ -25,7 +25,8 @@ experiences = [
   "neural-net-vis",
   "learning-to-walk",
   "spacetime-sandbox",
-  "houses-of-light"
+  "houses-of-light",
+  "scriptures"
 ]
 
 [game]
