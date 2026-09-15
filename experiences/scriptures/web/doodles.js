@@ -90,18 +90,27 @@ var Doodles = (function () {
                                 pen(seed, { roughness: 2.3, bowing: 2.2 }));
         },
 
-        /* Two passes of a loose curve just under the baseline -- the way you
-         * underline something in a notebook without lifting the pen. */
+        /* Two passes of a loose curve under the word -- the way you underline
+         * something in a notebook without lifting the pen.
+         *
+         * It starts below the rect rather than inside it. The rect is the run's
+         * inline box, whose bottom is only a couple of pixels clear of where
+         * the descenders of a j or a y actually reach, so a stroke drawn up
+         * inside it and then given its wobble climbs back through the word.
+         * The wobble is kept smaller here than on the other marks for the same
+         * reason: this is the one mark whose whole job is to stay under. */
         underline: function (r, seed) {
             var g = document.createElementNS(NS, 'g');
-            var y = r.bottom - r.height * 0.06;
+            var y = r.bottom + r.height * 0.12;
             for (var pass = 0; pass < 2; pass++) {
                 var pts = [];
                 for (var i = 0; i <= 4; i++) {
                     pts.push([r.left - 6 + (r.width + 12) * (i / 4),
-                              y + pass * 4 + (i % 2 ? 1.5 : -1.5)]);
+                              y + pass * 4 + (i % 2 ? 1.2 : -1.2)]);
                 }
-                g.appendChild(rc.curve(pts, pen(seed + pass, { strokeWidth: 2.6 })));
+                g.appendChild(rc.curve(pts, pen(seed + pass, {
+                    strokeWidth: 2.6, roughness: 1.35, bowing: 1.2
+                })));
             }
             return g;
         },

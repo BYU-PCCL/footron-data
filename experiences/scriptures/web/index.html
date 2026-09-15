@@ -74,7 +74,7 @@
     top: 0; bottom: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 50%;
+    width: 50%;              /* only the opening width: fit() picks per verse */
     z-index: 2;
     display: flex; align-items: center; justify-content: center;
     padding: 6vh 9vw;
@@ -94,6 +94,17 @@
   .line { white-space: pre; }
   #quote.wrapping .line { white-space: pre-wrap; }
   .line.gap { height: .7em; }
+
+  /* Reflow: a verse too long to stand on its own lines is run together as
+     prose and allowed to fill the column, which buys it back the size it was
+     losing to being tall and narrow. The authored breaks become the ordinary
+     spaces quote.js already put there (.joint); the stanza breaks and the
+     attribution keep their own lines. */
+  .joint { display: none; }
+  #quote.reflow .line { display: inline; white-space: pre-wrap; }
+  #quote.reflow .line.gap,
+  #quote.reflow .line.attribution { display: block; }
+  #quote.reflow .joint { display: inline; }
 
   /* Each letter is its own inline-block, and a line may be broken between any
      two of them -- so a wrapped quote would otherwise split words down the

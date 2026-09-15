@@ -40,6 +40,18 @@ var Quote = (function () {
         beforeAttribution: 1100
     };
 
+    /* Every verse is a different length and the rhythm above is written for a
+     * short one: Alma 7:14-16 typed at it takes a minute and a half to land,
+     * which is longer than anyone stands in front of the wall. So the rhythm is
+     * scaled per quote. Anything that would come in under TARGET_MS is typed
+     * exactly as written; anything longer is sped up in proportion to how long
+     * it is, down to a floor that still reads as a typewriter rather than a
+     * paste. Every beat scales together -- the held breath at a full stop and
+     * at the end of a line included -- so a hurried verse keeps its cadence. */
+    var TARGET_MS = 38000;
+    var MIN_RATE = 0.45;
+    var rate = 1;            /* set per quote in play() */
+
     var host = null;         /* the element the quote is built into */
     var caret = null;
     var chars = [];          /* flat list of { el, ch, seg, last, lineEnd } */
@@ -102,7 +114,11 @@ var Quote = (function () {
                 host.appendChild(gap);
                 continue;
             }
-            host.appendChild(buildLine(line, 'line'));
+            /* A line with another line after it in the same stanza carries a
+             * joint: the space that authored line break turns into if fit()
+             * decides this verse has to be run together as prose. */
+            var next = parsed.lines[i + 1];
+            host.appendChild(buildLine(line, 'line', next !== undefined && next !== null));
         }
         if (parsed.attribution && parsed.attribution.length) {
             /* The held beat belongs to the last character of the quote itself,
@@ -117,7 +133,7 @@ var Quote = (function () {
         if (chars.length) { chars[chars.length - 1].last = true; }
     }
 
-    function buildLine(runs, className) {
+    function buildLine(runs, className, joinNext) {
         var lineEl = document.createElement('div');
         lineEl.className = className;
         var firstCharOfLine = chars.length;
@@ -184,6 +200,19 @@ var Quote = (function () {
             lineEl.appendChild(segEl);
         }
 
+        /* The joint is typed like any other space, and is display:none while the
+         * verse is set on its own lines, so it costs nothing there. */
+        if (joinNext) {
+            var joint = document.createElement('span');
+            joint.className = 'ch sp joint';
+            joint.textContent = ' ';
+            lineEl.appendChild(joint);
+            chars.push({
+                el: joint, ch: ' ', seg: { el: joint, doodles: [], fired: true },
+                lastOfSeg: false, lineEnd: false, last: false, beforeAttribution: false
+            });
+        }
+
         if (chars.length > firstCharOfLine) { chars[chars.length - 1].lineEnd = true; }
         return lineEl;
     }
@@ -195,24 +224,90 @@ var Quote = (function () {
      * A quote long enough to hit the floor size is allowed to wrap instead. */
     var FIT = { min: 20, grow: 2.0, margin: 0.97 };
 
+    /* Three dials, tried in this order.
+     *
+     * The column: a narrow measure reads better, so it is opened up only as far
+     * as this verse needs -- per cent of the wall, narrowest first.
+     *
+     * The line breaks: a verse long enough that even the widest column leaves
+     * it cramped is the one standing as a tall stack of short lines, and height
+     * is what is costing it its size. That one is run together as prose and
+     * allowed to fill the box instead.
+     *
+     * The size: whatever is left, floored at FIT.min.
+     *
+     * Both thresholds are a fraction of the wall's height rather than a pixel
+     * count, so the same verse behaves the same way on a bigger screen. */
+    var COLUMNS = [50, 62, 74, 86];
+    var COMFORT = 0.030;       /* stop widening once the type reaches this */
+    var REFLOW_GAIN = 1.25;    /* what reflowing has to buy to be worth it */
+
     function fit() {
         var stage = host.parentElement;
         var cs = getComputedStyle(stage);
-        var availW = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+        var padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
         var availH = stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+        if (availH <= 0) { return; }
 
-        host.classList.remove('wrapping');
+        host.classList.remove('wrapping', 'reflow');
         host.style.fontSize = '';                 /* back to the CSS clamp */
+        host.style.maxWidth = '';
         var base = parseFloat(getComputedStyle(host).fontSize);
 
         /* With .line at white-space:pre, scrollWidth is the widest line. */
-        var w = host.scrollWidth, h = host.scrollHeight;
-        if (!w || !h) { return; }
+        var natW = host.scrollWidth, natH = host.scrollHeight;
+        if (!natW || !natH) { return; }
 
-        var k = Math.min(availW / w, availH / h) * FIT.margin;
-        var size = Math.min(base * k, base * FIT.grow);
+        /* Laid out on its own lines the block is the size it is whatever the
+         * column -- only the room changes -- so the column can be picked by
+         * arithmetic rather than by laying the verse out once per candidate. */
+        var comfort = window.innerHeight * COMFORT;
+        var pick = null;
+        for (var i = 0; i < COLUMNS.length; i++) {
+            var availW = window.innerWidth * COLUMNS[i] / 100 - padX;
+            var k = Math.min(availW / natW, availH / natH) * FIT.margin;
+            pick = { pct: COLUMNS[i], room: availW, size: Math.min(base * k, base * FIT.grow) };
+            if (pick.size >= comfort) { break; }
+        }
+        stage.style.width = pick.pct + '%';
+
+        var size = pick.size;
+        if (size < comfort) {
+            /* Short of comfortable even in the widest column. Rather than guess
+             * from the length of the verse whether its line breaks are what is
+             * costing it, lay it out both ways and look: the authored breaks
+             * are kept unless letting them go buys a materially bigger verse.
+             *
+             * Reflowed, the block fills whatever width it is given, so the
+             * width is pinned here and the search is left to solve for the
+             * height alone. */
+            host.classList.add('reflow');
+            host.style.maxWidth = (pick.room * FIT.margin) + 'px';
+            var reflowed = fillSize(availH * FIT.margin, base);
+            if (reflowed >= size * REFLOW_GAIN) {
+                size = reflowed;
+            } else {
+                host.classList.remove('reflow');
+                host.style.maxWidth = '';
+            }
+        }
+
         if (size < FIT.min) { size = FIT.min; host.classList.add('wrapping'); }
         host.style.fontSize = size + 'px';
+    }
+
+    /* The largest size at which the reflowed verse still fits the box. Wrapped
+     * text has no closed form for this -- a size either fits or it does not --
+     * so it is a handful of bisections against the real layout. */
+    function fillSize(maxH, base) {
+        var lo = FIT.min, hi = base * FIT.grow, best = lo;
+        for (var i = 0; i < 11; i++) {
+            var mid = (lo + hi) / 2;
+            host.style.fontSize = mid + 'px';
+            if (host.scrollHeight <= maxH + 0.5) { best = mid; lo = mid; }
+            else { hi = mid; }
+        }
+        return best;
     }
 
     /* Re-fits and re-measures after the window changes size. Only meaningful
@@ -229,7 +324,25 @@ var Quote = (function () {
         if (/[—–-]/.test(ch)) { d += PACE.dash; }
         if (entry.lineEnd) { d += PACE.lineEnd; }
         if (entry.beforeAttribution) { d += PACE.beforeAttribution; }
-        return d;
+        return d * rate;
+    }
+
+    /* What the quote now laid out would take at the written rhythm, with the
+     * jitter averaged out rather than rolled -- the same sum delayFor produces,
+     * which is what makes the scaling below land where it says it will. */
+    function naturalDuration() {
+        var ms = 0;
+        for (var i = 0; i < chars.length; i++) {
+            var entry = chars[i], ch = entry.ch;
+            ms += PACE.base + PACE.jitter / 2;
+            if (ch === ' ') { ms += PACE.space; }
+            if (/[,;:]/.test(ch)) { ms += PACE.comma; }
+            if (/[.!?]/.test(ch)) { ms += PACE.stop; }
+            if (/[—–-]/.test(ch)) { ms += PACE.dash; }
+            if (entry.lineEnd) { ms += PACE.lineEnd; }
+            if (entry.beforeAttribution) { ms += PACE.beforeAttribution; }
+        }
+        return ms;
     }
 
     function reveal(entry) {
@@ -278,6 +391,8 @@ var Quote = (function () {
      * highlight rather than as a cursor. */
     function moveCaret(el) {
         var r = el.getBoundingClientRect();
+        /* A joint that is display:none has no box to stand beside. */
+        if (!r.width && !r.height) { return; }
         var h = r.height * 0.56;
         caret.style.transform = 'translate(' + (r.right + 2) + 'px,' +
                                                (r.top + r.height * 0.30) + 'px)';
@@ -319,6 +434,8 @@ var Quote = (function () {
         onDone = done;
         clearTimeout(timer);
         build(parse(src));
+        var natural = naturalDuration();
+        rate = natural > 0 ? Math.max(MIN_RATE, Math.min(1, TARGET_MS / natural)) : 1;
         fit();
         /* One frame for the browser to lay the hidden text out at the fitted
          * size before the first caret position is measured. */
