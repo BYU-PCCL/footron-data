@@ -9,8 +9,14 @@
  * watching for two minutes sees that shape without being told it.
  */
 
-const PAD_L = 0.044;   // matches the caption's left margin, in fractions of width
 const PAD_R = 0.30;    // keep clear of the corner globe
+
+/* Footron's launcher paints a 300x300 "Scan to" QR card over the bottom-left
+ * corner, plus 32 of padding — in fixed pixels, so on a small window it is most
+ * of the width and on the wall it is a corner. The axis has to start clear of
+ * it or the first half-century of dedications is drawn underneath the card. */
+const QR_KEEPOUT = 332;
+const PAD_L = 0.044;   // in fractions of width, where there is room for it
 
 export class Ribbon {
   constructor(canvas, temples) {
@@ -41,7 +47,8 @@ export class Ribbon {
   }
 
   x(year) {
-    const a = this.w * PAD_L, b = this.w * (1 - PAD_R);
+    const a = Math.max(this.w * PAD_L, QR_KEEPOUT + 20);
+    const b = this.w * (1 - PAD_R);
     return a + ((year - this.min) / (this.max - this.min)) * (b - a);
   }
 
