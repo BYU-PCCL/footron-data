@@ -19,6 +19,12 @@ import { connectFootron } from "./footron.js";
 
 const BATCH = 8;   // slides fetched from the running order at a time
 
+/* How much the running order is allowed to depart from strict quality order,
+ * in units of aesthetic score. The scores of everything that survived the gates
+ * span about 4.9 to 6.5, so a jitter of this size reshuffles neighbours freely
+ * while still keeping the stronger photographs tending toward the front. */
+const ORDER_JITTER = 0.8;
+
 const app = {
   temples: [],
   slides: [],
@@ -116,20 +122,38 @@ function take(n) {
   return out;
 }
 
-/* Build the running order once. Two competing goals: show the best
- * photographs, and do not show six pictures of Utah in a row. So sort by score
- * and deal the result out round-robin by country, which keeps quality high
- * while guaranteeing the sequence travels. */
+/* Build the running order once per load. Three competing goals: show the best
+ * photographs, never show six pictures of Utah in a row, and do not show every
+ * visitor the same opening.
+ *
+ * That last one matters more than it looks. The wall gives an experience about
+ * five minutes, which is some thirty slides out of two hundred, so a strictly
+ * deterministic order would mean the same thirty temples every single time and
+ * the other one hundred and seventy would be seen by almost nobody. Scores are
+ * therefore jittered before sorting: the order differs on every boot, while a
+ * better photograph is still likelier to come early. The round-robin deal by
+ * country then guarantees the sequence travels whatever the shuffle did. */
 function buildOrder() {
   const byCountry = new Map();
-  for (const s of [...app.slides].sort((a, b) => b.image.aesthetic - a.image.aesthetic)) {
+  const shuffled = app.slides
+    .map((s) => ({ s, key: s.image.aesthetic + (Math.random() - 0.5) * ORDER_JITTER }))
+    .sort((a, b) => b.key - a.key)
+    .map((x) => x.s);
+  for (const s of shuffled) {
     const k = s.temple.country || "—";
     if (!byCountry.has(k)) byCountry.set(k, []);
     byCountry.get(k).push(s);
   }
-  // Biggest groups first so the United States, which is most of the corpus, is
-  // always available to fill a gap rather than exhausting early.
-  const groups = [...byCountry.values()].sort((a, b) => b.length - a.length);
+  // The countries are dealt in a random order too, not biggest-first. Dealing
+  // them in a fixed order made the *pictures* differ between boots while the
+  // rhythm stayed identical — always America, then Mexico, then Canada, then
+  // Brazil — which is the sort of thing nobody notices once and everybody
+  // notices on the fourth visit.
+  const groups = [...byCountry.values()];
+  for (let i = groups.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [groups[i], groups[j]] = [groups[j], groups[i]];
+  }
   const order = [];
   let dealt = true;
   while (dealt) {
@@ -151,15 +175,21 @@ function setPalette(pal) {
   root.setProperty("--glow-3", pal[2] || pal[1] || pal[0]);
 }
 
+/* The two sources are used on different terms, so they are credited
+ * differently rather than being given one house format that would imply the
+ * Church's photographs are freely licensed like the rest. */
 function setCredit(image) {
   const el = document.getElementById("credit");
   const who = (image.credit || "").replace(/\s+/g, " ").trim();
-  el.textContent = [
-    image.title.replace(/^File:/, ""),
-    who ? `© ${who}` : null,
-    image.license,
-    "via Wikimedia Commons",
-  ].filter(Boolean).join("  ·  ");
+  const parts = image.from === "church"
+    ? [image.title.replace(/^Church Media:\s*/, ""),
+       "© Intellectual Reserve, Inc.",
+       "churchofjesuschrist.org"]
+    : [image.title.replace(/^File:/, ""),
+       who ? `© ${who}` : null,
+       image.license,
+       "via Wikimedia Commons"];
+  el.textContent = parts.filter(Boolean).join("  ·  ");
   el.classList.add("show");
 }
 

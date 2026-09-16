@@ -5,8 +5,9 @@
  * happen on every slide, staggered so that none of them is ever the thing you
  * are watching:
  *
- *   * a slow Ken Burns drift, anchored on the building rather than the frame
- *     centre, so the drift is *around* the temple;
+ *   * a slow travel up the photograph — the frame is filled edge to edge and
+ *     the slide rises from the foot of the picture to the spire over its life,
+ *     so the whole of it is seen without any of it being letterboxed;
  *   * the ambient wash behind everything re-grading to this photograph's own
  *     three dominant colours, which takes a couple of seconds and so is always
  *     still settling when the caption finishes arriving;
@@ -23,26 +24,36 @@ import { displayName, dedicationLine, metaLine } from "./label.js";
 const HOLD = 9200;        // ms a slide is held, bloom included
 const BLOOM = 2400;       // ms for the light to open across the frame
 
-/* The drift is gentle because the photograph is shown whole rather than
- * cropped to the frame (see .plate-front): anything more than a few per cent
- * of zoom starts pushing the top of the building off the wall, which is the
- * problem the contained layout exists to avoid. */
-const ZOOM_MIN = 1.0, ZOOM_MAX = 1.06;
+/* How long the travel takes. A slide is fully visible from the end of its own
+ * bloom until the next one starts blooming over it, so the journey is set to
+ * finish just as it begins to be covered rather than running on underneath. */
+const PAN_MS = HOLD + BLOOM * 0.5;
 
-/* Where a point in the photograph lands on the wall, once the photograph has
- * been fitted inside it. The bloom has to open from the spire, and the spire's
- * position is recorded in the image's own coordinates — but the image occupies
- * only the middle ~60% of a 2.25:1 wall, so those coordinates are not screen
- * coordinates and using them directly would open the light off to one side. */
-function imageToScreen(ix, iy, imgAspect) {
+/* Below this much overflow there is nothing to pan across — an image already
+ * about as wide as the wall — so it gets a gentle push in instead, purely so
+ * the frame is never completely still. */
+const MIN_TRAVEL = 40;
+
+/**
+ * Fill the frame with the photograph and work out the journey across it.
+ *
+ * `cover` would do the filling, but it crops to the middle and stays there. So
+ * size an element to the photograph's own proportions at the scale that fills
+ * the frame, and move it: the overflow is exactly the part of the picture that
+ * does not fit, and travelling that distance is exactly seeing all of it.
+ *
+ * Panning the long axis rather than assuming the tall one keeps this correct
+ * for a panorama too, should one ever pass the filters.
+ */
+function layout(el, imgAspect) {
   const W = window.innerWidth || 1, H = window.innerHeight || 1;
-  const screenAspect = W / H;
-  let bw, bh;
-  if (!imgAspect || !Number.isFinite(imgAspect)) return [ix, iy];
-  if (imgAspect > screenAspect) { bw = W; bh = W / imgAspect; }
-  else { bh = H; bw = H * imgAspect; }
-  const ox = (W - bw) / 2, oy = (H - bh) / 2;
-  return [(ox + ix * bw) / W, (oy + iy * bh) / H];
+  const a = Number.isFinite(imgAspect) && imgAspect > 0 ? imgAspect : W / H;
+  let w, h;
+  if (a < W / H) { w = W; h = W / a; }     // narrower than the wall: travel down
+  else { h = H; w = H * a; }               // wider than the wall: travel across
+  el.style.width = `${w}px`;
+  el.style.height = `${h}px`;
+  return { w, h, W, H, overflowX: Math.max(0, w - W), overflowY: Math.max(0, h - H) };
 }
 
 export class Slideshow {
@@ -100,39 +111,48 @@ export class Slideshow {
     const el = document.createElement("div");
     el.className = "plate-img blooming";
 
-    // Two layers from one file: the photograph itself, shown whole, over a
-    // blurred and dimmed copy that fills the rest of the ultrawide frame.
-    const back = document.createElement("div");
-    back.className = "plate-back";
-    const front = document.createElement("div");
-    front.className = "plate-front";
-    back.style.backgroundImage = front.style.backgroundImage = `url("${image.src}")`;
-    el.append(back, front);
+    const pan = document.createElement("div");
+    pan.className = "plate-pan";
+    pan.style.backgroundImage = `url("${image.src}")`;
+    el.append(pan);
 
-    // Ken Burns is anchored on the building, not the frame. The bloom point is
-    // the spire, so scaling about a point a little below it keeps the temple in
-    // shot for the whole drift instead of letting it wander off an edge.
     const aspect = image.w && image.h ? image.w / image.h : null;
-    const [sx, sy] = imageToScreen(image.bloom[0], image.bloom[1], aspect);
-    const bx = sx * 100, by = sy * 100;
-    el.style.setProperty("--bx", `${bx}%`);
-    el.style.setProperty("--by", `${by}%`);
-    el.style.setProperty("--ox", `${bx}%`);
-    el.style.setProperty("--oy", `${Math.min(80, by + 18)}%`);
+    const box = layout(pan, aspect);
+
+    // The travel runs upward: it opens at the foot of the photograph and rises
+    // to the spire, so the building is revealed the way you take it in standing
+    // in front of one rather than the way a camera falls off it.
+    const travelY = box.overflowY, travelX = box.overflowX;
+    const still = travelY < MIN_TRAVEL && travelX < MIN_TRAVEL;
+
+    // Where the spire is on the wall *at the moment the light arrives*, which
+    // is the start of the travel and therefore the picture shifted up by its
+    // whole overflow. On a tall photograph the spire is still above the top of
+    // the frame then, so the bloom is clamped back onto the wall and opens from
+    // the top edge — which is the direction the spire is in, and the direction
+    // the picture is about to rise from.
+    const bx = (image.bloom[0] * box.w - travelX) / box.W;
+    const by = (image.bloom[1] * box.h - travelY) / box.H;
+    const cx = Math.max(0.04, Math.min(0.96, bx)) * 100;
+    const cy = Math.max(0.04, Math.min(0.96, by)) * 100;
+    el.style.setProperty("--bx", `${cx}%`);
+    el.style.setProperty("--by", `${cy}%`);
 
     this.plates.appendChild(el);
 
-    // Alternate pushing in and pulling out so consecutive slides do not all
-    // drift the same way, which is what makes a long sequence feel mechanical.
-    const inward = this.plates.children.length % 2 === 0;
-    const z0 = inward ? ZOOM_MIN : ZOOM_MAX, z1 = inward ? ZOOM_MAX : ZOOM_MIN;
-    const dx = (Math.random() - 0.5) * 1.0, dy = (Math.random() - 0.5) * 0.8;
-
-    el.animate(
-      [{ transform: `scale(${z0}) translate(0%, 0%)` },
-       { transform: `scale(${z1}) translate(${dx}%, ${dy}%)` }],
-      { duration: HOLD + BLOOM + 2000, fill: "forwards", easing: "linear" }
-    );
+    // Eased a little at both ends so the journey starts and stops the way a
+    // camera move does, rather than switching on at full speed.
+    if (still) {
+      // Nothing to travel across; push in gently so the frame is never dead.
+      pan.animate([{ transform: "scale(1)" }, { transform: "scale(1.05)" }],
+        { duration: PAN_MS, fill: "forwards", easing: "linear" });
+    } else {
+      pan.animate(
+        [{ transform: `translate(${-travelX}px, ${-travelY}px)` },
+         { transform: "translate(0px, 0px)" }],
+        { duration: PAN_MS, fill: "forwards", easing: "cubic-bezier(.32,0,.68,1)" }
+      );
+    }
 
     el.animate([{ opacity: 0 }, { opacity: 1 }],
       { duration: BLOOM * 0.55, fill: "forwards", easing: "ease-out" });
