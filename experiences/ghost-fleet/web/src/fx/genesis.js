@@ -3,51 +3,89 @@ import * as THREE from 'three';
 /**
  * "Genesis" — the opening explainer.
  *
- * One Gaussian, then many, then coloured, then assembled into a ship. It runs
- * on the real splat data: the cloud that scatters and reassembles is literally
- * the ship's own 58,000 Gaussians being interpolated from a scatter state to
- * their authored positions. Nothing is faked for the animation, which is the
- * whole point — by the time the battle starts the viewer has watched the
- * primitive, seen a hull built out of it, and knows what is coming apart when
- * a shot lands.
+ * The argument, in order: here is a Gaussian in two dimensions; it can be
+ * stretched and turned; it is not really flat, it is an ellipsoid in space; it
+ * carries its own colour; one is useless but thousands overlap into a surface;
+ * here are fifty-eight thousand; each takes its own colour; together they are
+ * a ship. Then the battle starts, and the viewer already knows what is coming
+ * apart when a shot lands.
  *
- * Beats:
- *   0  one Gaussian, turning slowly so it reads as an ellipsoid not a disc
- *   1  it multiplies into a cloud of identical pale splats
- *   2  each takes its own colour
- *   3  they fly into formation and become the ship
- *   4  pull back, hand over to the battle
+ * It runs on the real splat data. From the moment the cloud appears it is the
+ * lead ship's own 58,640 Gaussians being interpolated from a scatter state to
+ * their authored positions — nothing is substituted for the animation, which
+ * is the entire point of showing it.
+ *
+ * Pacing: captions are 15-25 words and each beat is timed to be read at a
+ * wall, not a desk — roughly four words a second with a beat of silence at
+ * each end. Touching the screen skips the whole thing.
  */
 
 const BEATS = [
-  { key: 'one',      dur: 4.2 },
-  { key: 'many',     dur: 3.6 },
-  { key: 'colour',   dur: 3.0 },
-  { key: 'assemble', dur: 5.4 },
-  { key: 'reveal',   dur: 3.0 }
+  { key: 'flat',     dur: 6.0 },   // a 2D Gaussian, face-on and round
+  { key: 'stretch',  dur: 6.0 },   // anisotropy: it becomes an ellipse
+  { key: 'depth',    dur: 8.5 },   // turned edge-on, then given a third radius
+  { key: 'colour1',  dur: 6.0 },   // it carries its own colour and opacity
+  { key: 'many',     dur: 6.0 },   // one multiplies outward
+  { key: 'count',    dur: 5.5 },   // the full pale swarm
+  { key: 'colour2',  dur: 5.5 },   // each takes its own colour
+  { key: 'assemble', dur: 7.5 },   // they fly into formation
+  { key: 'reveal',   dur: 4.0 }    // pull back, hand over to the battle
 ];
 
 const TOTAL = BEATS.reduce((a, b) => a + b.dur, 0);
 
-const _q = new THREE.Quaternion();
-const _q2 = new THREE.Quaternion();
-const _e = new THREE.Euler();
-const _c = new THREE.Color();
-const _wc = new THREE.Vector3();
+// absolute start time of each beat
+const START = [];
+BEATS.reduce((acc, b, i) => { START[i] = acc; return acc + b.dur; }, 0);
+
+const B_FLAT = 0, B_STRETCH = 1, B_DEPTH = 2, B_COLOUR1 = 3,
+      B_MANY = 4, B_COUNT = 5, B_COLOUR2 = 6, B_ASSEMBLE = 7, B_REVEAL = 8;
 
 /** Height of the hero Gaussian above the cloud centre, in local units. */
 const HERO_Y = 9.0;
 
 /**
- * Size of the hero Gaussian. A splat is drawn out to 3 sigma, so its visible
- * extent is roughly 3x this — big enough to read as a shape, small enough that
- * the whole ellipsoid and its falloff stay inside the frame.
+ * Size of the hero. A splat is drawn out to 3 sigma, so its visible extent is
+ * roughly 3x this — big enough to read as a shape, small enough that the whole
+ * falloff stays inside the frame.
  */
-const HERO_S = 0.92;
+const HERO_R = 0.92;          // the round 2D Gaussian's radius
+const HERO_LONG = 1.62;       // long axis once stretched
+const HERO_SHORT = 0.50;      // short axis once stretched
+const HERO_THIN = 0.022;      // "flat": thin enough to vanish edge-on
+const HERO_DEEP = 0.62;       // third radius once it becomes an ellipsoid
+
+const _q = new THREE.Quaternion();
+const _qRoll = new THREE.Quaternion();
+const _e = new THREE.Euler();
+const _m = new THREE.Matrix4();
+const _n = new THREE.Vector3();
+const _e1 = new THREE.Vector3();
+const _e2 = new THREE.Vector3();
+const _up = new THREE.Vector3(0, 1, 0);
+const _alt = new THREE.Vector3(1, 0, 0);
+const _wc = new THREE.Vector3();
+
+/**
+ * Colours the hero cycles through while the caption says the colour belongs to
+ * the Gaussian. A single warm shift was far too subtle against a sunset sky —
+ * the point only lands if the viewer watches the same blob become obviously
+ * different colours. These are real values off the ship: canvas, gilding,
+ * painted trim, tarred oak.
+ */
+const HERO_PALETTE = [
+  [0.94, 0.90, 0.82],   // canvas
+  [0.97, 0.74, 0.26],   // gilding
+  [0.92, 0.22, 0.24],   // painted trim
+  [0.62, 0.44, 0.28]    // oak
+];
+const _camLocal = new THREE.Vector3();
+const _inv = new THREE.Matrix4();
 
 const ease = (t) => t * t * (3 - 2 * t);
 const easeOut = (t) => 1 - Math.pow(1 - t, 3);
-const easeIn = (t) => t * t * t;
+const clamp01 = (t) => t < 0 ? 0 : t > 1 ? 1 : t;
+const lerp = (a, b, t) => a + (b - a) * t;
 
 /** Deterministic hash so the scatter is identical every run. */
 function hash(i) {
@@ -72,8 +110,6 @@ export class Genesis {
     const n = ship.splatCount;
     this.n = n;
 
-    // scatter state: a loose shell around the hull, plus a birth time so the
-    // cloud grows outward from the first Gaussian rather than popping in
     this.sx = new Float32Array(n);
     this.sy = new Float32Array(n);
     this.sz = new Float32Array(n);
@@ -84,14 +120,13 @@ export class Genesis {
     let cx = 0, cy = 0, cz = 0;
     for (let i = 0; i < n; i++) { cx += d.pos[i * 3]; cy += d.pos[i * 3 + 1]; cz += d.pos[i * 3 + 2]; }
     this.centre = new THREE.Vector3(cx / n, cy / n, cz / n);
+    this.heroPos = this.centre.clone().setY(this.centre.y + HERO_Y);
 
     for (let i = 0; i < n; i++) {
-      // even distribution on a shell, radius jittered so it reads as volume
+      // a broad, slightly flattened swarm, wide enough that the camera can get
+      // outside it and read it as one object
       const u = hash(i * 3 + 1) * 2 - 1;
       const th = hash(i * 3 + 2) * Math.PI * 2;
-      // a broad, slightly flattened swarm. It has to be wide enough that the
-      // camera can get outside it and read it as one object — at the original
-      // radius the lens ended up inside and the frame went white.
       const r = 26 + 20 * Math.pow(hash(i * 3 + 3), 0.55);
       const s = Math.sqrt(Math.max(0, 1 - u * u));
       this.sx[i] = this.centre.x + r * s * Math.cos(th) * 1.35;
@@ -103,12 +138,8 @@ export class Genesis {
       this.spin[i * 3 + 2] = (hash(i * 5 + 6) - 0.5) * 1.4;
     }
 
-    // the hero Gaussian of beat 0: pick one from the hull so its colour is
-    // honest timber rather than whatever happened to be at index zero
-    this.hero = 0;
-    for (let i = 0; i < n; i++) {
-      if (d.part[i] === 0 && d.pos[i * 3 + 1] > 1.5) { this.hero = i; break; }
-    }
+    this._camPos = new THREE.Vector3();
+    this._camLook = new THREE.Vector3();
   }
 
   get duration() { return TOTAL; }
@@ -119,13 +150,13 @@ export class Genesis {
     this.done = false;
     this.beat = -1;
     this.ship.mesh.setCount(1);
+    this._solveCamera(0);
   }
 
   /** Jump to the finished state — a visitor touching the screen outranks this. */
   skip() {
     if (!this.running) return;
     this.t = TOTAL;
-    this._apply(TOTAL);
     this._finish();
   }
 
@@ -153,17 +184,123 @@ export class Genesis {
     this.t += dt;
     if (this.t >= TOTAL) { this._finish(); return; }
 
-    // which beat, and how far through it
-    let acc = 0, idx = 0, local = 0;
-    for (let i = 0; i < BEATS.length; i++) {
-      if (this.t < acc + BEATS[i].dur) { idx = i; local = (this.t - acc) / BEATS[i].dur; break; }
-      acc += BEATS[i].dur;
+    let idx = 0;
+    for (let i = BEATS.length - 1; i >= 0; i--) {
+      if (this.t >= START[i]) { idx = i; break; }
     }
     if (idx !== this.beat) { this.beat = idx; this.panel?.step(idx); }
-    this.local = local;
+    this.panel?.progress(this.t / TOTAL);
 
+    // the camera has to be solved before the splats, because while the Gaussian
+    // is still a flat 2D one it is turned to face the lens
+    this._solveCamera(this.t);
     this._apply(this.t);
   }
+
+  // ------------------------------------------------------------ the hero
+
+  /**
+   * Orientation that lays the Gaussian's face squarely toward the camera, so
+   * what the viewer sees is a true 2D Gaussian rather than a foreshortened
+   * slice of a 3D one. `roll` turns it within that plane.
+   */
+  _billboard(out, roll) {
+    _inv.copy(this.ship.mesh.matrixWorld).invert();
+    _camLocal.copy(this._camPos).applyMatrix4(_inv);
+
+    _n.subVectors(_camLocal, this.heroPos);
+    if (_n.lengthSq() < 1e-9) _n.set(0, 0, 1);
+    _n.normalize();
+
+    const ref = Math.abs(_n.dot(_up)) > 0.94 ? _alt : _up;
+    _e1.crossVectors(ref, _n).normalize();
+    _e2.crossVectors(_n, _e1).normalize();
+
+    _m.makeBasis(_e1, _e2, _n);
+    out.setFromRotationMatrix(_m);
+    if (roll) {
+      _qRoll.setFromAxisAngle(_n, roll);
+      out.premultiply(_qRoll);
+    }
+    return out;
+  }
+
+  /**
+   * The single Gaussian's state for the first four beats.
+   *
+   * The story runs 2D -> 3D, so it starts billboarded and round: a circular
+   * splat facing the lens, which is exactly what a 2D Gaussian looks like.
+   * Then it stretches into an ellipse, then it is turned edge-on — where being
+   * flat becomes obvious, because it nearly disappears — and only then is it
+   * given a third radius and allowed to tumble as a solid.
+   */
+  _hero(time, out) {
+    const beat = time < START[B_STRETCH] ? B_FLAT
+      : time < START[B_DEPTH] ? B_STRETCH
+      : time < START[B_COLOUR1] ? B_DEPTH : B_COLOUR1;
+
+    let rx, ry, rz, roll = 0, tumble = 0, warm = 0, alpha = 1;
+
+    if (beat === B_FLAT) {
+      const u = clamp01(time / BEATS[B_FLAT].dur);
+      const grow = easeOut(clamp01(u * 3.4));
+      rx = ry = HERO_R * grow;
+      rz = HERO_THIN;
+      alpha = clamp01(u * 4);
+      // a barely-there breath, so it never looks like a pasted-on decal
+      rx *= 1 + 0.03 * Math.sin(time * 1.2);
+      ry *= 1 + 0.03 * Math.sin(time * 1.2);
+
+    } else if (beat === B_STRETCH) {
+      const u = clamp01((time - START[B_STRETCH]) / BEATS[B_STRETCH].dur);
+      const s = ease(clamp01(u * 2.0));
+      rx = lerp(HERO_R, HERO_LONG, s);
+      ry = lerp(HERO_R, HERO_SHORT, s);
+      rz = HERO_THIN;
+      // once stretched, turn it in its own plane: the ellipse can lie any way
+      roll = ease(clamp01((u - 0.45) / 0.55)) * Math.PI * 0.85;
+
+    } else if (beat === B_DEPTH) {
+      const u = clamp01((time - START[B_DEPTH]) / BEATS[B_DEPTH].dur);
+      rx = HERO_LONG;
+      ry = HERO_SHORT;
+      roll = Math.PI * 0.85;
+      // 0.00-0.42  swing to edge-on; being flat becomes undeniable
+      // 0.42-0.78  grow the third radius: now it is an ellipsoid
+      // 0.78-1.00  let it tumble as a solid
+      tumble = ease(clamp01(u / 0.42)) * Math.PI * 0.52;
+      const depth = ease(clamp01((u - 0.42) / 0.36));
+      rz = lerp(HERO_THIN, HERO_DEEP, depth);
+      tumble += ease(clamp01((u - 0.78) / 0.22)) * 1.1;
+
+    } else {
+      const u = clamp01((time - START[B_COLOUR1]) / BEATS[B_COLOUR1].dur);
+      rx = HERO_LONG; ry = HERO_SHORT; rz = HERO_DEEP;
+      roll = Math.PI * 0.85;
+      tumble = Math.PI * 0.52 + 1.1 + (time - START[B_COLOUR1]) * 0.42;
+      // step through the palette, holding each long enough to register
+      warm = u * (HERO_PALETTE.length - 1);
+      // and let the opacity dip once, so that reads as its own property too
+      // a dip, not a disappearance: these splats composite over a bright sky
+      // and a deep dip simply reads as the thing being gone
+      alpha = 1 - 0.30 * Math.sin(clamp01((u - 0.45) / 0.55) * Math.PI);
+    }
+
+    this._billboard(_q, roll);
+    if (tumble) {
+      // turn about the ellipse's own long axis, which is the local x after the
+      // billboard basis — that is the axis that swings it edge-on
+      _e.set(0, 0, 0);
+      _qRoll.setFromAxisAngle(_e1.set(1, 0, 0).applyQuaternion(_q).normalize(), tumble);
+      _q.premultiply(_qRoll);
+    }
+
+    out.rx = rx; out.ry = ry; out.rz = rz;
+    out.q = _q; out.warm = warm; out.alpha = alpha;
+    return out;
+  }
+
+  // ------------------------------------------------------------- render
 
   _apply(time) {
     const ship = this.ship;
@@ -171,173 +308,196 @@ export class Genesis {
     const d = ship.data;
     const n = this.n;
 
-    // beat boundaries in absolute seconds
-    const t0 = BEATS[0].dur;
-    const t1 = t0 + BEATS[1].dur;
-    const t2 = t1 + BEATS[2].dur;
-    const t3 = t2 + BEATS[3].dur;
+    // ---- beats 0-3: a single Gaussian
+    if (time < START[B_MANY]) {
+      const h = this._hero(time, this._heroOut || (this._heroOut = {}));
 
-    // ---- beat 0: a single Gaussian, turning
-    if (time < t0) {
-      const u = time / t0;
-      const h = this.hero;
-
-      // a lazy tumble on two axes, so the anisotropy is unmistakable
-      _e.set(time * 0.55, time * 0.8, Math.sin(time * 0.6) * 0.3, 'XYZ');
-      _q.setFromEuler(_e);
-
-      // grows in, then breathes very slightly so it never looks like a decal
-      const grow = easeOut(Math.min(1, u * 3.2));
-      const s = HERO_S * grow * (1 + 0.035 * Math.sin(time * 1.3));
+      // Neutral while it is still just "a Gaussian"; once the caption says the
+      // colour belongs to it, walk the palette so the viewer sees it change.
+      let r = 0.82, g = 0.80, b = 0.78;
+      if (h.warm > 0) {
+        const f = Math.min(h.warm, HERO_PALETTE.length - 1);
+        const i0 = Math.floor(f);
+        const i1 = Math.min(i0 + 1, HERO_PALETTE.length - 1);
+        // hold each colour, then move briskly: a constant crossfade reads as
+        // one muddy gradient rather than as four distinct colours
+        const k = ease(clamp01(((f - i0) - 0.35) / 0.45));
+        const A = HERO_PALETTE[i0], B = HERO_PALETTE[i1];
+        r = lerp(A[0], B[0], k); g = lerp(A[1], B[1], k); b = lerp(A[2], B[2], k);
+      }
 
       mesh.set(0,
-        this.centre.x, this.centre.y + HERO_Y, this.centre.z,
-        s * 1.55, s * 0.62, s * 0.30,          // deliberately anisotropic
-        _q.x, _q.y, _q.z, _q.w,
-        // warm timber, lifted well clear of the sky behind it — a single
-        // splat at hull albedo simply disappears against a sunset
-        0.92, 0.66, 0.40,
-        Math.min(1, u * 4), 0.30);
+        this.heroPos.x, this.heroPos.y, this.heroPos.z,
+        h.rx, h.ry, h.rz,
+        h.q.x, h.q.y, h.q.z, h.q.w,
+        r, g, b, h.alpha, 0.26);
       mesh.setCount(1);
       mesh.flush();
       return;
     }
 
-    // from here on every splat is live; birth and opacity do the revealing
+    // ---- beats 4-8: the swarm
     mesh.setCount(n);
 
-    // global progress through each phase
-    const pMany = Math.min(1, Math.max(0, (time - t0) / BEATS[1].dur));
-    const pCol  = Math.min(1, Math.max(0, (time - t1) / BEATS[2].dur));
-    const pAsm  = Math.min(1, Math.max(0, (time - t2) / BEATS[3].dur));
+    const pMany = clamp01((time - START[B_MANY]) / (BEATS[B_MANY].dur + BEATS[B_COUNT].dur));
+    const pCol  = clamp01((time - START[B_COLOUR2]) / BEATS[B_COLOUR2].dur);
+    const pAsm  = clamp01((time - START[B_ASSEMBLE]) / BEATS[B_ASSEMBLE].dur);
 
-    const heroS = HERO_S;
     const cloudBase = 0.42;
+    const ox = this.heroPos.x, oy = this.heroPos.y, oz = this.heroPos.z;
 
     for (let i = 0; i < n; i++) {
       const o3 = i * 3, o4 = i * 4;
 
-      // --- born yet?
       const b = this.birth[i];
-      const bornAt = b * 0.82;
-      const age = (pMany - bornAt) / 0.18;
-      const born = Math.min(1, Math.max(0, age));
+      const born = clamp01((pMany - b * 0.82) / 0.18);
 
-      // --- position: from the hero's spot, out to the shell, then into place
-      const ox = this.centre.x, oy = this.centre.y + HERO_Y, oz = this.centre.z;
       const fly = easeOut(born);
       let px = ox + (this.sx[i] - ox) * fly;
       let py = oy + (this.sy[i] - oy) * fly;
       let pz = oz + (this.sz[i] - oz) * fly;
 
-      if (pAsm > 0) {
-        // stagger it a little so the ship gathers rather than snapping, but
-        // not so much that it is still a blob at the end of the beat
-        const lag = b * 0.22;
-        const a = ease(Math.min(1, Math.max(0, (pAsm - lag) / (1 - lag))));
-        px += (d.pos[o3] - px) * a;
-        py += (d.pos[o3 + 1] - py) * a;
-        pz += (d.pos[o3 + 2] - pz) * a;
+      const lag = b * 0.22;
+      const settle = pAsm > 0 ? ease(clamp01((pAsm - lag) / (1 - lag))) : 0;
+      if (settle > 0) {
+        px += (d.pos[o3] - px) * settle;
+        py += (d.pos[o3 + 1] - py) * settle;
+        pz += (d.pos[o3 + 2] - pz) * settle;
       }
 
-      // --- scale: hero-sized at birth, shrinking to the real splat size
-      const target = pAsm > 0
-        ? ease(Math.min(1, Math.max(0, (pAsm - b * 0.22) / (1 - b * 0.22))))
-        : 0;
       const cloud = cloudBase * (0.55 + 0.9 * hash(i * 13 + 2));
-      const sBirth = heroS * 0.5 * (1 - easeOut(born)) + cloud * easeOut(born);
-      const sx = sBirth + (d.scl[o3] - sBirth) * target;
-      const sy = sBirth + (d.scl[o3 + 1] - sBirth) * target;
-      const sz = sBirth * 0.55 + (d.scl[o3 + 2] - sBirth * 0.55) * target;
+      const sBirth = HERO_LONG * 0.5 * (1 - easeOut(born)) + cloud * easeOut(born);
+      const sx = sBirth + (d.scl[o3] - sBirth) * settle;
+      const sy = sBirth + (d.scl[o3 + 1] - sBirth) * settle;
+      const sz = sBirth * 0.55 + (d.scl[o3 + 2] - sBirth * 0.55) * settle;
 
-      // --- orientation: tumbling in the cloud, settling into the authored one
       _e.set(this.spin[o3] * time, this.spin[o3 + 1] * time, this.spin[o3 + 2] * time, 'XYZ');
       _q.setFromEuler(_e);
-      _q2.set(d.rot[o4], d.rot[o4 + 1], d.rot[o4 + 2], d.rot[o4 + 3]);
-      if (target > 0) _q.slerp(_q2, target);
+      if (settle > 0) {
+        _qRoll.set(d.rot[o4], d.rot[o4 + 1], d.rot[o4 + 2], d.rot[o4 + 3]);
+        _q.slerp(_qRoll, settle);
+      }
 
-      // --- colour: pale and uniform, then each takes its own
-      const wave = Math.min(1, Math.max(0, (pCol - hash(i * 17 + 5) * 0.45) / 0.55));
-      const w = ease(wave);
+      const wave = ease(clamp01((pCol - hash(i * 17 + 5) * 0.45) / 0.55));
       const pale = 0.46;
-      const r = pale + (d.col[o3] - pale) * w;
-      const g = pale * 0.97 + (d.col[o3 + 1] - pale * 0.97) * w;
-      const bl = pale * 0.90 + (d.col[o3 + 2] - pale * 0.90) * w;
+      const r = pale + (d.col[o3] - pale) * wave;
+      const g = pale * 0.97 + (d.col[o3 + 1] - pale * 0.97) * wave;
+      const bl = pale * 0.90 + (d.col[o3 + 2] - pale * 0.90) * wave;
 
-      // the cloud is deliberately translucent: 58,000 opaque splats stacked
-      // along the view ray composite to a flat white and read as fog
+      // 58,000 opaque splats stacked along the view ray composite to flat
+      // white and read as fog, so the cloud is deliberately translucent
       const cloudA = 0.44;
-      const alpha = born * (target > 0 ? (d.opa[i] - cloudA) * target + cloudA : cloudA);
+      const alpha = born * (settle > 0 ? (d.opa[i] - cloudA) * settle + cloudA : cloudA);
 
       mesh.set(i, px, py, pz, sx, sy, sz, _q.x, _q.y, _q.z, _q.w,
-        r, g, bl, alpha, d.emi[i] * target);
+        r, g, bl, alpha, d.emi[i] * settle);
     }
     mesh.flush();
   }
 
-  /** Where the camera should be, in world space, for the current moment. */
-  camera(out, lookAt, time = this.t) {
-    // the centre is authored in the ship's local space; she has a heading and
-    // rides the swell, so it has to be taken into world space every frame
-    const c = _wc.copy(this.centre).applyMatrix4(this.ship.mesh.matrixWorld);
-    const t0 = BEATS[0].dur;
-    const t1 = t0 + BEATS[1].dur;
-    const t2 = t1 + BEATS[2].dur;
-    const t3 = t2 + BEATS[3].dur;
+  // ------------------------------------------------------------- camera
 
-    // `shift` biases the subject into the clear half of the frame, as a
-    // fraction of the view distance. The swarm is far larger than the ship, so
-    // it needs a gentler push or it runs off the right edge.
-    let dist, height, drift, aim, shift;
-    if (time < t0) {
-      // Close on the single Gaussian, looking UP at it. The sky carries a warm
-      // band all the way round the horizon, so a splat held at eye level
-      // disappears into the glare whatever the bearing; against the upper sky
-      // it reads immediately.
-      const u = time / t0;
-      dist = 11 - 2.0 * ease(u);
-      height = -3.0;
-      aim = HERO_Y; shift = 0.22;
-      drift = time * 0.12;
-    } else if (time < t1) {
-      const u = (time - t0) / BEATS[1].dur;
-      dist = 9 + 131 * easeOut(u);
-      height = -3.0 + 26 * ease(u);
-      aim = HERO_Y + (3.2 - HERO_Y) * ease(u); shift = 0.22 - 0.06 * ease(u);
-      drift = t0 * 0.12 + (time - t0) * 0.10;
-    } else if (time < t2) {
-      const u = (time - t1) / BEATS[2].dur;
-      dist = 140 - 6 * ease(u);
-      height = 23; aim = 3.2; shift = 0.16;
-      drift = t0 * 0.12 + (t1 - t0) * 0.10 + (time - t1) * 0.09;
-    } else if (time < t3) {
-      const u = (time - t2) / BEATS[3].dur;
-      dist = 134 - 70 * ease(u);
-      height = 23 - 12 * ease(u); aim = 3.2; shift = 0.16 + 0.14 * ease(u);
-      drift = t0 * 0.12 + (t1 - t0) * 0.10 + (t2 - t1) * 0.09 + (time - t2) * 0.07;
+  /**
+   * Solve the camera for this moment into `_camPos` / `_camLook`.
+   *
+   * The sky carries a warm band all the way round the horizon, so a single
+   * splat held at eye level disappears into the glare on every bearing. The
+   * early beats therefore sit below the Gaussian and look up at it against the
+   * zenith, where it reads immediately.
+   */
+  _solveCamera(time) {
+    const c = _wc.copy(this.centre).applyMatrix4(this.ship.mesh.matrixWorld);
+    const heroLift = HERO_Y;
+
+    let dist, height, aim, shift, drift;
+
+    const at = (i) => clamp01((time - START[i]) / BEATS[i].dur);
+
+    if (time < START[B_STRETCH]) {
+      dist = 11.5 - 0.8 * ease(at(B_FLAT));
+      height = -3.2; aim = heroLift; shift = 0.22; drift = time * 0.045;
+
+    } else if (time < START[B_DEPTH]) {
+      dist = 10.7; height = -3.2; aim = heroLift; shift = 0.22;
+      drift = START[B_STRETCH] * 0.045 + (time - START[B_STRETCH]) * 0.05;
+
+    } else if (time < START[B_COLOUR1]) {
+      // ease round a little as it turns, so the edge-on moment is seen from an
+      // angle where "flat" is unmistakable rather than ambiguous
+      const u = at(B_DEPTH);
+      dist = 10.7 + 1.3 * ease(u);
+      height = -3.2 - 0.2 * ease(u); aim = heroLift; shift = 0.22;
+      drift = START[B_STRETCH] * 0.045 + BEATS[B_STRETCH].dur * 0.05
+            + (time - START[B_DEPTH]) * 0.085;
+
+    } else if (time < START[B_MANY]) {
+      // hold the steep look-up: at a shallower angle the Gaussian sits against
+      // the sky's warm horizon band and a dark palette colour vanishes into it
+      dist = 12.0; height = -3.4; aim = heroLift; shift = 0.22;
+      drift = START[B_STRETCH] * 0.045 + BEATS[B_STRETCH].dur * 0.05
+            + BEATS[B_DEPTH].dur * 0.085 + (time - START[B_COLOUR1]) * 0.06;
+
     } else {
-      const u = (time - t3) / BEATS[4].dur;
-      dist = 64 + 18 * ease(u);
-      height = 11 + 3 * ease(u); aim = 3.2; shift = 0.30;
-      drift = t0 * 0.12 + (t1 - t0) * 0.10 + (t2 - t1) * 0.09 + (t3 - t2) * 0.07 + (time - t3) * 0.06;
+      // from here the subject is the swarm, then the ship
+      const base = START[B_STRETCH] * 0.045 + BEATS[B_STRETCH].dur * 0.05
+                 + BEATS[B_DEPTH].dur * 0.085 + BEATS[B_COLOUR1].dur * 0.06;
+
+      if (time < START[B_COUNT]) {
+        const u = at(B_MANY);
+        dist = lerp(12.3, 140, easeOut(u));
+        height = lerp(-1.8, 24, ease(u));
+        aim = lerp(heroLift, 3.2, ease(u));
+        shift = lerp(0.22, 0.16, ease(u));
+        drift = base + (time - START[B_MANY]) * 0.05;
+
+      } else if (time < START[B_COLOUR2]) {
+        dist = 140 - 4 * ease(at(B_COUNT));
+        height = 24; aim = 3.2; shift = 0.16;
+        drift = base + BEATS[B_MANY].dur * 0.05 + (time - START[B_COUNT]) * 0.045;
+
+      } else if (time < START[B_ASSEMBLE]) {
+        dist = 136 - 4 * ease(at(B_COLOUR2));
+        height = 24; aim = 3.2; shift = 0.16;
+        drift = base + BEATS[B_MANY].dur * 0.05 + BEATS[B_COUNT].dur * 0.045
+              + (time - START[B_COLOUR2]) * 0.045;
+
+      } else if (time < START[B_REVEAL]) {
+        const u = at(B_ASSEMBLE);
+        dist = lerp(132, 64, ease(u));
+        height = lerp(24, 11, ease(u)); aim = 3.2;
+        shift = lerp(0.16, 0.30, ease(u));
+        drift = base + BEATS[B_MANY].dur * 0.05 + BEATS[B_COUNT].dur * 0.045
+              + BEATS[B_COLOUR2].dur * 0.045 + (time - START[B_ASSEMBLE]) * 0.04;
+
+      } else {
+        const u = at(B_REVEAL);
+        dist = lerp(64, 82, ease(u));
+        height = lerp(11, 14, ease(u)); aim = 3.2; shift = 0.30;
+        drift = base + BEATS[B_MANY].dur * 0.05 + BEATS[B_COUNT].dur * 0.045
+              + BEATS[B_COLOUR2].dur * 0.045 + BEATS[B_ASSEMBLE].dur * 0.04
+              + (time - START[B_REVEAL]) * 0.035;
+      }
     }
 
-    // Stand with the sun behind us. The sunset is toward -x, so looking that
-    // way puts the subject in silhouette against a blown-out sky; from here
-    // the Gaussians are lit and the sky behind them is the deep blue half.
+    // Stand with the sun behind us: the sunset is toward -x, so looking that
+    // way puts the subject in silhouette against a blown-out sky.
     const a = 2.95 + drift;
-    out.set(c.x + Math.cos(a) * dist, c.y + height, c.z + Math.sin(a) * dist);
+    this._camPos.set(c.x + Math.cos(a) * dist, c.y + height, c.z + Math.sin(a) * dist);
+    this._camLook.set(c.x, c.y + aim, c.z);
 
-    // The captions own the left of the frame. Aiming left of the subject
-    // swings the lens left, which carries the subject over into the clear
-    // half — the same trick the impact showcase uses.
-    lookAt.set(c.x, c.y + aim, c.z);
-    const dx = out.x - c.x, dz = out.z - c.z;
+    // The captions own the left of the frame. Aiming left of the subject swings
+    // the lens left, which carries the subject into the clear half.
+    const dx = this._camPos.x - c.x, dz = this._camPos.z - c.z;
     const inv = 1 / Math.max(1e-3, Math.hypot(dx, dz));
-    // perpendicular to the view, scaled by distance so the framing holds
     const off = dist * shift;
-    lookAt.x += -dz * inv * off;
-    lookAt.z += dx * inv * off;
+    this._camLook.x += -dz * inv * off;
+    this._camLook.z += dx * inv * off;
+  }
+
+  /** Where the camera should be, in world space, for the current moment. */
+  camera(out, lookAt) {
+    out.copy(this._camPos);
+    lookAt.copy(this._camLook);
     return out;
   }
 }

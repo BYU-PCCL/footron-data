@@ -308,7 +308,7 @@ body.showcase .fleets, body.showcase .hud-bottom { opacity: 0; transition: opaci
 
 .gen-rule { width: 54px; height: 2px; background: var(--gold); margin-bottom: 22px; opacity: .9; }
 
-.gen-body { position: relative; min-height: 210px; }
+.gen-body { position: relative; min-height: 232px; }
 
 .gen-step {
   position: absolute; inset: 0;
@@ -337,8 +337,20 @@ body.showcase .fleets, body.showcase .hud-bottom { opacity: 0; transition: opaci
 
 .gen-step[data-step="4"] .gen-n { visibility: hidden; }
 
+.gen-foot {
+  margin-top: 26px; display: flex; flex-direction: column; gap: 11px;
+}
+/* A finite-looking rule. Without it a visitor cannot tell whether this is a
+   thirty-second explainer or the whole piece, and leaves. */
+.gen-progress {
+  height: 1px; background: rgba(242,236,224,.16); overflow: hidden;
+}
+.gen-progress i {
+  display: block; height: 100%; width: 0%;
+  background: linear-gradient(90deg, rgba(216,177,104,.5), var(--gold));
+}
 .gen-skip {
-  margin-top: 26px; font-size: clamp(9px, .68vw, 11px);
+  font-size: clamp(9px, .68vw, 11px);
   letter-spacing: .26em; text-transform: uppercase; color: var(--faint);
   text-shadow: 0 1px 10px rgba(0,0,0,.95);
 }
