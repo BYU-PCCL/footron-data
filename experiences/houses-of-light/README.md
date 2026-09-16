@@ -31,9 +31,18 @@ Roughly 1,100 candidates were harvested from Commons and scored by
 **LAION-Aesthetics V2** (an MLP head over CLIP ViT-L/14 embeddings, trained on
 human ratings), then filtered by five zero-shot CLIP gates that reject posed
 groups, interiors, construction sites, visitor-centre scale models and
-composited "giant moon" shots — plus a title filter for the artists' renderings
-the Church library carries for temples that were not yet built. 208 images
-across 201 temples in 48 countries survived.
+composited "giant moon" shots.
+
+Three more filters are not models at all, because nothing here could separate
+them: artists' renderings (the Church library carries them for temples that
+were not yet built), a family of Commons uploads run through a sepia-and-grunge
+treatment, and detail crops of a doorway or a statue. All three label
+themselves in the filename — "Artist Rendition", "Aged", "Close-up" — so a
+title match is exact where a CLIP gate would risk discarding real photographs.
+Two remaining images are on an explicit denylist with their reasons recorded
+beside them, the star-field composite of Draper among them.
+
+**206 images across 201 temples in 48 countries** survived.
 
 ## Notes for this repo
 
