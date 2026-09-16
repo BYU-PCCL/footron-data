@@ -5,6 +5,7 @@ experiences = [ "pi", "pi-circle", "pi-walk", "pi-triangle" ]
 [interactive]
 title = "Interactive Experiences"
 experiences = [
+  "ghost-fleet",
   "fourier",
   "wind",
   "style-transfer",
