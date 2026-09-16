@@ -19,6 +19,11 @@
  *   { type: "replay" }                  play the opening explainer again
  *   { type: "release" }                 hand the wall back to its own loop
  *
+ * The channel is one-way. Every panel in this repository is send-only, and the
+ * wall has nothing it needs to tell a phone: the controls are all verbs, none
+ * of them need to know the state of the battle to be worth pressing, and a
+ * ship already lost is simply ignored here.
+ *
  * Anything unrecognised is ignored: a controls bundle newer than the deployed
  * wall should degrade rather than throw. No message can park the wall in a
  * state a visitor cannot get it out of, which is why `release` exists and why
@@ -93,11 +98,5 @@ export function connectFootron(api) {
     try { handle(msg); } catch (err) { /* a bad message must not stop the wall */ }
   });
 
-  return {
-    connected: true,
-    /** Tell the phones what is on the wall, so the controls can label ships. */
-    send(payload) {
-      try { messaging.sendMessage?.(payload); } catch (err) { /* offline is fine */ }
-    }
-  };
+  return { connected: true };
 }

@@ -108,7 +108,6 @@ let victoryAt = -1;
 let fadeOut = 0;
 let fadeGoal = 0;
 const explosionFor = (p, power) => explosionFx(world.fx, p, power);
-let lastPublish = 0;
 let restarting = false;
 let captureCam = null;      // set only by offline screenshot tooling
 let paused = false;
@@ -382,21 +381,6 @@ const footron = connectFootron({
   release() { enterIdle(); }
 });
 
-/** Keep the phone's ship list honest as hulls are lost and fleets re-raised. */
-function publishFleet() {
-  if (!footron.connected) return;
-  footron.send({
-    type: 'fleet',
-    ships: world.ships.map((s, i) => ({
-      index: i,
-      name: s.name,
-      faction: s.faction.key,
-      integrity: s.dead ? 0 : Math.round(Math.max(0, s.integrity) * 100),
-      state: s.dead ? 'lost' : s.sinking ? 'sinking' : 'afloat'
-    }))
-  });
-}
-
 window.addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
   if (k === 'q') { markInput(); volley('crimson'); }
@@ -653,7 +637,6 @@ function loop(now) {
   } else victoryAt = -1;
 
   hud.update(dt, { fps, mode, splats: world.liveSplatCount(), shots: world.shotsFired });
-  if (clock - lastPublish > 1.5) { lastPublish = clock; publishFleet(); }
   adapt(dtMs);
 }
 
