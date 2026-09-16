@@ -41,10 +41,13 @@ across 201 temples in 48 countries survived.
   is the tree that runs.
 * The wall is 2736x1216 — 2.25:1 — and not one of these photographs is that
   wide (the median is 4:3). The frame is filled edge to edge and then travelled
-  across: each slide starts at the top of the picture, where the spire is, and
-  pans down to the bottom over its life, so all of it is seen. Cropping to fill
-  and holding still would show 59% of a 4:3 photograph and cut the spire off a
-  quarter of them.
+  across: each slide opens at the foot of the picture and rises to the spire
+  over its life, so all of it is seen. Cropping to fill and holding still would
+  show 59% of a 4:3 photograph and cut the spire off a quarter of them.
+* The running order is reshuffled on every load. Five minutes is about thirty
+  slides out of two hundred, so a fixed order would show the same thirty
+  temples to everyone; scores are jittered and the countries dealt at random,
+  so it differs each boot while better photographs still tend to come early.
 * The bottom-left corner is left clear for the launcher's "Scan to" QR card
   (300x300 plus 32 of padding): the caption, the credit line and the left end of
   the chronology ribbon all start to the right of it.

@@ -5,9 +5,9 @@
  * happen on every slide, staggered so that none of them is ever the thing you
  * are watching:
  *
- *   * a slow travel across the photograph — the frame is filled edge to edge
- *     and the slide pans from the top of the picture to the bottom over its
- *     life, so the whole of it is seen without any of it being letterboxed;
+ *   * a slow travel up the photograph — the frame is filled edge to edge and
+ *     the slide rises from the foot of the picture to the spire over its life,
+ *     so the whole of it is seen without any of it being letterboxed;
  *   * the ambient wash behind everything re-grading to this photograph's own
  *     three dominant colours, which takes a couple of seconds and so is always
  *     still settling when the caption finishes arriving;
@@ -119,20 +119,20 @@ export class Slideshow {
     const aspect = image.w && image.h ? image.w / image.h : null;
     const box = layout(pan, aspect);
 
-    // The travel starts at the top of the photograph, which is where the spire
-    // is, and ends at the bottom. That order matters: the bloom opens on the
-    // spire, so the spire has to be the part that is on the wall when the light
-    // arrives, and the eye then travels down the building.
+    // The travel runs upward: it opens at the foot of the photograph and rises
+    // to the spire, so the building is revealed the way you take it in standing
+    // in front of one rather than the way a camera falls off it.
     const travelY = box.overflowY, travelX = box.overflowX;
     const still = travelY < MIN_TRAVEL && travelX < MIN_TRAVEL;
 
-    // The bloom opens from the spire, whose position is recorded in the
-    // photograph's own coordinates. At the start of the travel the picture's
-    // top-left corner sits on the frame's, so converting is just a matter of
-    // scale — but the spire can start below the bottom of the frame on a very
-    // tall photograph, so clamp it back onto the wall.
-    const bx = image.bloom[0] * box.w / box.W;
-    const by = image.bloom[1] * box.h / box.H;
+    // Where the spire is on the wall *at the moment the light arrives*, which
+    // is the start of the travel and therefore the picture shifted up by its
+    // whole overflow. On a tall photograph the spire is still above the top of
+    // the frame then, so the bloom is clamped back onto the wall and opens from
+    // the top edge — which is the direction the spire is in, and the direction
+    // the picture is about to rise from.
+    const bx = (image.bloom[0] * box.w - travelX) / box.W;
+    const by = (image.bloom[1] * box.h - travelY) / box.H;
     const cx = Math.max(0.04, Math.min(0.96, bx)) * 100;
     const cy = Math.max(0.04, Math.min(0.96, by)) * 100;
     el.style.setProperty("--bx", `${cx}%`);
@@ -148,8 +148,8 @@ export class Slideshow {
         { duration: PAN_MS, fill: "forwards", easing: "linear" });
     } else {
       pan.animate(
-        [{ transform: "translate(0px, 0px)" },
-         { transform: `translate(${-travelX}px, ${-travelY}px)` }],
+        [{ transform: `translate(${-travelX}px, ${-travelY}px)` },
+         { transform: "translate(0px, 0px)" }],
         { duration: PAN_MS, fill: "forwards", easing: "cubic-bezier(.32,0,.68,1)" }
       );
     }
