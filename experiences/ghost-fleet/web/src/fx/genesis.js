@@ -74,11 +74,15 @@ const _wc = new THREE.Vector3();
  * painted trim, tarred oak.
  */
 const HERO_PALETTE = [
-  [0.94, 0.90, 0.82],   // canvas
+  [0.88, 0.86, 0.80],   // canvas — also the neutral the earlier beats use, so
+                        // entering this beat does not pop to a new colour
   [0.97, 0.74, 0.26],   // gilding
   [0.92, 0.22, 0.24],   // painted trim
   [0.62, 0.44, 0.28]    // oak
 ];
+
+/** What the Gaussian is while it is still only "a Gaussian". */
+const HERO_NEUTRAL = HERO_PALETTE[0];
 const _camLocal = new THREE.Vector3();
 const _inv = new THREE.Matrix4();
 
@@ -239,7 +243,9 @@ export class Genesis {
       : time < START[B_DEPTH] ? B_STRETCH
       : time < START[B_COLOUR1] ? B_DEPTH : B_COLOUR1;
 
-    let rx, ry, rz, roll = 0, tumble = 0, warm = 0, alpha = 1;
+    // `palette` is an index into HERO_PALETTE once the colour beat starts,
+    // and -1 before it — 0 is a real palette entry, so it cannot mean "none"
+    let rx, ry, rz, roll = 0, tumble = 0, palette = -1, alpha = 1;
 
     if (beat === B_FLAT) {
       const u = clamp01(time / BEATS[B_FLAT].dur);
@@ -279,7 +285,7 @@ export class Genesis {
       roll = Math.PI * 0.85;
       tumble = Math.PI * 0.52 + 1.1 + (time - START[B_COLOUR1]) * 0.42;
       // step through the palette, holding each long enough to register
-      warm = u * (HERO_PALETTE.length - 1);
+      palette = u * (HERO_PALETTE.length - 1);
       // and let the opacity dip once, so that reads as its own property too
       // a dip, not a disappearance: these splats composite over a bright sky
       // and a deep dip simply reads as the thing being gone
@@ -290,13 +296,12 @@ export class Genesis {
     if (tumble) {
       // turn about the ellipse's own long axis, which is the local x after the
       // billboard basis — that is the axis that swings it edge-on
-      _e.set(0, 0, 0);
       _qRoll.setFromAxisAngle(_e1.set(1, 0, 0).applyQuaternion(_q).normalize(), tumble);
       _q.premultiply(_qRoll);
     }
 
     out.rx = rx; out.ry = ry; out.rz = rz;
-    out.q = _q; out.warm = warm; out.alpha = alpha;
+    out.q = _q; out.palette = palette; out.alpha = alpha;
     return out;
   }
 
@@ -314,9 +319,9 @@ export class Genesis {
 
       // Neutral while it is still just "a Gaussian"; once the caption says the
       // colour belongs to it, walk the palette so the viewer sees it change.
-      let r = 0.82, g = 0.80, b = 0.78;
-      if (h.warm > 0) {
-        const f = Math.min(h.warm, HERO_PALETTE.length - 1);
+      let r = HERO_NEUTRAL[0], g = HERO_NEUTRAL[1], b = HERO_NEUTRAL[2];
+      if (h.palette >= 0) {
+        const f = Math.min(h.palette, HERO_PALETTE.length - 1);
         const i0 = Math.floor(f);
         const i1 = Math.min(i0 + 1, HERO_PALETTE.length - 1);
         // hold each colour, then move briskly: a constant crossfade reads as
