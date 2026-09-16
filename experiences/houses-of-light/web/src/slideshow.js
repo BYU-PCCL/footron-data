@@ -21,12 +21,16 @@
 
 import { displayName, dedicationLine, metaLine } from "./label.js";
 
-const HOLD = 9200;        // ms a slide is held, bloom included
+const HOLD = 30000;       // ms a slide is held, bloom included
 const BLOOM = 2400;       // ms for the light to open across the frame
 
 /* How long the travel takes. A slide is fully visible from the end of its own
  * bloom until the next one starts blooming over it, so the journey is set to
- * finish just as it begins to be covered rather than running on underneath. */
+ * finish just as it begins to be covered rather than running on underneath.
+ *
+ * At a thirty-second hold this works out around 25 pixels a second up a 4:3
+ * photograph — slow enough that you notice the building has moved rather than
+ * watching it move, which is the point. */
 const PAN_MS = HOLD + BLOOM * 0.5;
 
 /* Below this much overflow there is nothing to pan across — an image already
