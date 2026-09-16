@@ -1,6 +1,6 @@
 # Image credits
 
-208 photographs from two sources, on two different
+206 photographs from two sources, on two different
 sets of terms. Both are credited on the wall for the whole time each
 photograph is on screen.
 
@@ -11,7 +11,7 @@ photographer as those licences require.
 
 | Temple | File | Photographer | Licence |
 | --- | --- | --- | --- |
-| Albuquerque New Mexico Temple | [Albuquerque New Mexico Temple, Color Aged.jpg](https://commons.wikimedia.org/wiki/File:Albuquerque_New_Mexico_Temple,_Color_Aged.jpg) | Altus Photo Design | CC BY 2.0 |
+| Albuquerque New Mexico Temple | [Albuquerque New Mexico Temple, Entrance.jpg](https://commons.wikimedia.org/wiki/File:Albuquerque_New_Mexico_Temple,_Entrance.jpg) | Altus Photo Design | CC BY 2.0 |
 | Auckland New Zealand Temple | [Auckland New Zealand Temple - 2025-03-10.jpg](https://commons.wikimedia.org/wiki/File:Auckland_New_Zealand_Temple_-_2025-03-10.jpg) | CreatorPtah | CC0 |
 | Bangkok Thailand Temple | [Bangkok Thailand Temple (2026) 01.jpg](https://commons.wikimedia.org/wiki/File:Bangkok_Thailand_Temple_(2026)_01.jpg) | Medelam | CC BY-SA 4.0 |
 | Bangkok Thailand Temple | [Bangkok Thailand Temple (2026) 02.jpg](https://commons.wikimedia.org/wiki/File:Bangkok_Thailand_Temple_(2026)_02.jpg) | Medelam | CC BY-SA 4.0 |
@@ -28,8 +28,7 @@ photographer as those licences require.
 | Columbus Ohio Temple | [Columbus Ohio Temple 2017.jpg](https://commons.wikimedia.org/wiki/File:Columbus_Ohio_Temple_2017.jpg) | JonRidinger | CC BY-SA 4.0 |
 | Deseret Peak Utah Temple | [Deseret Peak Utah Temple outside - 2024.jpg](https://commons.wikimedia.org/wiki/File:Deseret_Peak_Utah_Temple_outside_-_2024.jpg) | Lomrjyo | CC BY-SA 4.0 |
 | Detroit Michigan Temple | [Detroit Michigan Temple (2) 1.jpg](https://commons.wikimedia.org/wiki/File:Detroit_Michigan_Temple_(2)_1.jpg) | Chad James L Fournier | CC BY-SA 4.0 |
-| Draper Utah Temple | [Draper1.jpg](https://commons.wikimedia.org/wiki/File:Draper1.jpg) | Whatsupchadjames | CC BY-SA 4.0 |
-| Draper Utah Temple | [Draper Utah Temple, Aged with Smoke.jpg](https://commons.wikimedia.org/wiki/File:Draper_Utah_Temple,_Aged_with_Smoke.jpg) | Altus Photo Design | CC BY 2.0 |
+| Draper Utah Temple | [Drapertemple.jpg](https://commons.wikimedia.org/wiki/File:Drapertemple.jpg) | Whatsupchadjames | CC BY-SA 4.0 |
 | Edmonton Alberta Temple | [Mormon Temple Edmonton Alberta Canada 01.jpg](https://commons.wikimedia.org/wiki/File:Mormon_Temple_Edmonton_Alberta_Canada_01.jpg) | WinterE229 WinterforceMedia | Public domain |
 | Elko Nevada Temple | [Elko Nevada Temple name stone.jpg](https://commons.wikimedia.org/wiki/File:Elko_Nevada_Temple_name_stone.jpg) | Bobjgalindo | CC BY-SA 4.0 |
 | Fort Collins Colorado Temple | [Ft Collins Colorado Temple 16.jpg](https://commons.wikimedia.org/wiki/File:Ft_Collins_Colorado_Temple_16.jpg) | Chad James L Fournier | CC BY-SA 4.0 |
@@ -43,14 +42,13 @@ photographer as those licences require.
 | Kirtland Temple | [Plate 1—The Kirtland Temple.png](https://commons.wikimedia.org/wiki/File:Plate_1%E2%80%94The_Kirtland_Temple.png) | C. R. Savage Co. | Public domain |
 | Laie Hawaii Temple | [2023-04-20, Laie Hawaii Temple, 02.jpg](https://commons.wikimedia.org/wiki/File:2023-04-20,_Laie_Hawaii_Temple,_02.jpg) | Steven Pavlov | CC BY-SA 4.0 |
 | Laie Hawaii Temple | [2023-04-20, Laie Hawaii Temple, 01.jpg](https://commons.wikimedia.org/wiki/File:2023-04-20,_Laie_Hawaii_Temple,_01.jpg) | Steven Pavlov | CC BY-SA 4.0 |
-| Las Vegas Nevada Temple | [Las Vegas Nevada Temple, Spires Aged.jpg](https://commons.wikimedia.org/wiki/File:Las_Vegas_Nevada_Temple,_Spires_Aged.jpg) | Altus Photo Design | CC BY 2.0 |
 | Layton Utah Temple | [Laytonutahtemple.jpg](https://commons.wikimedia.org/wiki/File:Laytonutahtemple.jpg) | Whatsupchadjames | CC BY-SA 4.0 |
 | Logan Utah Temple | [Logan2.jpg](https://commons.wikimedia.org/wiki/File:Logan2.jpg) | Whatsupchadjames | CC BY-SA 4.0 |
-| Los Angeles California Temple | [Los Angeles California Temple, Aged.jpg](https://commons.wikimedia.org/wiki/File:Los_Angeles_California_Temple,_Aged.jpg) | Altus Photo Design | CC BY 2.0 |
+| Los Angeles California Temple | [Los Angeles California Temple Night.jpg](https://commons.wikimedia.org/wiki/File:Los_Angeles_California_Temple_Night.jpg) | ChristianSchd | CC BY-SA 3.0 |
 | Louisville Kentucky Temple | [AncientandAcceptedScottishRiteTempleLouisville.jpg](https://commons.wikimedia.org/wiki/File:AncientandAcceptedScottishRiteTempleLouisville.jpg) | Andrew Jameson | CC BY-SA 3.0 |
 | Manaus Brazil Temple | [Templo de Manaus.jpg](https://commons.wikimedia.org/wiki/File:Templo_de_Manaus.jpg) | Gabriel Smith | CC BY 2.0 |
 | Manila Philippines Temple | [Allan Jay Quesada Manila Philippines Temple 20221026 172350.jpg](https://commons.wikimedia.org/wiki/File:Allan_Jay_Quesada_Manila_Philippines_Temple_20221026_172350.jpg) | Allan Jay Quesada | CC BY-SA 4.0 |
-| Manti Utah Temple | [Manti Utah Temple Closeup.jpg](https://commons.wikimedia.org/wiki/File:Manti_Utah_Temple_Closeup.jpg) | Itsetsyoufree32 | CC BY 4.0 |
+| Manti Utah Temple | [Southwest corner of the Manti Utah Temple.jpg](https://commons.wikimedia.org/wiki/File:Southwest_corner_of_the_Manti_Utah_Temple.jpg) | Itsetsyoufree32 | CC BY 4.0 |
 | Memphis Tennessee Temple | [Memphis Tennessee Temple 2023.jpg](https://commons.wikimedia.org/wiki/File:Memphis_Tennessee_Temple_2023.jpg) | Morganlefay11 | CC BY-SA 4.0 |
 | Meridian Idaho Temple | [Meridian Idaho Temple.jpg](https://commons.wikimedia.org/wiki/File:Meridian_Idaho_Temple.jpg) | Frank Schulenburg | CC BY-SA 4.0 |
 | Montevideo Uruguay Temple | [Iglesia Mormones - panoramio (1).jpg](https://commons.wikimedia.org/wiki/File:Iglesia_Mormones_-_panoramio_(1).jpg) | Andrés Franchi Ugart… | CC BY-SA 3.0 |
@@ -58,7 +56,6 @@ photographer as those licences require.
 | Mount Timpanogos Utah Temple | [Mount Timpanogos Temple 4.jpg](https://commons.wikimedia.org/wiki/File:Mount_Timpanogos_Temple_4.jpg) | — | CC BY-SA 2.5 |
 | Mérida México Temple | [Merida Mexico Temple by Renegade of Funk - Andy Funk cropped.jpg](https://commons.wikimedia.org/wiki/File:Merida_Mexico_Temple_by_Renegade_of_Funk_-_Andy_Funk_cropped.jpg) | Renegade of Funk / Andy Funk | CC BY 2.0 |
 | Nauvoo Illinois Temple | [Sunny afternoon view of Nauvoo Illinois Temple.jpg](https://commons.wikimedia.org/wiki/File:Sunny_afternoon_view_of_Nauvoo_Illinois_Temple.jpg) | Nyttend | Public domain |
-| Newport Beach California Temple | [Newport Beach California Temple, Aged.jpg](https://commons.wikimedia.org/wiki/File:Newport_Beach_California_Temple,_Aged.jpg) | Altus Photo Design | CC BY 2.0 |
 | Oakland California Temple | [Oakland Temple.jpg](https://commons.wikimedia.org/wiki/File:Oakland_Temple.jpg) | Jeffry | CC BY 2.0 |
 | Ogden Utah Temple | [Ogden Utah Temple fountain (47142906672).jpg](https://commons.wikimedia.org/wiki/File:Ogden_Utah_Temple_fountain_(47142906672).jpg) | Ben P L from Provo, USA | CC BY-SA 2.0 |
 | Okinawa Japan Temple | [Okinawa Temple Front.jpg](https://commons.wikimedia.org/wiki/File:Okinawa_Temple_Front.jpg) | Epachamo | CC BY-SA 4.0 |
@@ -92,7 +89,6 @@ photographer as those licences require.
 | Tijuana México Temple | [Templo Tijuana Mexico (cropped).jpg](https://commons.wikimedia.org/wiki/File:Templo_Tijuana_Mexico_(cropped).jpg) | Isai Armenta | CC BY 4.0 |
 | Tijuana México Temple | [Templo Tijuana Mexico.jpg](https://commons.wikimedia.org/wiki/File:Templo_Tijuana_Mexico.jpg) | Isai Armenta | CC BY 4.0 |
 | Trujillo Peru Temple | [Templo de Trujillo, Perú.jpg](https://commons.wikimedia.org/wiki/File:Templo_de_Trujillo,_Per%C3%BA.jpg) | "cfuguer.02" | CC BY-SA 4.0 |
-| Twin Falls Idaho Temple | [Twin Falls Idaho Temple, Aged.jpg](https://commons.wikimedia.org/wiki/File:Twin_Falls_Idaho_Temple,_Aged.jpg) | Altus Photo Design | CC BY 2.0 |
 | Washington D.C. Temple | [DC Mormon Temple Panorama.jpg](https://commons.wikimedia.org/wiki/File:DC_Mormon_Temple_Panorama.jpg) | Pachiscool11 | CC0 |
 | Willamette Valley Oregon Temple | [Willamette Valley Oregon Temple aerial - September 2026.jpg](https://commons.wikimedia.org/wiki/File:Willamette_Valley_Oregon_Temple_aerial_-_September_2026.jpg) | Tedder | CC BY-SA 4.0 |
 | Yigo Guam Temple | [Yigo Guam Temple.jpg](https://commons.wikimedia.org/wiki/File:Yigo_Guam_Temple.jpg) | LittleT889 | CC BY 4.0 |
@@ -181,6 +177,7 @@ own use is within those terms.
 | México City México Temple | Mexico City Mexico Temple and Front Lawn | [collection](https://www.churchofjesuschrist.org/media/collection/mexico-city-mexico-temple-images?lang=eng) |
 | Nashville Tennessee Temple | Nashville Tennessee Temple Name Sign | [collection](https://www.churchofjesuschrist.org/media/collection/nashville-tennessee-temple-images?lang=eng) |
 | Nauvoo Temple | Nauvoo Illinois Temple at Sunset | [collection](https://www.churchofjesuschrist.org/media/collection/nauvoo-illinois-temple-images?lang=eng) |
+| Newport Beach California Temple | Newport Beach California Temple in a Storm | [collection](https://www.churchofjesuschrist.org/media/collection/newport-beach-california-temple-images?lang=eng) |
 | Nukuʻalofa Tonga Temple | Nuku‘alofa Tonga Temple in the Evening | [collection](https://www.churchofjesuschrist.org/media/collection/nuku-alofa-tonga-temple-images?lang=eng) |
 | Oaxaca México Temple | Oaxaca Mexico Temple | [collection](https://www.churchofjesuschrist.org/media/collection/oaxaca-mexico-temple-images?lang=eng) |
 | Oklahoma City Oklahoma Temple | Oklahoma City Oklahoma Temple in the Evening | [collection](https://www.churchofjesuschrist.org/media/collection/oklahoma-city-oklahoma-temple-images?lang=eng) |
@@ -225,6 +222,7 @@ own use is within those terms.
 | Tokyo Japan Temple | Tokyo Japan Temple: Exterior | [collection](https://www.churchofjesuschrist.org/media/collection/tokyo-japan-temple-images?lang=eng) |
 | Toronto Ontario Temple | Toronto&nbsp;Ontario&nbsp;Temple: Exterior | [collection](https://www.churchofjesuschrist.org/media/collection/toronto-ontario-temple-images?lang=eng) |
 | Tucson Arizona Temple | Tucson Arizona Temple Exterior | [collection](https://www.churchofjesuschrist.org/media/collection/tucson-arizona-temple-images?lang=eng) |
+| Twin Falls Idaho Temple | Twin Falls Idaho Temple during Daylight | [collection](https://www.churchofjesuschrist.org/media/collection/twin-falls-idaho-temple-images?lang=eng) |
 | Urdaneta Philippines Temple | Urdaneta Philippines Temple Exterior | [collection](https://www.churchofjesuschrist.org/media/collection/urdaneta-philippines-temple-images?lang=eng) |
 | Vancouver British Columbia Temple | Vancouver British Columbia Temple | [collection](https://www.churchofjesuschrist.org/media/collection/vancouver-british-columbia-temple-images?lang=eng) |
 | Veracruz México Temple | Veracruz Mexico Temple | [collection](https://www.churchofjesuschrist.org/media/collection/veracruz-mexico-temple-images?lang=eng) |
