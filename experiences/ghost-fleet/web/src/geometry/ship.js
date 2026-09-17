@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { SplatBuilder, surface, tube, cord, PART } from './splatbuilder.js';
 import { makeRng } from './rng.js';
 import { SHIP, beamProfile, sheer, keelDepth, sectionWidth, hullPoint } from './hull.js';
+import { MASTS, brace, BELLY, sailPoint, deckY } from './rig.js';
 
 /**
  * Procedurally builds a galleon as a cloud of anisotropic Gaussians.
@@ -242,16 +243,10 @@ export function buildShip({ seed = 1, faction, density = 1 } = {}) {
 
   // ---- masts, spars, sails, rigging
   // [heightFraction, halfWidth, drop] — courses are wide and deep, topsails taper
-  const masts = [
-    { t: 0.21, h: 19.5, r: 0.32, sails: [[0.30, 7.0, 6.0], [0.58, 5.8, 4.6], [0.80, 3.9, 3.1]] },  // mizzen (aft)
-    { t: 0.49, h: 25.0, r: 0.40, sails: [[0.25, 9.8, 7.8], [0.53, 8.2, 6.3], [0.76, 5.6, 4.2]] },  // main
-    { t: 0.78, h: 20.5, r: 0.32, sails: [[0.28, 8.0, 6.6], [0.56, 6.7, 5.1], [0.79, 4.4, 3.4]] }   // fore
-  ];
-
-  const BRACE = 0.42;                  // radians the yards are swung round
-  const cb = Math.cos(BRACE), sb = Math.sin(BRACE);
-  /** Rotate a point in the yard's plane about the mast's vertical axis. */
-  const brace = (ox, oz) => [ox * cb - oz * sb, ox * sb + oz * cb];
+  // MASTS, brace() and the sail surface come from rig.js: the depth proxy is
+  // built from the same numbers, and a sail proxy that has drifted from the
+  // sail is worse than none at all.
+  const masts = MASTS;
 
   const mastTops = [];
   for (const m of masts) {
@@ -280,14 +275,8 @@ export function buildShip({ seed = 1, faction, density = 1 } = {}) {
         });
 
       // the sail: a sheet that bellies away from the wind
-      const belly = 1.35;
       surface(b, (u, v, o) => {
-        const zz = (u * 2 - 1) * half * (1 - 0.07 * v);
-        // the sail bellies away from the wind, deepest at its middle
-        const bow = Math.sin(Math.PI * u) * Math.sin(Math.PI * Math.min(1, v * 1.15)) * belly;
-        const ripple = 0.14 * Math.sin(u * 13.0 + v * 4.0) * Math.sin(Math.PI * u);
-        const [bx, bz] = brace(-bow - ripple, zz);
-        o.p.set(yx + bx, yy - v * sh + Math.pow(Math.sin(Math.PI * u), 1.5) * 0.30 * v, bz);
+        sailPoint(m, [hf, half, sh], u, v, o.p);
         const [dux, duz] = brace(0, 2 * half);
         const [dvx, dvz] = brace(-0.2, 0);
         o.du.set(dux, 0, duz);

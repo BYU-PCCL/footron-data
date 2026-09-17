@@ -154,6 +154,8 @@ function beginGenesis() {
   lead.update(0.0001, world.time, world.swell);
 
   showcase.enabled = false;
+  // she is a cloud until the last beat, so nothing about her should occlude
+  world.ships.forEach(s => s.setProxiesVisible(false));
   genesis = new Genesis(lead, genesisPanel);
   genesis.start();
   genesisPanel.show();
@@ -161,7 +163,7 @@ function beginGenesis() {
 
 function endGenesis() {
   genesis = null;
-  world.ships.forEach(s => { s.mesh.visible = true; });
+  world.ships.forEach(s => { s.mesh.visible = true; s.setProxiesVisible(true); });
   showcase.enabled = true;
   // The genesis has just spent twenty seconds on captions; give the battle a
   // proper run before the next explainer, or the piece reads as a slideshow.

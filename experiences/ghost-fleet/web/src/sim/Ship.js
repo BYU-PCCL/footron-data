@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { SplatMesh } from '../splats/SplatMesh.js';
 import { buildShip } from '../geometry/ship.js';
 import { SHIP, buildHullProxy } from '../geometry/hull.js';
+import { buildSailProxy, buildSparProxy } from '../geometry/rig.js';
 import { PART } from '../geometry/splatbuilder.js';
 import { KIND } from '../fx/DynamicSplats.js';
 import { waveFrame } from '../geometry/ocean.js';
@@ -44,15 +45,45 @@ export class Ship {
     // transparent mesh with no depth write, so without this its debris draws
     // over the hull whatever the real depth — fragments blown out the far
     // side appear to hang in front of the near one.
-    const proxy = new THREE.Mesh(
-      buildHullProxy(),
-      new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: true, depthTest: true })
-    );
+    const depthOnly = () => new THREE.MeshBasicMaterial({
+      colorWrite: false, depthWrite: true, depthTest: true
+    });
+
+    const proxy = new THREE.Mesh(buildHullProxy(), depthOnly());
     proxy.name = `hull-proxy-${name}`;
     proxy.renderOrder = -5;          // before every splat mesh
     proxy.frustumCulled = false;
     mesh.add(proxy);
     this.proxy = proxy;
+
+    // The hull is a closed solid and can be inset; a sail is a sheet with no
+    // inside to shrink toward, so its proxy sits exactly where the sail's own
+    // Gaussians do and is pushed back in depth instead. Without this, flotsam
+    // floating on the water beyond a sail draws straight through it.
+    const sailMat = depthOnly();
+    sailMat.polygonOffset = true;
+    sailMat.polygonOffsetFactor = 4.0;
+    sailMat.polygonOffsetUnits = 8;
+    sailMat.side = THREE.DoubleSide;    // sails are seen from both faces
+
+    const sailProxy = new THREE.Mesh(buildSailProxy(), sailMat);
+    sailProxy.name = `sail-proxy-${name}`;
+    sailProxy.renderOrder = -4;
+    sailProxy.frustumCulled = false;
+    mesh.add(sailProxy);
+    this.sailProxy = sailProxy;
+
+    // Masts and yards matter more than their size suggests: a mast is dark
+    // against a bright sky, so debris drawing through one is among the most
+    // obvious depth failures on the ship. Too slender to inset, so they share
+    // the sails' offset.
+    const sparMat = sailMat.clone();
+    const sparProxy = new THREE.Mesh(buildSparProxy(), sparMat);
+    sparProxy.name = `spar-proxy-${name}`;
+    sparProxy.renderOrder = -4;
+    sparProxy.frustumCulled = false;
+    mesh.add(sparProxy);
+    this.sparProxy = sparProxy;
 
     // ---- coarse spatial index: buckets along the ship's length
     this.SLICES = 40;
@@ -119,6 +150,17 @@ export class Ship {
   }
 
   worldMatrix() { return this.mesh.matrixWorld; }
+
+  /**
+   * The depth proxies describe an assembled ship. While the genesis has her
+   * scattered into a cloud there is no solid there to occlude anything, and
+   * leaving them on punches a ship-shaped hole through the swarm.
+   */
+  setProxiesVisible(v) {
+    if (this.proxy) this.proxy.visible = v;
+    if (this.sailProxy) this.sailProxy.visible = v;
+    if (this.sparProxy) this.sparProxy.visible = v;
+  }
 
   /**
    * Roughly how much of this ship sits between two points, both in local
