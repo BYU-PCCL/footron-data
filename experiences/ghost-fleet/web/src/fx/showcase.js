@@ -133,26 +133,35 @@ export class ImpactShowcase {
   rearm(delay = 14) {
     this.seenFirst = false;
     this.cooldown = 0;
-    this.firstDelay = delay;    // let the engagement actually start first
+    // Only paces hits AFTER the first one — the first shot home is never held
+    // back, so a fresh fleet always gets its opening impact shown.
+    this.firstDelay = delay;
     if (this.active) this._end();
   }
 
   /** A hit just landed. Decide whether to stop the world for it. */
   offer(info) {
     if (!this.enabled || this.state !== STATE.IDLE) return;
-    if (this.cooldown > 0 || this.firstDelay > 0) return;
 
-    // Only a hit with something to show. A graze that clips a shroud removes a
-    // handful of splats and looks like nothing when you freeze it — though the
-    // bar is lower under the cinematic camera, which is already framing the
-    // action and has nothing else competing for the moment.
-    const bar = this.cinematic ? RICH_LO * 0.62 : RICH_LO;
-    if (info.removed < bar) return;
+    // The FIRST shot to go home in a battle always stops the world, whatever
+    // it removed. The opening explainer has just promised that a cannonball
+    // takes these Gaussians out of the hull; the first one that lands is that
+    // promise being kept, and letting it go by because it only clipped a rail
+    // leaves the whole argument hanging.
+    const first = !this.seenFirst;
+    if (!first) {
+      if (this.cooldown > 0 || this.firstDelay > 0) return;
+      // After that, only a hit with something to show — a graze looks like
+      // nothing when you freeze it. The bar is lower under the cinematic
+      // camera, which is already framing the action.
+      const bar = this.cinematic ? RICH_LO * 0.62 : RICH_LO;
+      if (info.removed < bar) return;
+    }
 
-    this._begin(info);
+    this._begin(info, first);
   }
 
-  _begin(info) {
+  _begin(info, first = false) {
     this.hit = info;
     this.state = STATE.PUSH;
     this.t = 0;
@@ -161,8 +170,11 @@ export class ImpactShowcase {
     this._aim = null;
 
     // how much this particular hit has to show
-    const rich = THREE.MathUtils.clamp(
-      (info.removed - RICH_LO) / (RICH_HI - RICH_LO), 0, 1);
+    // The first hit is shown whatever its size, so give it a floor: a
+    // nine-second hold on a small one is still long enough to read the panel.
+    const rich = first
+      ? Math.max(0.35, THREE.MathUtils.clamp((info.removed - RICH_LO) / (RICH_HI - RICH_LO), 0, 1))
+      : THREE.MathUtils.clamp((info.removed - RICH_LO) / (RICH_HI - RICH_LO), 0, 1);
     this.richness = rich;
     this.holdDur = THREE.MathUtils.lerp(HOLD_MIN, HOLD_MAX, rich);
     this.slowest = THREE.MathUtils.lerp(SLOW_MAX, SLOW_MIN, rich);
@@ -173,7 +185,10 @@ export class ImpactShowcase {
     // chosen to be clear of the rig, but a hit can throw its fragments
     // somewhere the clear bearing does not look — and stopping the world to
     // present an empty patch of sea is worse than not stopping it at all.
-    if (!this._shotHasSubject()) {
+    //
+    // The first hit is exempt: it is the one that answers the explainer, and a
+    // thin shot of it is better than skipping the moment entirely.
+    if (!first && !this._shotHasSubject()) {
       this.state = STATE.COOLDOWN;
       this.hit = null;
       this.cooldown = 6;          // try again on the next solid hit, soon
