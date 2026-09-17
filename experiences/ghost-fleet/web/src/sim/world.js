@@ -5,6 +5,7 @@ import { FACTIONS } from './factions.js';
 import { DynamicSplats, KIND } from '../fx/DynamicSplats.js';
 import { muzzleBlast, explosion, waterSplash, burn, wake } from '../fx/emitters.js';
 import { waveAt } from '../geometry/ocean.js';
+import { Wind } from './wind.js';
 
 const _v = new THREE.Vector3();
 const _v2 = new THREE.Vector3();
@@ -43,6 +44,8 @@ export class World {
       groundColor: new THREE.Color(0.10, 0.11, 0.14),
       ambient: 0.85
     };
+
+    this.wind = new Wind();
 
     this.fx = new DynamicSplats(dynamicCapacity);
     // smoke and fire are volumetric, not surfaces — only half-shade them
@@ -129,10 +132,16 @@ export class World {
     ship.pos.set(L.x, 0, L.z);
     ship.heading = L.h;
     ship.targetHeading = L.h;
-    ship.speed = 3.0 + (k % 2) * 0.5;
+    // Her best, not her actual — what she makes depends on the wind, and she
+    // will average well under this. Set high enough that a ship on a good
+    // point of sail is visibly quick, because "fast when the wind serves" is
+    // the whole point of modelling it.
+    ship.maxSpeed = 7.6 + (k % 2) * 0.8;
+    ship.speed = 3.0;
     ship.reload = 1.5 + k * 0.8;
     ship.mesh.setViewport(this.viewport.x, this.viewport.y);
     ship.mesh.setLighting(this.lighting);
+    ship.wind = this.wind;
     ship.update(0.0001, this.time, this.swell);
     this.scene.add(ship.mesh);
     this.ships.push(ship);
@@ -410,6 +419,12 @@ export class World {
         ship.targetHeading += d * urgency;
       }
 
+      // A course inside the no-go zone is a course that stops her dead, so the
+      // helm takes the nearest one she can actually sail. Over a few minutes
+      // this is what puts ships on long boards to windward instead of letting
+      // them slide sideways at whatever heading the tactics asked for.
+      ship.targetHeading = this.wind.sailable(ship.targetHeading);
+
       // keep the fight near the origin so the camera never loses it
       const fromCenter = Math.hypot(ship.pos.x, ship.pos.z);
       if (fromCenter > 60) {
@@ -565,6 +580,7 @@ export class World {
   update(dt, realDt = dt) {
     this.time += dt;
     this.swell += (this.stormTarget - this.swell) * Math.min(1, dt * 0.45);
+    this.wind.update(dt, this.swell);
 
     for (const ship of this.ships) {
       if (ship.dead) continue;

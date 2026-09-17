@@ -67,6 +67,9 @@ in sync.
 
 ## Notes for whoever picks this up
 
+- Ships sail rather than drive: `src/sim/wind.js` holds the wind and a
+  square-rig polar curve, and `Ship.update` turns that into speed, momentum and
+  heel. `maxSpeed` is her best on a beam reach, not what she makes.
 - The guns are in ports and traverse about 25°, so ships manoeuvre for a firing
   solution. Player commands go through `orderBroadside`, which puts the helm
   over when the battery cannot bear — a command that silently does nothing is

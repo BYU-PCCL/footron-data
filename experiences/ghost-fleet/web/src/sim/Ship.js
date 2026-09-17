@@ -6,6 +6,7 @@ import { buildSailProxy, buildSparProxy } from '../geometry/rig.js';
 import { PART } from '../geometry/splatbuilder.js';
 import { KIND } from '../fx/DynamicSplats.js';
 import { waveFrame } from '../geometry/ocean.js';
+import { polar } from './wind.js';
 
 const _v = new THREE.Vector3();
 const _v2 = new THREE.Vector3();
@@ -94,9 +95,15 @@ export class Ship {
     // ---- sailing state
     this.pos = new THREE.Vector3();
     this.heading = 0;             // radians, 0 = bow toward +x
-    this.speed = 3.2;
     this.targetHeading = 0;
     this.rudder = 0;
+
+    // `speed` is what she is making now; `maxSpeed` is her best, on a beam
+    // reach in a full breeze. They used to be the same number, which is why
+    // the fleet moved like a carousel.
+    this.maxSpeed = 7.6;
+    this.speed = 3.0;
+    this.heel = 0;
 
     // ---- condition
     this.maxIntegrity = 1;
@@ -379,10 +386,47 @@ export class Ship {
     while (dh > Math.PI) dh -= Math.PI * 2;
     while (dh < -Math.PI) dh += Math.PI * 2;
     this.rudder += (Math.max(-1, Math.min(1, dh * 1.6)) - this.rudder) * Math.min(1, dt * 1.6);
-    this.heading += this.rudder * 0.30 * dt;
+    // the rudder only bites on water flowing past it, so a ship with no way on
+    // answers her helm slowly — which is what makes being caught in irons cost
+    // something rather than just looking slow
+    const bite = Math.min(1, 0.25 + 0.75 * (this.speed / Math.max(1e-3, this.maxSpeed)));
+    this.heading += this.rudder * 0.34 * bite * dt;
 
+    // ---- what the wind will give her on this heading
+    const wind = this.wind;
+    let target = this.maxSpeed;
+    let heelWant = 0;
+    if (wind) {
+      const off = wind.angleOff(this.heading);
+      target *= polar(off) * wind.strength;
+      // a ship under press of sail lies over away from the wind, hardest when
+      // it is on the beam and she is driving
+      // A ship laid over is the clearest sign from a distance that she is
+      // driving rather than drifting, so this is pitched for legibility across
+      // a room — around ten degrees at full press, rather than the five or six
+      // that would be closer to the truth.
+      heelWant = -wind.side(this.heading) * Math.sin(off) * wind.strength * 0.26;
+    }
+
+    // hard over scrubs way off: the rudder is a brake as well as a helm
+    target *= 1 - 0.34 * Math.abs(this.rudder);
+    // a holed ship carries less canvas and drags water — but this compounds
+    // with a poor point of sail, so it stays gentle
+    target *= 0.62 + 0.38 * this.integrity;
     const drive = this.sinking ? Math.max(0, 1 - this.sinkT * 0.5) : 1;
-    const sp = this.speed * drive * (0.55 + 0.45 * this.integrity);
+    target *= drive;
+
+    // Momentum. A ship does not change speed when her helmsman does — she
+    // gathers way slowly and carries it a long time, and that lag is most of
+    // what makes her look heavy.
+    const gaining = target > this.speed;
+    const tau = gaining ? 7.5 : 4.0;
+    this.speed += (target - this.speed) * Math.min(1, dt / tau);
+
+    this.heel += (heelWant * Math.min(1, this.speed / this.maxSpeed) - this.heel)
+      * Math.min(1, dt * 0.55);
+
+    const sp = this.speed;
     this.pos.x += Math.cos(this.heading) * sp * dt;
     this.pos.z += Math.sin(this.heading) * sp * dt;
 
@@ -403,7 +447,9 @@ export class Ship {
     const szp = this.pos.z - Math.cos(this.heading) * SHIP.B * 0.5;
     const hp = waveFrame(px, pz, time, swell, null);
     const hs = waveFrame(sxp, szp, time, swell, null);
-    let roll = Math.atan2(hs - hp, SHIP.B) * 0.9 + Math.sin(time * 0.62 + this.seed) * 0.035;
+    let roll = Math.atan2(hs - hp, SHIP.B) * 0.9
+      + Math.sin(time * 0.62 + this.seed) * 0.035
+      + this.heel;
 
     // the hull profile already measures from the waterline (local y = 0), so
     // this is just the trim: a laden ship floats a little below her marks
