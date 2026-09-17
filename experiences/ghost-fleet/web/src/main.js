@@ -648,7 +648,7 @@ function loop(now) {
 if (CAPTURE) {
   // expose a handle so tooling can drive the scene deterministically
   window.__fleet = {
-    world, camera, rig, director, renderer,
+    world, camera, rig, director, renderer, footron,
     play: () => enterPlay(),
     idle: () => enterIdle(),
     setCam: (i) => { camPreset = i; hud.setCamLabel(CAM_NAMES[i]); },
