@@ -18,7 +18,7 @@ orientation, so the hull comes apart into the cloud it was made of.
 
 Two moments exist to make that legible:
 
-- **The opening**, about fifty-five seconds, nine beats. It builds the
+- **The opening**, about sixty-six seconds, nine beats. It builds the
   primitive up before using it: a round 2D Gaussian; stretched into an ellipse;
   turned edge-on, where it nearly vanishes and being flat becomes undeniable;
   given a third radius so it is an ellipsoid in space; cycled through the
@@ -28,10 +28,12 @@ Two moments exist to make that legible:
   onward it interpolates the lead ship's real splat data — nothing is faked for
   the animation. A progress rule runs under the captions so a visitor can see
   it is finite.
-- **Anatomy of a hit**, roughly once a minute: the battle ramps down to a
-  twentieth speed, the camera pushes in close enough to resolve individual
-  fragments, the powder smoke thins out of the way, and a panel gives the live
-  count of Gaussians struck out of that hull.
+- **Anatomy of a hit**: the battle ramps down to as little as a thirtieth
+  speed, the camera pushes in close enough to resolve individual fragments, the
+  powder smoke thins out of the way, and a panel gives the count of Gaussians
+  struck out of that hull. Both the hold and the depth of the slow motion scale
+  with how much the shot tore loose — nine seconds up to fifteen. Under the
+  cinematic camera it comes round about every half minute.
 
 Both are skipped instantly by touching the screen.
 

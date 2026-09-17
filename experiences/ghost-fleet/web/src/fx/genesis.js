@@ -20,16 +20,23 @@ import * as THREE from 'three';
  * each end. Touching the screen skips the whole thing.
  */
 
+/**
+ * Beat durations. These are reading times first and animation times second:
+ * a caption of twenty words at a wall, read by someone who has just walked up
+ * and is not expecting text, needs longer than it does at a desk. Every beat
+ * carries a caption, so every beat gets room to be finished and looked away
+ * from before the next one arrives.
+ */
 const BEATS = [
-  { key: 'flat',     dur: 6.0 },   // a 2D Gaussian, face-on and round
-  { key: 'stretch',  dur: 6.0 },   // anisotropy: it becomes an ellipse
-  { key: 'depth',    dur: 8.5 },   // turned edge-on, then given a third radius
-  { key: 'colour1',  dur: 6.0 },   // it carries its own colour and opacity
-  { key: 'many',     dur: 6.0 },   // one multiplies outward
-  { key: 'count',    dur: 5.5 },   // the full pale swarm
-  { key: 'colour2',  dur: 5.5 },   // each takes its own colour
-  { key: 'assemble', dur: 7.5 },   // they fly into formation
-  { key: 'reveal',   dur: 4.0 }    // pull back, hand over to the battle
+  { key: 'flat',     dur: 7.5 },   // a 2D Gaussian, face-on and round
+  { key: 'stretch',  dur: 7.5 },   // anisotropy: it becomes an ellipse
+  { key: 'depth',    dur: 10.5 },  // turned edge-on, then given a third radius
+  { key: 'colour1',  dur: 7.5 },   // it carries its own colour and opacity
+  { key: 'many',     dur: 7.0 },   // one multiplies outward
+  { key: 'count',    dur: 6.5 },   // the full pale swarm
+  { key: 'colour2',  dur: 6.5 },   // each takes its own colour
+  { key: 'assemble', dur: 8.5 },   // they fly into formation
+  { key: 'reveal',   dur: 5.0 }    // pull back, hand over to the battle
 ];
 
 const TOTAL = BEATS.reduce((a, b) => a + b.dur, 0);

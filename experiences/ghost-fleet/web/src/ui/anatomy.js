@@ -4,8 +4,16 @@
  * hit actually being shown.
  */
 
-// when each beat appears, in seconds after the panel opens
-const BEAT_AT = [0.35, 1.9, 3.3, 5.4];
+/**
+ * When each beat appears, as a fraction of however long the world is being
+ * held. The hold is variable — a hit with more to show gets longer — so fixed
+ * seconds would leave the last paragraph on screen for four seconds after one
+ * hit and barely one after another.
+ *
+ * The last beat lands at 0.60, which leaves the whole final two-fifths of the
+ * hold to read it in.
+ */
+const BEAT_AT = [0.04, 0.21, 0.40, 0.60];
 
 export class AnatomyPanel {
   constructor() {
@@ -20,10 +28,11 @@ export class AnatomyPanel {
     this.open = false;
   }
 
-  show(info) {
+  show(info, holdDur = 9) {
     this.t = 0;
     this.open = true;
     this.hit = info;
+    this.holdDur = holdDur;
 
     this.figs.hull.textContent = info.ship.splatCount.toLocaleString();
     this.figs.removed.textContent = info.removed.toLocaleString();
@@ -41,13 +50,14 @@ export class AnatomyPanel {
     this.t += dt;
 
     this.beats.forEach((b, i) => {
-      if (this.t >= BEAT_AT[i]) b.classList.add('on');
+      if (this.t >= BEAT_AT[i] * this.holdDur) b.classList.add('on');
     });
 
     // Count only this hit's fragments. `fx.aliveCount` is every effect splat
     // in the scene — smoke, spray and other ships' debris included — which
     // would make the figure a good deal larger than the sentence claims.
-    if (this.t > BEAT_AT[1] && this.t < BEAT_AT[1] + 2.4 && this.fragments !== undefined) {
+    const figuresFrom = BEAT_AT[1] * this.holdDur;
+    if (this.t > figuresFrom && this.t < figuresFrom + 2.8 && this.fragments !== undefined) {
       this.figs.flight.textContent = this.fragments.toLocaleString();
     }
   }

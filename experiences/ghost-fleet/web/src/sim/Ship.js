@@ -232,6 +232,7 @@ export class Ship {
 
     const debrisBudget = Math.min(opts.debrisBudget ?? 620, fx.freeCount);
     let debrisMade = 0;
+    this.lastDebrisMade = 0;
     const emitDir = opts.dir || _n.set(0, 1, 0);
 
     const m = this.mesh.matrixWorld;
@@ -298,6 +299,10 @@ export class Ship {
     if (removed > 25 && this.fires.length < 9) {
       this.fires.push({ p: localPoint.clone(), t: 0, life: 9 + Math.random() * 10, size: Math.min(1.5, radius * 0.45) });
     }
+    // how many of the removed Gaussians actually became flying fragments —
+    // the showcase quotes this, and it must never exceed `removed`
+    this.lastDebrisMade = debrisMade;
+
     if (this.integrity <= 0 && !this.sinking) this.beginSinking();
     return removed;
   }

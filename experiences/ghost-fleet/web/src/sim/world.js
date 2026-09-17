@@ -545,6 +545,7 @@ export class World {
     if (removed > 0 && this.onHit) {
       this.onHit({
         ship, removed, power, radius,
+        fragments: ship.lastDebrisMade,
         local: local.clone(),
         world: world.clone(),
         dir: dir.clone(),

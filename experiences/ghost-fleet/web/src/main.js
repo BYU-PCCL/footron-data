@@ -557,6 +557,9 @@ function loop(now) {
 
   // ---- camera
   if (!genesis) {
+    // the attract loop and the cinematic preset are where this moment does the
+    // most work, and it runs more often there
+    showcase.cinematic = (mode === MODE.IDLE) || camPreset === 2;
     showcase.update(dt, camera, world.time, world.swell);
     world.fx.reveal = showcase.reveal;
   }
@@ -690,6 +693,7 @@ if (CAPTURE) {
       // showcase sees debug hits too
       world.onHit?.({
         ship: s, removed, power, radius,
+        fragments: s.lastDebrisMade,
         local: p.clone(), world: w.clone(),
         dir: d.clone().applyQuaternion(s.mesh.quaternion), debris: world.fx.aliveCount
       });
