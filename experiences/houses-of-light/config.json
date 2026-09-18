@@ -1,0 +1,26 @@
+{
+  "id": "houses-of-light",
+  "type": "web",
+  "title": "Houses of Light",
+  "description": "A slow tour of Latter-day Saint temples, one photograph at a time. Every image is either freely licensed from Wikimedia Commons or from the Church's own media library, and was chosen by LAION-Aesthetics — a model trained on human judgements of what makes a good photograph — out of nearly three thousand candidates.",
+  "long_description": "There are more than two hundred of these buildings now, on every inhabited continent, and almost nobody has seen more than a handful of them. This piece is an attempt to show the whole set, one at a time, held long enough to actually look at.<br><br>The photographs come from Wikimedia Commons, which is the only source that carries machine-readable licensing — so everything here is CC&nbsp;BY, CC&nbsp;BY-SA, CC0 or public domain, and the photographer and licence are credited on screen the entire time a photograph is up. Roughly a thousand candidates were scored twice: once by LAION-Aesthetics&nbsp;V2, an MLP head on CLIP embeddings trained on human ratings, which is what separates a photograph from a snapshot; and once by a set of CLIP tests that remove the scale models, the interiors, the building sites and the pictures of somebody's family standing in front of the temple.<br><br>The wall is filled edge to edge and then travelled across: each slide opens at the foot of the photograph and rises to the spire over its life, so the whole picture is seen rather than a crop of its middle. The running order is reshuffled every time it starts, so it is not the same thirty temples for every visitor. The light opens from the spire &mdash; the new photograph is revealed through a soft mask centred on the brightest point of the upper frame, which is the spire in nearly every temple picture. The colour in the room is graded from that photograph's own palette rather than from a fixed theme. Along the bottom, a ribbon marks every dedication from Kirtland in 1836 to this year and lights the one on screen — four in the first century, then a wall of them from about 1980 on. In the corner a globe turns to the building's real coordinates, lit by the real position of the sun.<br><br>From your phone you can send it to a part of the world you know.",
+  "action_hints": [
+    "send the wall to the part of the world you are from",
+    "watch the globe turn to a temple you have never heard of",
+    "hold a photograph you want to keep looking at",
+    "look at the ribbon: four dedications in the first century, then hundreds",
+    "check the credit line — every photographer is named"
+  ],
+  "layout": "full",
+  "lifetime": 300,
+  "queueable": true,
+  "unlisted": false,
+  "tags": [
+    "photography",
+    "architecture",
+    "geography",
+    "machine-learning",
+    "ambient",
+    "visualization"
+  ]
+}

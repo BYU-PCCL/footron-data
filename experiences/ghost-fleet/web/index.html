@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+<title>Ghost Fleet</title>
+<!-- The wall has no browser chrome and no favicon, so declare an empty one
+     rather than let every load log a 404. -->
+<link rel="icon" href="data:," />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./src/ui/style.css" />
+</head>
+<body>
+  <canvas id="stage"></canvas>
+
+  <!-- IDLE / ATTRACT FURNITURE
+       Deliberately confined to the corners: the scene is the point, and a
+       centred title card covers exactly the part of it worth looking at. -->
+  <div id="idle" class="idle">
+    <div class="id-brand">
+      <span class="id-mark">GHOST&nbsp;FLEET</span>
+      <span class="id-sub">Real-time 3D Gaussian splatting</span>
+    </div>
+
+    <div class="id-stats">
+      <div class="id-stat"><b id="idleSplats">—</b><em>gaussians</em></div>
+      <div class="id-stat"><b id="idleFps">—</b><em>fps</em></div>
+      <div class="id-stat"><b id="idleShots">—</b><em>shots</em></div>
+    </div>
+
+    <div class="id-cta"><span class="dot"></span>Touch anywhere to take the helm</div>
+
+  </div>
+
+  <!-- INTERACTIVE HUD -->
+  <div id="hud" class="hud">
+    <div class="hud-top">
+      <div class="brand">GHOST&nbsp;FLEET</div>
+      <div class="hint" id="hint">Drag to orbit &middot; tap a ship to mark your target &middot; tap the sea for a ranging shot</div>
+      <div class="readout"><span id="splatCount">—</span> gaussians <i>/</i> <span id="fps">—</span> fps</div>
+    </div>
+
+    <div class="fleets">
+      <div class="fleet fleet-a" id="fleetA"></div>
+      <div class="fleet fleet-b" id="fleetB"></div>
+    </div>
+
+    <div class="hud-bottom">
+      <button class="btn" data-act="broadsideA"><span class="k">Q</span>Crimson broadside</button>
+      <button class="btn" data-act="broadsideB"><span class="k">E</span>Azure broadside</button>
+      <button class="btn" data-act="camera"><span class="k">C</span><em id="camLabel">Orbit</em></button>
+      <button class="btn" data-act="storm"><span class="k">S</span><em id="stormLabel">Summon squall</em></button>
+      <button class="btn ghost" data-act="reset"><span class="k">R</span>Raise the fleet</button>
+    </div>
+  </div>
+
+  <!-- GENESIS — the opening explainer. One beat visible at a time; the
+       progress rule says the piece is finite, which is what stops a visitor
+       walking away three seconds in. -->
+  <div id="genesis" class="genesis" aria-live="polite">
+    <div class="gen-rule"></div>
+    <div class="gen-body">
+      <div class="gen-step" data-step="0">
+        <span class="gen-n">01</span>
+        <h2>You have seen this curve</h2>
+        <p>The <b>normal distribution</b> — the bell curve — plotted over two
+           axes instead of one. A hill, highest at the mean, tailing away in
+           every direction.</p>
+      </div>
+      <div class="gen-step" data-step="1">
+        <span class="gen-n">02</span>
+        <h2>Now look straight down it</h2>
+        <p>Height has nowhere to go but into brightness. A soft bump of light,
+           brightest at the centre, fading outward, never quite reaching zero.
+           <b>Gaussian</b> is its other name.</p>
+      </div>
+      <div class="gen-step" data-step="2">
+        <span class="gen-n">03</span>
+        <h2>It need not be round</h2>
+        <p>Give it a different radius along each axis and it stretches into an
+           ellipse, lying whichever way you turn it.</p>
+      </div>
+      <div class="gen-step" data-step="3">
+        <span class="gen-n">04</span>
+        <h2>And it is not flat</h2>
+        <p>Edge-on it almost disappears. Give it a third radius and it becomes
+           an <b>ellipsoid</b> — a blob of light sitting in space.</p>
+      </div>
+      <div class="gen-step" data-step="4">
+        <span class="gen-n">05</span>
+        <h2>It carries its own colour</h2>
+        <p>Colour and opacity belong to the Gaussian itself. There is no
+           texture, and no surface for a texture to sit on.</p>
+      </div>
+      <div class="gen-step" data-step="5">
+        <span class="gen-n">06</span>
+        <h2>One is nothing</h2>
+        <p>Alone it is a smudge. The whole idea is that you can pile thousands
+           of them up and let them overlap.</p>
+      </div>
+      <div class="gen-step" data-step="6">
+        <span class="gen-n">07</span>
+        <h2>Fifty-eight thousand</h2>
+        <p>Pack enough together and the eye stops seeing blobs and starts
+           seeing a surface. There is no surface — that is the trick.</p>
+      </div>
+      <div class="gen-step" data-step="7">
+        <span class="gen-n">08</span>
+        <h2>Each its own colour</h2>
+        <p>Oak and tar below the waterline, painted trim, gilding, weathered
+           canvas aloft.</p>
+      </div>
+      <div class="gen-step" data-step="8">
+        <span class="gen-n">09</span>
+        <h2>Together, a ship</h2>
+        <p>Every plank, rope and sail is one of these. Which is why, when a
+           cannonball lands, you can watch them come apart again.</p>
+      </div>
+      <div class="gen-step" data-step="9">
+        <span class="gen-n">—</span>
+        <h2>Ghost Fleet</h2>
+        <p>Four of them, trading broadsides on an endless sea.</p>
+      </div>
+    </div>
+    <div class="gen-foot">
+      <div class="gen-progress"><i id="genProgress"></i></div>
+      <div class="gen-skip">Touch to skip</div>
+    </div>
+  </div>
+
+  <!-- ANATOMY OF A HIT — the explanatory panel for the impact showcase -->
+  <div id="anatomy" class="anatomy" aria-live="polite">
+    <div class="an-rule"></div>
+    <div class="an-eyebrow">Anatomy of a hit</div>
+    <h2 class="an-title">You are looking at<br/>individual Gaussians</h2>
+
+    <div class="an-beats">
+      <div class="an-beat" data-beat="0">
+        <p>This ship is not a mesh. Every plank, sail and rope is a
+           <b>3D Gaussian</b> — a soft, squashed ellipsoid with its own
+           position, colour and orientation.</p>
+      </div>
+      <div class="an-beat" data-beat="1">
+        <div class="an-figs">
+          <div class="an-fig"><b id="anHull">—</b><em>in this hull</em></div>
+          <div class="an-fig"><b id="anRemoved">—</b><em>struck out</em></div>
+          <div class="an-fig"><b id="anFlight">—</b><em>in flight</em></div>
+        </div>
+      </div>
+      <div class="an-beat" data-beat="2">
+        <p>The shot <b>deletes</b> the Gaussians it hits and throws the rest
+           clear — each fragment keeping the exact colour, size and angle of
+           the splat it used to be. Nothing is swapped for a particle effect.</p>
+      </div>
+      <div class="an-beat" data-beat="3">
+        <p>The scorched ring around the breach is the Gaussians that survived,
+           darkened where the blast reached them.</p>
+      </div>
+    </div>
+
+    <div class="an-foot"><span class="an-dot"></span>Resuming</div>
+  </div>
+
+  <div id="boot" class="boot"><div class="boot-in"><div class="boot-bar"><i id="bootFill"></i></div><div class="boot-txt" id="bootTxt">Splatting the hulls…</div></div></div>
+
+  <!-- The wall's phone-controls client. A plain script, not a module: it is a
+       UMD build that defines globalThis.FootronMessaging, and src/footron.js
+       reads the global and degrades to a no-op when it is absent. -->
+  <script src="./vendor/footron-messaging.min.js"></script>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

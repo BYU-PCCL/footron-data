@@ -5,6 +5,7 @@ experiences = [ "pi", "pi-circle", "pi-walk", "pi-triangle" ]
 [interactive]
 title = "Interactive Experiences"
 experiences = [
+  "ghost-fleet",
   "fourier",
   "wind",
   "style-transfer",
@@ -24,7 +25,9 @@ experiences = [
   "alg-infect",
   "neural-net-vis",
   "learning-to-walk",
-  "spacetime-sandbox"
+  "spacetime-sandbox",
+  "houses-of-light",
+  "scriptures"
 ]
 
 [game]
@@ -73,7 +76,10 @@ experiences = [ "cpms50" ]
 title = "LDS-themed experiences"
 experiences = [
   "temple-photo-op",
-  "bookofmormon"
+  "bookofmormon",
+  "houses-of-light",
+  "scriptures"
+  
 ]
 
 [archive]
