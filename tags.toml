@@ -76,7 +76,10 @@ experiences = [ "cpms50" ]
 title = "LDS-themed experiences"
 experiences = [
   "temple-photo-op",
-  "houses-of-light"
+  "bookofmormon",
+  "houses-of-light",
+  "scriptures"
+  
 ]
 
 [archive]
