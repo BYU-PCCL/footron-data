@@ -18,10 +18,15 @@ orientation, so the hull comes apart into the cloud it was made of.
 
 Two moments exist to make that legible:
 
-- **The opening**, about sixty-six seconds, nine beats. It builds the
-  primitive up before using it: a round 2D Gaussian; stretched into an ellipse;
-  turned edge-on, where it nearly vanishes and being flat becomes undeniable;
-  given a third radius so it is an ellipsoid in space; cycled through the
+- **The opening**, about seventy-seven seconds, ten beats. It builds the
+  primitive up before using it, starting from something the viewer already
+  knows: the normal distribution, plotted as a surface over two axes, with the
+  two bell curves through the mean picked out in gold. The eye then rises to
+  the top of that plot, where the height axis points straight at it and carries
+  nothing, so height becomes brightness — and the flattened plot is the splat.
+  From there: stretched into an ellipse; turned edge-on, where it nearly
+  vanishes and being flat becomes undeniable; given a third radius so it is an
+  ellipsoid in space; cycled through the
   ship's own palette to show colour and opacity belong to the Gaussian rather
   than to any surface; multiplied outward; fifty-eight thousand of them; each
   taking its own colour; then flown into formation as a ship. From the cloud

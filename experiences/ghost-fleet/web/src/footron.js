@@ -33,9 +33,29 @@
 
 const IDLE_RETURN = 40000;   // ms of phone silence before the wall resumes itself
 
-export function connectFootron(api) {
-  const Messaging = globalThis.FootronMessaging;
-  if (!Messaging) {
+/**
+ * Footron passes the router's socket URL as `?ftMsgUrl=…`. Without it the
+ * client falls back to `ws://localhost:8089/out` and retries that forever, so
+ * a plain dev server spends the session failing to open a socket and filling
+ * the console — which is noise every headless test then has to filter. Append
+ * `?ftmsg=1` to connect by hand against a local router.
+ *
+ * Same gate as barnsley-fern, wave-lab and houses-of-light.
+ */
+export function footronEnabled(search) {
+  const q = search === undefined
+    ? (typeof location === 'undefined' ? '' : location.search)
+    : search;
+  const params = new URLSearchParams(q);
+  return params.has('ftMsgUrl') || params.get('ftmsg') === '1';
+}
+
+export function connectFootron(api, opts = {}) {
+  const enabled = opts.enabled !== undefined ? opts.enabled : footronEnabled();
+  if (!enabled) return { connected: false };
+
+  const ns = globalThis.FootronMessaging;
+  if (!ns) {
     // running outside the wall — a plain browser, or a dev server
     return { connected: false };
   }
@@ -86,17 +106,35 @@ export function connectFootron(api) {
     }
   };
 
-  let messaging;
-  try {
-    messaging = Messaging.default ? Messaging.default() : Messaging();
-  } catch (err) {
+  // `FootronMessaging` is a UMD *namespace* — { Connection, Messaging } — and
+  // `Messaging` is a class. It is not callable and there is no default export,
+  // so this has to be `new ns.Messaging()`. Getting that wrong threw a
+  // TypeError which the catch below then reported as "not on the wall", and
+  // the phone sat on "disconnected" with nothing in the console to say why.
+  if (typeof ns.Messaging !== 'function') {
+    console.error('[footron] FootronMessaging.Messaging is missing; phone controls will not connect');
     return { connected: false };
   }
 
-  messaging.mount?.();
-  messaging.addMessageListener?.((msg) => {
+  let messaging;
+  try {
+    messaging = new ns.Messaging();
+  } catch (err) {
+    // The global exists, so we ARE on the wall and this is a real failure.
+    // Never swallow it: a silent return here is indistinguishable from running
+    // on a dev server, which is exactly how the last one hid.
+    console.error('[footron] could not construct the messaging client', err);
+    return { connected: false };
+  }
+
+  messaging.addMessageListener((msg) => {
     try { handle(msg); } catch (err) { /* a bad message must not stop the wall */ }
   });
 
-  return { connected: true };
+  // mount() is async and rejects if the router is unreachable
+  Promise.resolve(messaging.mount()).catch((err) => {
+    console.error('[footron] messaging failed to mount', err);
+  });
+
+  return { connected: true, messaging };
 }
