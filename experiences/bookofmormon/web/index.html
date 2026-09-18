@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Book of Mormon translations</title>
+
+<!-- Every font is subset and self-hosted (see tools/fetch_fonts.py). The wall
+     is not guaranteed to reach fonts.googleapis.com, and a page whose whole
+     subject is 20 writing systems cannot degrade to tofu boxes. -->
+<link rel="stylesheet" href="fonts.css">
+
+<style>
+  :root {
+    /* Dark theme, same warm bookish palette turned inside out: the paper
+       becomes the ink and the ink becomes the light. Everything else is
+       re-pitched against the new ground so the gold still carries the page.
+       The sequential ramp itself lives in ERAS in app.js. */
+    --surface:    #17130e;   /* the ground: warm near-black, never pure black */
+    --ink:        #f0e7d8;   /* primary type, warm off-white */
+    --ink-soft:   #b2a38c;
+    --ink-mute:   #7d6f5c;
+
+    /* Gold foil, for the cover stamp and the live marker. On a dark ground
+       "pressed harder" reads as brighter rather than darker, so --foil-deep
+       is the stronger of the two, not the darker one. */
+    --foil:       #c9a05a;
+    --foil-deep:  #e2bb72;
+    --foil-lit:   #f4d79a;
+
+    /* Untranslated land has to sit clearly above the ground without competing
+       with the gold: too close to --surface and the continents vanish, which
+       is exactly what makes a map of one Pacific island unreadable. */
+    --land:       #4e463a;   /* a country with no translation */
+    --land-edge:  #7a6b55;   /* the borders are what make the map read */
+    --map-stroke: #0f0c08;   /* hairline between two filled countries */
+
+    /* One type scale for the whole wall; everything else is a ratio of it. */
+    --f-base: clamp(14px, 1.15vw, 30px);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--surface);
+    color: var(--ink);
+    font-family: "Noto Serif", Georgia, "Times New Roman", serif;
+    font-size: var(--f-base);
+    overflow: hidden;
+    cursor: none;                /* nothing on the wall is clickable */
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* The ground: a warm pool of light at the centre falling off to near-black
+     at the edges, plus a faint fibre speckle, so the type does not sit on a
+     flat block of colour under a projector. */
+  #paper {
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(120% 90% at 50% 36%, rgba(255,238,210,.060) 0%, rgba(255,238,210,0) 58%),
+      radial-gradient(135% 115% at 50% 50%, rgba(0,0,0,0) 38%, rgba(0,0,0,.58) 100%),
+      repeating-linear-gradient(115deg, rgba(255,235,200,.018) 0 2px, rgba(0,0,0,0) 2px 6px),
+      var(--surface);
+  }
+
+  /* ------------------------------------------------------------- scaffold */
+  #stage { position: fixed; inset: 0; z-index: 2; }
+  .scene {
+    position: absolute; inset: 0;
+    opacity: 0;
+    transition: opacity 900ms ease;
+    pointer-events: none;
+  }
+  .scene.live { opacity: 1; }
+
+  /* ---------------------------------------------------------- language page */
+  /* Three columns on an ultrawide wall: the book, the words, the place.
+     Percentages rather than fr units so the map keeps its aspect. */
+  .lang {
+    display: grid;
+    grid-template-columns: 27% minmax(0, 1fr) 30%;
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 0 3.4vw;
+    padding: 6.2vh 5vw 0;
+  }
+  /* Grid and flex items default to min-height:auto, i.e. they refuse to
+     shrink below their content -- so without these the columns push past the
+     row, the map balloons over the verse and the ribbon leaves the screen. */
+  .lang > * { min-width: 0; min-height: 0; }
+
+  /* -- the ghosted year sits behind everything, bleeding off the top edge */
+  .yearGhost {
+    position: absolute; top: -2.5vh; right: 3.2vw;
+    font-size: 25vh; font-weight: 600; line-height: .78;
+    color: rgba(244,215,154,.055);
+    letter-spacing: -.02em;
+    pointer-events: none; user-select: none;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* -- column 1: the book ------------------------------------------------ */
+  .bookWrap { display: flex; align-items: center; justify-content: center; }
+
+  /* A bound volume drawn in CSS: cloth board, foil rule, stamped title.
+     Not a photograph of one -- but it carries the one thing a photograph of a
+     foreign-language cover actually communicates, which is the title. */
+  .book {
+    position: relative;
+    /* Height comes from the grid row and the width follows from the aspect
+       ratio -- sizing it by width instead lets a tall cover overflow the row
+       on a wall that is much wider than it is high. */
+    height: 100%; width: auto; max-width: 100%;
+    aspect-ratio: 107 / 160;
+    border-radius: 3px 7px 7px 3px;
+    /* Against a near-black wall a dark blue board would simply disappear, so
+       the cloth is pitched a few steps lighter than the ground and edged: a
+       white inner rim for the board, a warm hairline outside it, then a soft
+       bloom that reads as light falling on a real object. */
+    background:
+      linear-gradient(105deg, rgba(255,255,255,.14) 0 18%, rgba(255,255,255,0) 44%),
+      radial-gradient(120% 140% at 18% 8%, #5d4c81 0%, #342a52 46%, #241d3b 100%);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.17),
+      0 0 0 1px rgba(201,160,90,.22),
+      0 2vh 5vh rgba(0,0,0,.62),
+      0 0 7vh rgba(122,101,178,.14);
+    display: grid; place-items: center;
+    padding: 9% 11%;
+    overflow: hidden;
+  }
+  /* the spine: a darker band with a highlight, down the binding edge */
+  .book::before {
+    content: ""; position: absolute; inset: 0 auto 0 0; width: 6.5%;
+    background: linear-gradient(90deg, rgba(0,0,0,.50), rgba(255,255,255,.10) 62%, rgba(0,0,0,.36));
+  }
+  /* the foil rule, inset like a real stamped border */
+  .book::after {
+    content: ""; position: absolute; inset: 5.5% 5% 5.5% 10%;
+    border: 1px solid rgba(244,215,154,.42);
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .bookTitle {
+    position: relative; z-index: 1;
+    text-align: center;
+    font-weight: 600;
+    line-height: 1.28;
+    color: var(--foil-lit);
+    background: linear-gradient(176deg, #f3d9a4 6%, #cba05a 48%, #fbe9c4 82%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-wrap: balance;
+    /* set by fitText(); this is only the ceiling before it measures */
+    font-size: 2.6vw;
+  }
+  .bookTitle[dir="rtl"] { line-height: 1.55; }
+  /* Deseret has no lowercase and very wide letterforms -- it needs air. */
+  .bookTitle.wide { letter-spacing: .01em; line-height: 1.42; }
+
+  .bookFoot {
+    position: absolute; left: 10%; right: 5%; bottom: 6.4%;
+    text-align: center;
+    font-size: .62em; letter-spacing: .20em; text-transform: uppercase;
+    color: rgba(244,215,154,.52);
+  }
+
+  /* -- column 2: year, language, verse ----------------------------------- */
+  .words { display: flex; flex-direction: column; justify-content: center; min-width: 0; overflow: hidden; }
+
+  .kicker {
+    display: flex; align-items: baseline; gap: .9em;
+    font-size: .74em; letter-spacing: .26em; text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .kicker .ord { color: var(--foil-deep); }
+
+  .langName {
+    margin: .30em 0 0;
+    font-size: 3.5em; font-weight: 600; line-height: 1.02;
+    letter-spacing: -.012em;
+  }
+  .langYear {
+    font-size: 3.5em; font-weight: 400; line-height: 1.02;
+    color: var(--foil-deep);
+    font-variant-numeric: tabular-nums;
+  }
+  .langMeta {
+    margin-top: .5em;
+    font-size: .86em; color: var(--ink-soft); line-height: 1.5;
+    max-width: 42ch;
+  }
+  .langMeta b { color: var(--ink); font-weight: 600; }
+
+  /* the verse: the hero of the page, set in its own script */
+  .verse {
+    margin-top: 1.5em;
+    position: relative;
+    padding-left: 1.1em;
+    line-height: 1.52;
+    font-size: 1.5em;           /* fitText() overrides */
+    text-wrap: pretty;
+  }
+  .verse::before {
+    content: ""; position: absolute; left: 0; top: .22em; bottom: .22em;
+    width: 2px; background: var(--foil); opacity: .5;
+  }
+  .verse[dir="rtl"] { padding-left: 0; padding-right: 1.1em; text-align: right; }
+  .verse[dir="rtl"]::before { left: auto; right: 0; }
+  .verseRef {
+    margin-top: .75em;
+    font-size: .72em; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .verseNone {
+    margin-top: 1.5em; font-size: 1.05em; font-style: italic;
+    color: var(--ink-soft); max-width: 40ch; line-height: 1.5;
+  }
+
+  /* -- column 3: the map -------------------------------------------------- */
+  .place { display: flex; flex-direction: column; justify-content: center; gap: 1.1em; min-height: 0; }
+  .mapBox { position: relative; width: 100%; }
+  /* The crop in miniMap() is built to MAP_ASPECT, so height follows width and
+     the cap is only a backstop on a short window. */
+  /* overflow must clip: the SVG holds the whole world and the viewBox only
+     frames part of it, so 'visible' paints the rest across the page. */
+  .mapBox svg { width: 100%; height: auto; max-height: 56vh; display: block; overflow: hidden; }
+  .placeLabel {
+    font-size: .74em; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .placeNames { font-size: .95em; color: var(--ink); line-height: 1.45; }
+
+  /* map marks: recessive land, one lit region, a soft pin */
+  .c-land  { fill: var(--land); stroke: var(--land-edge); stroke-width: .5; }
+  .c-lit   { fill: var(--foil); stroke: var(--foil-deep); stroke-width: .6; }
+  .m-outline { fill: none; stroke: var(--land-edge); stroke-width: .8; opacity: .55; }
+  .pin-halo { fill: var(--foil); opacity: .22; }
+  .pin-dot  { fill: var(--foil-deep); stroke: var(--surface); stroke-width: .8; }
+
+  /* ----------------------------------------------------- timeline ribbon */
+  /* Spans the full width under all three columns. Every translation is one
+     tick at its true year, so the 2000s crowding is the story, not a flaw. */
+  .ribbon { grid-column: 1 / -1; padding: 3.2vh 0 2.6vh; }
+  .ribbon svg { width: 100%; height: 7.2vh; display: block; overflow: visible; }
+  .t-axis  { stroke: var(--land-edge); stroke-width: 1; }
+  .t-tick  { stroke-width: 2; stroke-linecap: round; }
+  .t-now   { stroke: var(--foil-deep); stroke-width: 3.2; stroke-linecap: round; }
+  .t-label { fill: var(--ink-mute); font-size: 9px; letter-spacing: .18em; }
+  .t-decade { stroke: var(--land-edge); stroke-width: 1; opacity: .5; }
+
+  /* ------------------------------------------------------- timeline scene */
+  /* The interlude: the whole map, all translations blooming by year. */
+  .atlas { display: grid; grid-template-rows: auto 1fr auto; padding: 5.4vh 5vw 3vh; }
+  .atlasHead { display: flex; align-items: flex-end; justify-content: space-between; gap: 2vw; }
+  .atlasTitle { font-size: 2.5em; font-weight: 600; line-height: 1.05; letter-spacing: -.01em; }
+  .atlasSub { font-size: .92em; color: var(--ink-soft); margin-top: .35em; max-width: 52ch; line-height: 1.5; }
+  .atlasYear {
+    font-size: 5.4em; font-weight: 600; line-height: .9;
+    color: var(--foil-deep); font-variant-numeric: tabular-nums;
+  }
+  .atlasCount { font-size: .78em; letter-spacing: .2em; text-transform: uppercase; color: var(--ink-mute); text-align: right; }
+  .atlasMap { position: relative; display: grid; place-items: center; min-height: 0; padding: 1.4vh 0; }
+  .atlasMap svg { width: 100%; height: 100%; max-height: 62vh; display: block; overflow: hidden; }
+
+  /* the legend: a sequential ramp needs its scale shown, once */
+  .legend { display: flex; align-items: center; gap: .7em; font-size: .72em; color: var(--ink-mute); letter-spacing: .12em; text-transform: uppercase; }
+  .legendRamp { display: flex; height: .7em; border-radius: 2px; overflow: hidden; width: 16vw; }
+  .legendRamp i { flex: 1; }
+</style>
+</head>
+<body>
+  <div id="paper"></div>
+  <div id="stage"></div>
+  <script src="app.js"></script>
+</body>
+</html>
