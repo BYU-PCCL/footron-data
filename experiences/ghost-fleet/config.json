@@ -1,0 +1,26 @@
+{
+  "id": "ghost-fleet",
+  "type": "web",
+  "title": "Ghost Fleet",
+  "description": "Four men-o'-war built entirely out of 3D Gaussians — the same primitive behind Gaussian splatting — trading broadsides on an endless sea. Every plank, rope and sail is one soft ellipsoid out of about 235,000, and because the ships are made of them rather than described by a mesh, a cannonball that lands takes those Gaussians out of the hull and throws them into the air. The piece opens by showing you a single Gaussian, multiplying it, colouring it and assembling a ship from it, so the thing coming apart later is something you have already been introduced to.",
+  "long_description": "Gaussian splatting is how a photographed scene gets turned into something you can walk around: instead of building a surface, it scatters millions of soft, squashed ellipsoids through space and lets them overlap until they look like the thing. It is the technique behind most of the photoreal 3D capture you have seen in the last two years, and it is almost always shown as a frozen scan of a room.<br><br>These ships are the same primitive, authored rather than photographed. The hull is a parametric surface sampled into dense sheets of overlapping Gaussians; the masts and cordage are swept tubes of them; the sails are billowing sheets. Nothing is a triangle. Because every Gaussian is ours, an impact can delete the ones it hits and hand the rest to a physics pool with their exact colour, size and angle intact — so the hull genuinely comes apart into the cloud it was made of, with a scorched ring left around the wound.<br><br>It opens with an explainer: one Gaussian turning against the night sky, then fifty-eight thousand of them, then each taking its own colour, then the whole swarm flying into formation as a ship. About once a minute the battle also stops mid-shot, ramps down to a twentieth speed and pushes the camera in close enough to resolve individual fragments, with the live count of how many were struck out of the hull.<br><br>The sea is five Gerstner waves evaluated identically on the GPU and on the CPU, so hulls, splashes and flotsam ride exactly the surface you can see. The ships steer for a firing solution rather than shooting over the bow — the guns are in ports and traverse about twenty-five degrees — and a ship holed below the waterline floods and goes down by the stern. It runs at sixty frames a second.",
+  "action_hints": [
+    "tap a ship and watch the other fleet turn to bring its guns to bear",
+    "tap the open sea and see where the shot actually lands",
+    "wait for a hit — the world stops and shows you the Gaussians coming apart",
+    "summon a squall and watch the sea and the light change with it",
+    "get the camera down to the waterline as a broadside goes off",
+    "raise a fresh fleet and watch a ship build itself out of a cloud"
+  ],
+  "layout": "full",
+  "lifetime": 300,
+  "queueable": true,
+  "unlisted": false,
+  "tags": [
+    "graphics",
+    "interactive",
+    "simulation",
+    "visualization",
+    "generative"
+  ]
+}

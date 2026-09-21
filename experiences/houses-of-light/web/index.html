@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Houses of Light</title>
+<!-- The wall has no browser chrome and no favicon, so declare an empty one
+     rather than let every load log a 404. -->
+<link rel="icon" href="data:," />
+<link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+  <!-- Ambient wash. Graded per slide from the photograph's own palette, so the
+       room's colour comes from whatever is on the wall rather than a theme. -->
+  <div id="ambient"></div>
+
+  <main id="stage">
+    <div class="plate" id="plates"></div>
+    <div class="caption" id="caption">
+      <div class="cap-eyebrow"></div>
+      <h1 class="cap-name"></h1>
+      <div class="cap-meta"></div>
+    </div>
+  </main>
+
+  <!-- A permanent floor under the chronology ribbon and the credit line. The
+       photograph behind them changes every few seconds and some of them are
+       bright right down to the bottom edge, so the furniture cannot rely on the
+       image for contrast and carries its own. -->
+  <div id="floor"></div>
+
+  <!-- The chronology ribbon and the corner globe: the two fixed instruments
+       that say when and where the photograph on the wall is from. -->
+  <canvas id="ribbon"></canvas>
+  <canvas id="miniglobe"></canvas>
+
+  <div id="credit"></div>
+  <div id="piece-title">Houses of Light</div>
+
+  <div id="boot">
+    <div class="boot-mark"></div>
+    <div class="boot-text">Gathering temples…</div>
+  </div>
+
+  <!-- The wall's phone-controls client. A plain script, not a module: it is a
+       UMD build that defines globalThis.FootronMessaging, and src/footron.js
+       reads the global and degrades to a no-op when it is absent. -->
+  <script src="./vendor/footron-messaging.min.js"></script>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

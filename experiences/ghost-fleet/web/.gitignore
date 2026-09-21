@@ -1,0 +1,5 @@
+# Build output. `build_experiences.py` runs `npm run build` and reads
+# `directories.footronStatic` from package.json, so dist/ is produced by CI
+# rather than committed. The repo-level ignore covers `build/`, not `dist/`.
+dist/
+node_modules/
