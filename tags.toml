@@ -28,7 +28,8 @@ experiences = [
   "spacetime-sandbox",
   "houses-of-light",
   "scriptures",
-  "bookofmormon"
+  "bookofmormon",
+  "load-path"
 ]
 
 [game]
