@@ -27,24 +27,31 @@
   /* The canvas-side twins of these live in T at the top of draw.js and have to
      move with them: the canvas sits inside .viz, so a --viz that has drifted
      from T.ink shows up as a visible rectangle. */
-  --ink:#0B0F1C;
-  --viz:#0B0F1C;
-  --panel:#141A2C;
-  --panel-2:#171E33;
-  --line:#28324E;
-  --line-soft:#1E2740;
-  --text:#E9EDFB;
-  --muted:#8E9BC2;
-  --dim:#5B678C;
+  --ink:#1C1720;
+  --viz:#272029;
+  --panel:#272029;
+  --panel-2:#272029;
+  --line:#4A3F4F;
+  --line-soft:#372F3B;
+  --text:#F5EFEA;
+  --muted:#BEB0B8;
+  --dim:#8B7D88;
 
-  --r:calc(14px*var(--k));
+  /* Square, and separated by tone rather than by an outline. Every panel on
+     the page used to carry a hairline border and a 14px radius, which is the
+     shape every exhibit ends up wearing; this one is a flat block raised off
+     the ground behind it instead. */
+  --r:0px;
+  --lift:0 calc(1px*var(--k)) calc(2px*var(--k)) rgba(0,0,0,.28),
+         0 calc(16px*var(--k)) calc(36px*var(--k)) calc(-16px*var(--k)) rgba(0,0,0,.55);
+
   --f-mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
   --f-body:"Inter","Segoe UI",system-ui,sans-serif;
 
   /* The scene's colour. Written here so the page is never briefly the wrong
      colour before the script runs, and set again from the scene at load so the
      two cannot drift. */
-  --accent:#F5B54C;
+  --accent:#FF7A6B;
 }
 @media (min-width:1500px){ :root{--k:1} }
 @media (min-width:2300px){ :root{--k:1.22} }
@@ -55,8 +62,8 @@ html,body{height:100%}
 body{
   margin:0; overflow:hidden;
   background:
-    radial-gradient(calc(1100px*var(--k)) calc(700px*var(--k)) at 82% -10%, #17203A 0%, transparent 60%),
-    radial-gradient(calc(900px*var(--k)) calc(650px*var(--k)) at 6% 110%, #141B31 0%, transparent 58%),
+    radial-gradient(calc(1100px*var(--k)) calc(700px*var(--k)) at 82% -10%, #2B2131 0%, transparent 60%),
+    radial-gradient(calc(900px*var(--k)) calc(650px*var(--k)) at 6% 110%, #251D29 0%, transparent 58%),
     var(--ink);
   color:var(--text);
   font-family:var(--f-body);
@@ -75,9 +82,9 @@ body{
 }
 
 .card{
-  background:linear-gradient(180deg, var(--panel-2), var(--panel));
-  border:1px solid var(--line);
+  background:var(--panel);
   border-radius:var(--r);
+  box-shadow:var(--lift);
   padding:calc(15px*var(--k)) calc(17px*var(--k));
   min-height:0;
 }
@@ -121,14 +128,14 @@ body{
 .idea li::before{
   content:""; position:absolute; left:0; top:calc(8px*var(--k));
   width:calc(6px*var(--k)); height:calc(6px*var(--k)); border-radius:50%;
-  background:var(--accent); opacity:.8;
+  background:var(--accent); opacity:.9;
 }
-.idea em{font-style:normal; color:var(--text); font-weight:500}
+.idea em{font-style:normal; color:var(--text); font-weight:600}
 
 /* ------------------------------------------------------------------- viz */
 .viz{
   grid-area:viz; position:relative; min-height:0;
-  border:1px solid var(--line); border-radius:var(--r);
+  border-radius:var(--r); box-shadow:var(--lift);
   overflow:hidden; background:var(--viz);
   display:flex; flex-direction:column;
 }
@@ -139,7 +146,7 @@ body{
    list of the four-structure version is gone. */
 #progress{
   position:absolute; left:0; bottom:0; height:calc(3px*var(--k)); width:0%;
-  background:var(--accent); opacity:.85;
+  background:var(--accent); opacity:.9;
   transition:opacity .3s;
 }
 
@@ -179,10 +186,9 @@ body{
 /* The row the scene is currently demonstrating. */
 .cost tr.live .op,
 .cost tr.live .big{color:var(--accent)}
-.cost tr.live .big{text-shadow:0 0 calc(14px*var(--k)) color-mix(in srgb, var(--accent) 45%, transparent)}
 
 .uses p{margin:0; font-size:calc(13.5px*var(--k)); color:var(--muted); line-height:1.5; text-wrap:pretty}
-.uses em{font-style:normal; color:var(--text); font-weight:500}
+.uses em{font-style:normal; color:var(--text); font-weight:600}
 
 .sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
 
@@ -197,7 +203,7 @@ body.bare .stage{
 body.bare .mark,
 body.bare .rail,
 body.bare #progress{display:none}
-body.bare .viz{border:0; border-radius:0}
+body.bare .viz{border:0; border-radius:0; box-shadow:none}
 
 /* Narrow screens are for previewing on a laptop, not for the wall. Keep the
    scene and the narration; drop everything that is only orientation. */

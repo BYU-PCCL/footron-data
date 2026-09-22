@@ -92,7 +92,7 @@ function roundRect(ctx, x, y, w, h, r){
    one of these. */
 function box(ctx, x, y, w, h, o){
   o = o || {};
-  var r = o.r === undefined ? 6 : o.r;
+  var r = o.r === undefined ? 0 : o.r;
   if (o.glow){
     ctx.save();
     ctx.shadowColor = o.glow;
@@ -123,17 +123,17 @@ var SANS = '"Inter", "Segoe UI", system-ui, sans-serif';
  * four separate pages.
  */
 var T = {
-  ink:    "#0B0F1C",   /* the canvas ground                         */
-  panel:  "#141A2C",   /* an empty cell, slot or node               */
-  panel2: "#1B2238",   /* an empty cell that is being looked at     */
-  line:   "#28324E",   /* every border and rule                     */
-  grid:   "#1C2338",   /* the faintest structural line              */
-  text:   "#E9EDFB",   /* a value, a key, anything being read       */
-  muted:  "#8E9BC2",   /* a label                                   */
-  dim:    "#5B678C",   /* an index, a tick, a disabled thing        */
-  good:   "#6FE3A8",   /* yes / found / in the set                  */
-  bad:    "#FF6B7E",   /* no / missing / evicted                    */
-  warn:   "#FFC861"    /* the interesting case: a false positive    */
+  ink:    "#272029",   /* the canvas ground                         */
+  panel:  "#332B36",   /* an empty cell, slot or node               */
+  panel2: "#3E3542",   /* an empty cell that is being looked at     */
+  line:   "#4A3F4F",   /* every border and rule                     */
+  grid:   "#2E2732",   /* the faintest structural line              */
+  text:   "#F5EFEA",   /* a value, a key, anything being read       */
+  muted:  "#BEB0B8",   /* a label                                   */
+  dim:    "#8B7D88",   /* an index, a tick, a disabled thing        */
+  good:   "#7BD88F",   /* yes / found / in the set                  */
+  bad:    "#FF4F87",   /* no / missing / evicted                    */
+  warn:   "#F2B65C"    /* the interesting case: a false positive    */
 };
 
 /* One text call for the whole file. Size and colour are always given; the rest
