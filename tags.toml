@@ -28,6 +28,8 @@ experiences = [
   "spacetime-sandbox",
   "houses-of-light",
   "scriptures",
+  "skip-list",
+  "bloom-filter",
   "bookofmormon"
 ]
 
