@@ -27,7 +27,9 @@ experiences = [
   "learning-to-walk",
   "spacetime-sandbox",
   "houses-of-light",
-  "scriptures"
+  "scriptures",
+  "skip-list",
+  "bloom-filter"
 ]
 
 [game]
