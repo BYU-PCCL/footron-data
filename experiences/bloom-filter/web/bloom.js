@@ -32,7 +32,7 @@ var WORD_Y = 98;         /* the name currently being added or asked about    */
 var ARC_TOP = 132;       /* where the three arcs leave the name              */
 var PANEL_Y = 424;       /* the hash chips, and then the verdict             */
 
-var ACCENT = "#F5B54C";
+var ACCENT = "#FF7A6B";
 
 /*
  * Computer scientists, which is a pool the exhibit can draw a different seven
@@ -366,25 +366,24 @@ var scene = {
         if (this.probe[j].pos === i && this.probe[j].t >= 1) probed = this.probe[j].result;
       }
 
-      var fill = on > 0 ? D.mix(T.panel, ACCENT, 0.22 + 0.5 * on) : T.panel;
-      var stroke = D.fade(T.line, 1);
+      var fill = on > 0 ? D.mix(T.panel, ACCENT, 0.25 + 0.7 * on) : T.panel;
+      var stroke = null;
       var glow = null;
       if (probed === "ok"){ stroke = T.good; glow = D.fade(T.good, 0.5); }
       else if (probed === "zero"){ stroke = T.bad; glow = D.fade(T.bad, 0.55); }
       else if (isTarget && on > 0){ stroke = D.fade(ACCENT, 0.9); glow = D.fade(ACCENT, 0.4); }
-      else if (on > 0) stroke = D.fade(ACCENT, 0.5);
 
       /* A bit lands with a small vertical kick, so a 0 becoming a 1 is visible
          from across the room rather than only being a colour change. */
       var kick = (isTarget && this.anim[i] > 0 && this.anim[i] < 1) ? (1 - this.anim[i]) * 5 : 0;
 
       D.box(ctx, x, ROW_Y - kick, CELL, ROW_H, {
-        r: 5, fill: fill, stroke: stroke, lineWidth: glow ? 2 : 1.2,
+        r: ROW_H / 2, fill: fill, stroke: stroke, lineWidth: 2.5,
         glow: glow, glowSize: 14
       });
       D.text(ctx, on > 0.5 ? "1" : "0", x + CELL / 2, ROW_Y + ROW_H / 2 - kick, {
         size: 15, weight: 600,
-        color: on > 0.5 ? "#141A2C" : T.dim
+        color: on > 0.5 ? "#241E26" : T.dim
       });
 
       if (this.pingT[i] < 1){
@@ -473,9 +472,7 @@ var scene = {
         var isSubject = this.inserted[i] === this.word;
         D.box(ctx, cx - 9, 582, w + 18, 30, {
           r: 15,
-          fill: isSubject ? D.fade(ACCENT, 0.18) : D.fade(T.panel, 0.9),
-          stroke: isSubject ? D.fade(ACCENT, 0.7) : T.line,
-          lineWidth: 1
+          fill: isSubject ? D.fade(ACCENT, 0.2) : T.panel
         });
         D.text(ctx, this.inserted[i], cx + w / 2, 597, {
           size: 17, color: isSubject ? ACCENT : T.muted, weight: 500
@@ -507,10 +504,8 @@ var scene = {
       var landed = this.probe[j] && this.probe[j].t >= 1;
       var x = x0 + j * (w + gap);
       D.box(ctx, x, PANEL_Y, w, 56, {
-        r: 8,
-        fill: landed ? D.fade(ACCENT, 0.1) : D.fade(T.panel, 0.7),
-        stroke: landed ? D.fade(ACCENT, 0.55) : T.line,
-        lineWidth: 1.2
+        r: 0,
+        fill: landed ? D.fade(ACCENT, 0.16) : D.fade(T.panel, 0.7)
       });
       D.text(ctx, labels[j], x + 16, PANEL_Y + 19, {
         size: 10.5, color: T.dim, align: "left", track: 1.6
@@ -538,10 +533,8 @@ var scene = {
     ctx.save();
     ctx.globalAlpha = t;
     D.box(ctx, x, PANEL_Y - 4, w, 92, {
-      r: 10,
-      fill: D.fade(k.color, 0.09),
-      stroke: D.fade(k.color, 0.5),
-      lineWidth: 1.4
+      r: 0,
+      fill: D.fade(k.color, 0.15)
     });
     D.text(ctx, k.big, 500, PANEL_Y + 26, {
       size: 30, weight: 700, color: k.color, track: 1.5
