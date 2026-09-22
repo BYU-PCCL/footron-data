@@ -29,7 +29,8 @@ experiences = [
   "houses-of-light",
   "scriptures",
   "skip-list",
-  "bloom-filter"
+  "bloom-filter",
+  "bookofmormon"
 ]
 
 [game]
