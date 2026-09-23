@@ -12,6 +12,7 @@ experiences = [
   "fluid",
   "your-campus",
   "opinion-dynamics",
+  "crdt",
   "planes",
   "huffman",
   "gradient-descent",
