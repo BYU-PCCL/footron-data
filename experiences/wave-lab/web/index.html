@@ -12,6 +12,9 @@
 </head>
 <body>
 <canvas id="stage"></canvas>
+<div id="rogue-vignette"></div>
+<div id="rogue-flash"></div>
+<div id="rogue-banner"><b>Rogue wave</b><span>incoming</span></div>
 
 <div id="ui">
   <div class="panel" id="controls">
@@ -67,7 +70,7 @@
         <button data-theme="night">Moonlight</button>
       </div>
 
-      <div class="group-title">Demonstrations</div>
+      <div class="group-title">Show me why</div>
       <div class="chips" id="lessons">
         <button data-lesson="shoal">Shoaling</button>
         <button data-lesson="rip">Rip current</button>
@@ -122,10 +125,12 @@
     </div>
   </div>
 
-  <div class="panel" id="lesson-card">
-    <button id="lesson-close">×</button>
-    <h2 id="lesson-title"></h2>
-    <p id="lesson-body"></p>
+  <div id="captions" aria-live="polite">
+    <div class="caption">
+      <button id="caption-close" title="Stop the explanation">×</button>
+      <div class="caption-head"><span class="caption-title"></span><span class="caption-dots"></span></div>
+      <p class="caption-text"></p>
+    </div>
   </div>
 
   <div id="hint">drag on the beach to sculpt · scroll to resize brush · <kbd>H</kbd> hides the panels</div>
