@@ -7,28 +7,27 @@
  * sense, and nothing they can leave it stuck in. Walk away and the wall
  * returns to its own loop within a minute.
  *
- * The ordering is the design decision. Regions come first, because a visitor
- * knows where they are from and does not know the name of a temple — "Pacific"
- * is a question they can answer in one tap, and the wall answering it by
- * turning a globe to Tahiti is the moment they realise the thing across the
- * room is listening. Skip and hold come after, where the people who want them
- * will look.
+ * Regions are the whole interface, because a visitor knows where they are from
+ * and does not know the name of a temple — "Pacific" is a question they can
+ * answer in one tap, and the wall answering it by turning a globe to Tahiti is
+ * the moment they realise the thing across the room is listening. Each region
+ * opens a menu: shuffle through the whole region, or, for the visitor who
+ * does know the name of their temple, pick it out.
  *
  * Message formats — keep in sync with web/src/footron.js:
- *   { type: "region",  value: "utah" | "europe" | … }
- *   { type: "next"  }
- *   { type: "pause",   value: <bool> }
- *   { type: "release" }
+ *   { type: "region", value: "utah" | "europe" | … }
+ *   { type: "goto",   value: "<temple id>" }
  */
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { css } from "@emotion/react";
-import Button from "@material-ui/core/Button";
 import Chip from "@material-ui/core/Chip";
+import Divider from "@material-ui/core/Divider";
+import Menu from "@material-ui/core/Menu";
+import MenuItem from "@material-ui/core/MenuItem";
 import Typography from "@material-ui/core/Typography";
-import PauseIcon from "@material-ui/icons/Pause";
-import PlayArrowIcon from "@material-ui/icons/PlayArrow";
-import SkipNextIcon from "@material-ui/icons/SkipNext";
+import ShuffleIcon from "@material-ui/icons/Shuffle";
 import { useMessaging } from "@footron/controls-client";
+import { TEMPLES } from "./temples";
 
 // Ids only — the wall owns the boxes behind each one (REGIONS in
 // web/src/footron.js), so a region can be re-drawn without shipping a new
@@ -87,46 +86,28 @@ const chipStyle = css`
   }
 `;
 
-const rowStyle = css`
+const shuffleStyle = css`
   display: flex;
-  flex-direction: row;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
 `;
 
 const TempleControls = () => {
   const { sendMessage } = useMessaging();
-  const [paused, setPaused] = useState(false);
+  // The open region's menu: which region, and the chip it hangs from.
+  const [open, setOpen] = useState(null);
+  const close = useCallback(() => setOpen(null), []);
 
-  // The wall releases a held photograph after 45 seconds of quiet. Mirroring
-  // that here means the Hold button un-presses itself at the same moment the
-  // wall stops honouring it, rather than claiming to still be in charge.
-  const idle = useRef(null);
-  const touch = useCallback(() => {
-    clearTimeout(idle.current);
-    idle.current = setTimeout(() => setPaused(false), 45000);
-  }, []);
-  useEffect(() => () => clearTimeout(idle.current), []);
-
-  const region = useCallback((key) => {
+  const shuffle = useCallback((key) => {
     sendMessage({ type: "region", value: key });
-    setPaused(false);
-    touch();
-  }, [sendMessage, touch]);
+    close();
+  }, [sendMessage, close]);
 
-  const togglePause = useCallback(() => {
-    setPaused((prev) => {
-      const value = !prev;
-      sendMessage({ type: "pause", value });
-      return value;
-    });
-    touch();
-  }, [sendMessage, touch]);
-
-  const release = useCallback(() => {
-    sendMessage({ type: "release" });
-    setPaused(false);
-    clearTimeout(idle.current);
-  }, [sendMessage]);
+  const goto = useCallback((id) => {
+    sendMessage({ type: "goto", value: id });
+    close();
+  }, [sendMessage, close]);
 
   return (
     <div css={containerStyle}>
@@ -143,38 +124,32 @@ const TempleControls = () => {
             key={r.key}
             css={chipStyle}
             label={<><span>{r.label}</span><small>{r.note}</small></>}
-            onClick={() => region(r.key)}
+            onClick={(e) => setOpen({ key: r.key, anchor: e.currentTarget })}
             clickable
           />
         ))}
       </div>
 
-      <div css={rowStyle}>
-        <Button
-          onClick={togglePause}
-          startIcon={paused ? <PlayArrowIcon /> : <PauseIcon />}
-          variant="outlined"
-          fullWidth
-        >
-          {paused ? "Resume" : "Hold"}
-        </Button>
-        <Button
-          onClick={() => { sendMessage({ type: "next" }); touch(); }}
-          startIcon={<SkipNextIcon />}
-          variant="outlined"
-          fullWidth
-        >
-          Next
-        </Button>
-      </div>
-
-      <Button onClick={release} variant="outlined" fullWidth>
-        Let the wall carry on
-      </Button>
+      <Menu
+        anchorEl={open?.anchor}
+        open={Boolean(open)}
+        onClose={close}
+        PaperProps={{ style: { maxHeight: "60vh", minWidth: 240 } }}
+      >
+        {open && [
+          <MenuItem key="shuffle" onClick={() => shuffle(open.key)}>
+            <span css={shuffleStyle}><ShuffleIcon fontSize="small" /> Shuffle all</span>
+          </MenuItem>,
+          <Divider key="divider" />,
+          ...(TEMPLES[open.key] || []).map(([id, name]) => (
+            <MenuItem key={id} onClick={() => goto(id)}>{name}</MenuItem>
+          )),
+        ]}
+      </Menu>
 
       <Typography variant="body2" css={hintStyle}>
-        Leave it alone for 45 seconds and the wall goes back to its own tour, so
-        there is nothing here you can leave it stuck in.
+        Whatever you pick, the wall shows it and then carries on with its own
+        tour, so there is nothing here you can leave it stuck in.
       </Typography>
     </div>
   );
