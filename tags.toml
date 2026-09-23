@@ -23,6 +23,7 @@ experiences = [
   "wave-lab",
   "barnsley-fern",
   "alg-infect",
+  "quadtree",
   "neural-net-vis",
   "learning-to-walk",
   "spacetime-sandbox",
