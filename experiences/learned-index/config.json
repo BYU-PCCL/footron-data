@@ -1,0 +1,16 @@
+{
+  "id": "learned-index",
+  "title": "Learned Index",
+  "description": "Replace an index with a model: plot where every key sits in sorted order, fit that curve with a few straight lines, and look only near the prediction. Proposed at Google in 2018 and made provably bounded by the PGM-index in 2020.",
+  "long_description": "Plot each stored key against its position in the sorted list and you get the shape of the data. Fit that shape with straight lines that are never more than 12 positions wrong — each line is just three numbers.<br><br>A lookup evaluates one line to predict where the key is, then searches only the 25 slots around the prediction instead of the whole array. Smooth data needs few lines; bursty data needs many.<br><br>At these 1,400 keys that saves little time; on hundreds of millions it saves memory and cache misses. The honest caveats are on screen too: learned indexes work best on data that is read, not constantly changed (Kraska et al. 2018; Ferragina &amp; Vinciguerra 2020).",
+  "action_hints": [
+    "look up a key and see how close the prediction was",
+    "switch to different data and count the lines it needs",
+    "refit the model from scratch"
+  ],
+  "type": "web",
+  "layout": "full",
+  "lifetime": 180,
+  "queueable": true,
+  "unlisted": false
+}
