@@ -74,7 +74,7 @@ const Controls = () => {
   useEffect(() => {
     if (greeted.current) return undefined;
     greeted.current = true;
-    const hello = () => Promise.resolve(sendMessage({ type: "hello" })).catch(() => {});
+    const hello = () => Promise.resolve(sendMessage({ type: "hello" })).catch(() => undefined);
     hello();
     const t = setTimeout(hello, 1500);
     return () => clearTimeout(t);
