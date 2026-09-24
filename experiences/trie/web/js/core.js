@@ -138,6 +138,21 @@
     clear() { this.q.length = 0; this.wait = 0; }
     run(job) { this.q.push(job); return this; }
     hold(s) { this.q.push(() => s); return this; }
+    // Make room for a visitor: finish the operation in flight instantly (so the
+    // structure is never left half-changed), and drop queued work that hasn't
+    // started. Generators are run to completion with their holds skipped.
+    preempt() {
+      const head = this.q[0];
+      this.q.length = 0;
+      this.wait = 0;
+      if (head && typeof head.next === 'function') {
+        for (let guard = 0; guard < 100000; guard++) {
+          const { value, done } = head.next();
+          if (done) break;
+          if (value && typeof value.next === 'function') { /* nested generator objects are driven by yield* already */ }
+        }
+      }
+    }
     update(dt) {
       this.wait -= dt;
       let guard = 0;
