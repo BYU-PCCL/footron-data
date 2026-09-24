@@ -65,6 +65,7 @@
     duration: 64,
     idea: "Replace the index with a model that predicts where each key is stored.",
     glance: 2,
+    preempt: false,          // interrupts its own operations safely (see act)
     legend: [["sky", "stored keys"], ["teal", "model lines (±12)"], ["amber", "a lookup"]],
     notes: [
       'Plot each stored key against its position in the sorted list. The curve is the shape of the data — its cumulative distribution.',
@@ -139,8 +140,9 @@
 
     act(id) {
       const s = this.steps;
-      if (s.length > 3) return;
-      if (id === 'lookup') s.run(() => this.lookupGen());
+      if (s.length > 3 && id !== 'lookup') return;
+      // a new lookup starts now, cutting short any lookup or fit in progress
+      if (id === 'lookup') { s.clear(); this.shown = this.segs.length; this.look = null; s.run(() => this.lookupGen()); }
       else if (id === 'data') { s.clear(); this.di = (this.di + 1) % 3; this.load(); s.run(() => this.buildGen()); }
       else if (id === 'rebuild') { s.clear(); s.run(() => this.buildGen()); }
     },
@@ -158,7 +160,7 @@
 
     draw(g) {
       const S = DS.stage, u = DS.u;
-      const cx0 = S.x + 50 * u, cw = S.w * 0.62, cy0 = S.y + 10 * u, ch = S.h - 50 * u;
+      const cx0 = S.x + 80 * u, cw = S.w * 0.62 - 30 * u, cy0 = S.y + 10 * u, ch = S.h - 50 * u;
       const X = (k) => cx0 + ((k - this.kmin) / (this.kmax - this.kmin)) * cw;
       const Y = (p) => cy0 + ch - (p / (N - 1)) * ch;
       const L = this.look;
@@ -166,9 +168,9 @@
       // axes
       DS.line(g, cx0, cy0 + ch, cx0 + cw, cy0 + ch, DS.rgba(C.dim, 0.35), 1 * u);
       DS.line(g, cx0, cy0, cx0, cy0 + ch, DS.rgba(C.dim, 0.35), 1 * u);
-      DS.text(g, 'key →', cx0 + cw, cy0 + ch + 16 * u, { size: 12 * u, mono: true, color: C.mute, align: 'right' });
-      g.save(); g.translate(cx0 - 20 * u, cy0); g.rotate(-Math.PI / 2);
-      DS.text(g, '← position in the sorted array', 0, 0, { size: 12 * u, mono: true, color: C.mute, align: 'right' });
+      DS.text(g, 'key →', cx0 + cw, cy0 + ch + 18 * u, { size: 14 * u, mono: true, color: C.mute, align: 'right' });
+      g.save(); g.translate(cx0 - 72 * u, cy0); g.rotate(-Math.PI / 2);
+      DS.text(g, '← position in the sorted array', 0, 0, { size: 14 * u, mono: true, color: C.mute, align: 'right' });
       g.restore();
 
       // the data: every key at its position
@@ -194,48 +196,84 @@
       // the lookup
       if (L) {
         const x = X(L.k);
-        DS.line(g, x, cy0 + ch, x, Y(L.pred), DS.rgba(C.amber, 0.8), 1.4 * u);
-        DS.circle(g, x, cy0 + ch, 4 * u, C.amber);
+        DS.line(g, x, cy0 + ch, x, Y(L.pred), DS.rgba(C.amber, 0.85), 2 * u);
+        DS.halo(g, x, cy0 + ch, 26 * u, C.amber, 0.5);
+        DS.circle(g, x, cy0 + ch, 6 * u, C.amber);
+        if (L.stage === 0) DS.text(g, `key ${L.k.toFixed(2)}`, x, cy0 + ch + 20 * u, { size: 15 * u, mono: true, color: C.amber });
         if (L.stage >= 1) {
-          DS.line(g, cx0, Y(L.pred), x, Y(L.pred), DS.rgba(C.amber, 0.8), 1.4 * u);
-          g.fillStyle = DS.rgba(C.amber, 0.12);
-          g.fillRect(cx0 - 12 * u, Y(L.hi), 12 * u, Y(L.lo) - Y(L.hi));
-          DS.text(g, `${L.pred}`, cx0 - 16 * u, Y(L.pred), { size: 13 * u, mono: true, color: C.amber, align: 'right' });
+          // the ±12 band the answer must lie in
+          g.fillStyle = DS.rgba(C.amber, 0.14);
+          g.fillRect(cx0, Y(L.hi), cw, Math.max(3 * u, Y(L.lo) - Y(L.hi)));
+          DS.line(g, cx0, Y(L.pred), x, Y(L.pred), DS.rgba(C.amber, 0.85), 2 * u);
+          DS.circle(g, x, Y(L.pred), 5 * u, C.amber);
+          DS.text(g, `${L.pred}`, cx0 - 12 * u, Y(L.pred), { size: 16 * u, mono: true, weight: 600, color: C.amber, align: 'right' });
         }
       }
 
-      // right: the array window
-      const rx = cx0 + cw + 60 * u, rw = S.x1 - rx;
-      DS.text(g, 'THE SORTED ARRAY', rx, S.y + 6 * u, { size: 12 * u, mono: true, color: C.mute, align: 'left' });
-      const bar = 14 * u;
-      DS.box(g, rx, S.y + 22 * u, rw, bar, 3 * u, DS.rgba(C.sky, 0.15), DS.rgba(C.sky, 0.4), 1 * u);
-      DS.text(g, `${N.toLocaleString('en-US')} slots`, rx + rw, S.y + 50 * u, { size: 12 * u, mono: true, color: C.mute, align: 'right' });
-      if (L && L.stage >= 1) {
-        const wx = rx + (L.lo / N) * rw, ww = Math.max(3 * u, ((L.hi - L.lo + 1) / N) * rw);
-        DS.box(g, wx, S.y + 18 * u, ww, bar + 8 * u, 2 * u, DS.rgba(C.amber, 0.5), C.amber, 1.2 * u);
-        // zoom
-        const zy = S.y + 90 * u;
-        DS.text(g, `ZOOM: slots ${L.lo}–${L.hi}, the only ones searched`, rx, zy - 14 * u, { size: 12 * u, mono: true, color: C.amber, align: 'left' });
-        const n = L.hi - L.lo + 1, zc = rw / n;
-        const probes = L.probes.slice(0, L.shownProbes);
-        for (let i = 0; i < n; i++) {
-          const p = L.lo + i;
-          const x = rx + i * zc;
-          const probed = probes.indexOf(p);
-          const hit = p === L.idx && probed >= 0;
-          DS.box(g, x + 1, zy, zc - 2, 40 * u, 3 * u, hit ? C.teal : probed >= 0 ? DS.rgba(C.amber, 0.6) : C.cell, p === L.pred ? C.amber : null, 1.5 * u);
-          if (probed >= 0) DS.text(g, String(probed + 1), x + zc / 2, zy + 20 * u, { size: Math.min(12 * u, zc * 0.6), mono: true, color: C.dark, weight: 700 });
-        }
-        DS.text(g, 'numbers = order of binary-search probes', rx, zy + 58 * u, { size: 12 * u, mono: true, color: C.mute, align: 'left' });
+      // right: the sorted array, the 25-slot window, and the lookup told as steps
+      const rx = cx0 + cw + 64 * u, rw = S.x1 - rx;
+      let y = S.y + 8 * u;
+      DS.text(g, 'THE SORTED ARRAY', rx, y, { size: 15 * u, mono: true, color: C.dim, align: 'left' });
+      DS.text(g, `${N.toLocaleString('en-US')} slots`, rx + rw, y, { size: 15 * u, mono: true, color: C.dim, align: 'right' });
+      const barY = y + 20 * u, bar = 26 * u;
+      DS.box(g, rx, barY, rw, bar, 4 * u, DS.rgba(C.sky, 0.15), DS.rgba(C.sky, 0.45), 1 * u);
+      DS.text(g, '0', rx, barY + bar + 13 * u, { size: 12 * u, mono: true, color: C.mute, align: 'left' });
+      DS.text(g, String(N - 1), rx + rw, barY + bar + 13 * u, { size: 12 * u, mono: true, color: C.mute, align: 'right' });
+      const zy = barY + bar + 78 * u, zh = 62 * u;
+      const n = 2 * EPS + 1, zc = rw / n;
+      const act = L && L.stage >= 1;
+      if (act) {
+        const wx = rx + (L.lo / N) * rw, ww = Math.max(4 * u, ((L.hi - L.lo + 1) / N) * rw);
+        DS.box(g, wx, barY - 5 * u, ww, bar + 10 * u, 2 * u, DS.rgba(C.amber, 0.55), C.amber, 1.5 * u);
+        // zoom funnel from the window on the bar to the 25 slots below
+        g.beginPath();
+        g.moveTo(wx, barY + bar + 5 * u); g.lineTo(wx + ww, barY + bar + 5 * u);
+        g.lineTo(rx + rw, zy - 4 * u); g.lineTo(rx, zy - 4 * u); g.closePath();
+        g.fillStyle = DS.rgba(C.amber, 0.08); g.fill();
+        g.strokeStyle = DS.rgba(C.amber, 0.35); g.lineWidth = 1 * u; g.stroke();
       }
-      const sy = S.y + S.h * 0.45;
-      DS.text(g, `DATA: ${this.name}`, rx, sy, { size: 12 * u, mono: true, color: C.ink, align: 'left' });
-      DS.text(g, `${this.segs.length} lines for ${N.toLocaleString('en-US')} keys`, rx, sy + 28 * u, { size: 20 * u, mono: true, weight: 300, color: C.teal, align: 'left' });
-      DS.text(g, `max error ±${EPS} positions, guaranteed`, rx, sy + 54 * u, { size: 12 * u, mono: true, color: C.dim, align: 'left' });
-      if (this.lastCost) {
-        DS.text(g, `last lookup: ${this.lastCost.model} steps with the model`, rx, sy + 96 * u, { size: 13 * u, mono: true, color: C.amber, align: 'left' });
-        DS.text(g, `${this.lastCost.full} steps binary-searching everything`, rx, sy + 118 * u, { size: 13 * u, mono: true, color: C.dim, align: 'left' });
+      const probes = act ? L.probes.slice(0, L.shownProbes) : [];
+      for (let i = 0; i < n; i++) {
+        const p = act ? L.lo + i : -1;
+        const x = rx + i * zc;
+        const probed = probes.indexOf(p);
+        const hit = act && p === L.idx && probed >= 0;
+        const fill = !act ? DS.rgba(C.cell, 0.6) : hit ? C.teal : probed >= 0 ? DS.rgba(C.amber, 0.65) : C.cell;
+        DS.box(g, x + 1.5 * u, zy, zc - 3 * u, zh, 3 * u, fill, act && p === L.pred ? C.amber : DS.rgba(C.dim, act ? 0.25 : 0.12), (act && p === L.pred ? 2.5 : 1) * u);
+        if (probed >= 0) DS.text(g, String(probed + 1), x + zc / 2, zy + zh / 2, { size: Math.min(18 * u, zc * 0.7), mono: true, color: C.dark, weight: 700 });
       }
+      if (act) {
+        const px = rx + (L.pred - L.lo + 0.5) * zc;
+        DS.text(g, '▲ predicted', px, zy + zh + 16 * u, { size: 13 * u, mono: true, color: C.amber, align: px > rx + rw * 0.7 ? 'right' : px < rx + rw * 0.3 ? 'left' : 'center' });
+        DS.text(g, String(L.lo), rx, zy - 14 * u, { size: 13 * u, mono: true, color: C.amber, align: 'left' });
+        DS.text(g, String(L.hi), rx + rw, zy - 14 * u, { size: 13 * u, mono: true, color: C.amber, align: 'right' });
+      }
+      DS.text(g, act ? 'the only 25 slots searched  ·  numbers = probe order' : 'a lookup searches just 25 slots like these', rx + rw / 2, zy + zh + 40 * u, { size: 13 * u, mono: true, color: act ? C.dim : C.mute });
+
+      // the lookup, as numbered steps: amber = now, teal = done
+      let sy = zy + zh + 84 * u;
+      const found = L && L.stage >= 2 && L.shownProbes === L.probes.length;
+      const steps = [
+        [L ? `key ${L.k.toFixed(2)}  →  line ${L.seg + 1}` : 'pick the line for the key', L ? (L.stage > 0 ? 2 : 1) : 0],
+        [L && L.stage >= 1 ? `line predicts slot ${L.pred}` : 'the line predicts a slot', L ? (L.stage > 1 ? 2 : L.stage === 1 ? 1 : 0) : 0],
+        [L && L.stage >= 1 ? `search slots ${L.lo}–${L.hi}` : `search ±${EPS} around it`, L ? (found ? 2 : L.stage === 2 ? 1 : 0) : 0],
+        [found ? `found at ${L.idx}  ·  off by ${Math.abs(L.idx - L.pred)}` : 'found', found ? 3 : 0],
+      ];
+      const dataY = S.y1 - 112 * u;
+      const lh = DS.clamp((dataY - sy - 40 * u) / 3.5, 26 * u, 46 * u);
+      steps.forEach(([t, st], i) => {
+        const col = st === 3 ? C.teal : st === 2 ? DS.rgba(C.teal, 0.85) : st === 1 ? C.amber : C.mute;
+        DS.circle(g, rx + 13 * u, sy + i * lh, 12 * u, st ? DS.rgba(st === 1 ? C.amber : C.teal, 0.2) : null, col, 1.5 * u);
+        DS.text(g, String(i + 1), rx + 13 * u, sy + i * lh + 0.5 * u, { size: 13 * u, mono: true, weight: 700, color: col });
+        DS.text(g, t, rx + 36 * u, sy + i * lh, { size: 20 * u, mono: true, weight: st ? 500 : 400, color: st ? (st === 1 ? C.amber : C.ink) : C.mute, align: 'left' });
+      });
+
+      // the model and the data
+      sy = Math.max(sy + 3 * lh + 40 * u, dataY);
+      DS.text(g, `DATA: ${this.name}`, rx, sy, { size: 16 * u, mono: true, color: C.ink, align: 'left' });
+      DS.text(g, `${this.segs.length} lines for ${N.toLocaleString('en-US')} keys`, rx, sy + 36 * u, { size: 30 * u, weight: 400, color: C.teal, align: 'left' });
+      DS.text(g, `max error ±${EPS} positions, guaranteed`, rx, sy + 68 * u, { size: 15 * u, mono: true, color: C.dim, align: 'left' });
+      if (this.lastCost) DS.text(g, `last lookup: ${this.lastCost.model} steps  ·  full binary search: ${this.lastCost.full}`, rx, sy + 94 * u, { size: 14 * u, mono: true, color: C.dim, align: 'left' });
     },
 
     stats() {

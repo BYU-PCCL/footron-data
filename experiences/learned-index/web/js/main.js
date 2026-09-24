@@ -247,6 +247,10 @@
       if (st.pending >= 0 || !(s.actions || []).some((a) => a.id === id)) return false;
       activity();
       st.autoHold = st.t + 14;   // let the visitor's op play out before autoplay resumes
+      // A tap must show within a second: finish whatever is mid-flight and start
+      // the visitor's action now. Scenes that manage interruption themselves
+      // (a scripted story, say) set `preempt: false`.
+      if (s.preempt !== false && s.steps && s.steps.preempt) s.steps.preempt();
       s.act(id);
       return true;
     },
@@ -396,7 +400,7 @@
   renderMode();
   const warp = Math.min(600, parseFloat(params.get('warp')) || 0);
   for (let t = 0; t < warp; t += 1 / 30) { DS.time = st.t += 1 / 30; cur().update(1 / 30, true); }
-  if (warp) st.fade = 1;
+  if (warp) { st.fade = 1; if (opPending) { const [t, tone] = opPending; opPending = null; showOp(t, tone); } }
   if (params.has('clean')) document.querySelectorAll('.hud').forEach((e) => { e.style.display = 'none'; });
   requestAnimationFrame(frame);
 })();
