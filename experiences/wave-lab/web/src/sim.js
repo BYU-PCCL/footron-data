@@ -120,6 +120,14 @@ const perStep = (frac, dt) => 1 - Math.pow(1 - frac, dt / REF_DT);
 // How murky the surf is allowed to get: enough that a working break looks
 // stirred up, not so much that the whole coast reads as being in flood.
 const SURF_TURB = 0.26;
+// A rogue wave is far taller than anything the breaking cap below was tuned
+// for, and left to that cap it is knocked down to ordinary surf before it ever
+// reaches the sand. While one is running the cap is raised by up to this much,
+// easing back to normal over ROGUE_LIFE units of sim-time — long enough for the
+// wave to cross the basin and run up the beach, short enough that the next
+// swell is ordinary surf again.
+const ROGUE_LIFT = 2.2;
+const ROGUE_LIFE = 34;
 
 // --- frequency dispersion -------------------------------------------------
 //
@@ -236,6 +244,7 @@ export class Sim {
     this.foamTotal = 0;
     this.breakEnergy = 0;
     this.swashEnergy = 0;
+    this.rogue = 0;
     this.params = {
       amplitude: 0.55,
       frequency: 0.095,
@@ -607,18 +616,35 @@ export class Sim {
     return e;
   }
 
-  // One giant swell: a smooth ridge of water released offshore.
-  tsunami(strength = 2.6) {
-    const { eta, bed } = this;
+  // One giant wave, launched from just off the left edge of the picture.
+  //
+  // It used to be a still hump of water, which splits in two: half ran out to
+  // sea and died in the sponge, so the wave that reached the beach was half the
+  // height asked for. Now the hump is given the velocity of a shoreward-going
+  // long wave, u = c * eta / h, so all of it travels toward the beach. It is
+  // wide, because volume is what floods a beach, and it has a trough running
+  // ahead of it: the sea visibly drains off the shore just before the crest
+  // arrives, which is what a real rogue wave or tsunami does. The crest is a
+  // little taller mid-frame than at the edges, so it reads as a wave rather
+  // than a ruler.
+  tsunami(strength = 3.4) {
+    const { eta, bed, u } = this;
+    const wid = 20 * SCALE, x0 = VIEW_X0 - 9 * SCALE, xt = x0 + 1.9 * wid;
+    const trough = 0.35 * strength;
+    const prof = x => strength * Math.exp(-(((x - x0) / wid) ** 2))
+      - trough * Math.exp(-(((x - xt) / (1.1 * wid)) ** 2));
     for (let j = 0; j < NY; j++) {
       const row = j * NX;
-      const reach = Math.round(40 * SCALE), off = Math.round(6 * SCALE), wid = 11 * SCALE;
-      for (let i = 1; i < Math.min(NX, SRCX + reach); i++) {
-        const f = Math.exp(-Math.pow((i - (SRCX + off)) / wid, 2));
+      const focus = 0.8 + 0.2 * Math.cos(2 * Math.PI * (j / NY - 0.5));
+      for (let i = 1; i < NX; i++) {
         const k = row + i;
-        if (eta[k] - bed[k] > 0.4) eta[k] += strength * f;
+        const h = this.sea - bed[k];
+        if (h < 1.0) continue;
+        eta[k] = Math.max(bed[k] + 0.05, eta[k] + prof(i) * focus);
+        u[k] += Math.sqrt(G / h) * prof(i - 0.5) * focus;
       }
     }
+    this.rogue = 1;
   }
 
   splash(gx, gy, strength = 1.4, radius = 7) {
@@ -689,6 +715,7 @@ export class Sim {
       this.time += dt;
     }
     this.lastDt = sub * dt;   // sim-time advanced this frame; entities need it
+    if (this.rogue > 0) this.rogue = Math.max(0, this.rogue - this.lastDt / ROGUE_LIFE);
     this.rippleOff = (this.rippleOff + 3) % (NX * NY);
     this.postProcess(sub * dt);
   }
@@ -848,6 +875,7 @@ export class Sim {
     // the exact cells generating it — isolated blobs instead of surf.
     const foamDecay = Math.exp(-0.055 * dt);
     const etaFilter = perStep(Math.min(0.40, 0.18 + p.amplitude * 0.18), dt);
+    const rogueLift = this.rogue * ROGUE_LIFT;
     const breakRelax = perStep(0.55, dt);   // crest knocked down by breaking
     const breakFoam = 0.05 * (dt / REF_DT); // whitewater it leaves behind
     const slumpRate = perStep(0.40, dt);    // sand sliding toward its neighbours
@@ -869,7 +897,7 @@ export class Sim {
           // The cap needs a floor, or the shallows can never rise and the swash
           // never reaches dry sand.
           const cap = Math.min(2.2 * (p.amplitude + 0.5),
-            Math.max(0.9 * p.amplitude + 0.4, 0.85 * stillH));
+            Math.max(0.9 * p.amplitude + 0.4, 0.85 * stillH)) + rogueLift;
           const over = eta[c] - sea - cap;
           if (over > 0) {
             eta[c] -= over * breakRelax;   // relax, don't snap: snapping rings

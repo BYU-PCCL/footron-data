@@ -1,0 +1,17 @@
+{
+  "id": "crdt",
+  "title": "Editing Together, Offline",
+  "description": "Two people edit the same sentence on two disconnected laptops. When they reconnect, both copies end up exactly the same — no server decides. This is the CRDT idea behind collaborative editors like Automerge and Yjs.",
+  "long_description": "Every letter gets a permanent name — a counter plus who typed it — and every new letter is placed <i>after</i> a named letter, never at a numbered position. When both people type in the same spot, both copies apply the same tie-break, so they agree without ever talking it over.<br><br>Deleted letters stay behind as invisible tombstones, because someone else may still be typing right after them. The tree under the text shows how each letter hangs off the one it was typed after; reading it left to right gives the sentence.<br><br>The bottom line replays the same edits the naive way, by position — and the two copies disagree for good. That is the problem this data structure (RGA, Roh et al. 2011) solves.",
+  "action_hints": [
+    "replay the story from the start",
+    "make laptop A type something offline",
+    "make laptop B type something offline",
+    "sync and watch both copies match"
+  ],
+  "type": "web",
+  "layout": "full",
+  "lifetime": 180,
+  "queueable": true,
+  "unlisted": false
+}

@@ -1,0 +1,11 @@
+“And it came to pass that I, Nephi,
+said unto my father:
+[I will go and do](highlight) the things
+which the Lord hath commanded,
+for I know that the Lord [giveth no commandments](underline)
+unto the children of men,
+save he shall [prepare a way for them](glow)
+that they may [accomplish the thing](script)
+which he commandeth them.”
+
+-- 1 Nephi 3:7

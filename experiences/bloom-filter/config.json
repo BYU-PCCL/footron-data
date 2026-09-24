@@ -1,0 +1,16 @@
+{
+  "id": "bloom-filter",
+  "type": "web",
+  "title": "Have I Seen This Before?",
+  "description": "A Bloom filter is a set that never stores what you put in it — thirty-two bits and nothing else. It can tell you for certain that something was never added, and only ever tell you that something probably was. Watch a name it was never given come back as a yes.",
+  "long_description": "A Bloom filter answers one question, <i>have I seen this before?</i>, and it answers it without holding on to anything you gave it.<br><br>Adding a name runs it through three hash functions and sets the three bits they land on. Asking about a name runs the same three and reads them. If any one of them is 0 the name was definitely never added. If all three are 1 the filter says yes — but those bits could have been set by three different names that have nothing to do with the one being asked about.<br><br>That is a false positive, and the wall ends on a real one. The three hash functions are FNV-1a, djb2 and sdbm, the bit positions are whatever they actually produce, and the name that comes back wrongly is found by asking the filter rather than drawn in.",
+  "artist": "Emeline MacJanet",
+  "action_hints": [
+    "slow it down to follow one name through its three hashes",
+    "pause on the false positive at the end",
+    "deal new data and watch a different name collide"
+  ],
+  "layout": "full",
+  "lifetime": 180,
+  "queueable": true
+}

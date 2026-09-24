@@ -5,6 +5,7 @@ import { Surf } from './sound.js';
 import { Section } from './section.js';
 import { drawStructures } from './structures.js';
 import { connectFootron, footronEnabled, dispatchControlMessage } from './footron.js';
+import { Captions } from './captions.js';
 
 const sim = new Sim();
 const renderer = new Renderer(sim);
@@ -16,6 +17,7 @@ world.surf = surf;
 const canvas = document.getElementById('stage');
 const ctx = canvas.getContext('2d', { alpha: false });
 const ui = document.getElementById('ui');
+const captions = new Captions(document.getElementById('captions'));
 
 let themeName = 'day';
 let tool = 'raise';
@@ -23,7 +25,9 @@ let brush = Math.round(12 * SCALE);
 let dpr = 1;
 let W = 0, H = 0;
 let lastInput = performance.now();
-let attract = false;
+// The beach opens in its attract loop — the demonstrations, one after another —
+// so the first thing anyone sees is the water doing something worth explaining.
+let attract = true;
 let hover = null;
 let soundOn = false;
 const hintEl = document.getElementById('hint');
@@ -181,6 +185,7 @@ const presetsEl = document.getElementById('presets');
 const themesEl = document.getElementById('themes');
 
 function setCoast(name) {
+  stopLesson();          // a new coastline is not the scene being explained
   sim.preset(name);
   world.reset();
   syncSliders();
@@ -205,28 +210,33 @@ themesEl.addEventListener('click', ev => {
 // ------------------------------------------------------------ demonstrations
 //
 // Each one sets up a situation the physics then resolves on its own — nothing
-// here fakes the result. The card says what to watch for, so the beach also
-// works as an exhibit when nobody is there to explain it.
+// here fakes the result. The captions say what to watch for, a line at a time,
+// so the beach also works as an exhibit when nobody is there to explain it.
 
 const LESSONS = {
   shoal: {
     title: 'Shoaling: why waves grow as they arrive',
-    body: 'A long, low swell crossing a smooth slope. Watch the cross-section: '
-      + 'in deep water the crests are far apart and gentle. As the bed rises the '
-      + 'wave slows, so the crests bunch up and grow taller until the front face '
-      + 'is too steep to hold and it breaks.',
+    captions: [
+      'A long, low swell is rolling in over a smooth, gently rising sea bed.',
+      'Out in deep water the crests are far apart and gentle. The cross-section shows the profile.',
+      'As the bottom rises the wave slows down, so the crests behind catch up and bunch together.',
+      'The same energy squeezed into shallower water has only one way to go: up. The wave grows taller.',
+      'When the front face gets too steep to hold, it tips over and breaks.',
+    ],
     preset: 'flat',
     params: { amplitude: 0.5, frequency: 0.055, angle: 0, chop: 0.05, wind: 0.05, erosion: 0 },
     section: true,
   },
   rip: {
     title: 'Rip currents: where the water gets back out',
-    body: 'Waves pile water onto the beach, and it has to escape somewhere. A gap '
-      + 'in the sandbar is the path of least resistance. The arrows show the '
-      + 'mean flow: through the gap the water heads offshore two to four times '
-      + 'faster than on either side, fed by water drifting along the shore. '
-      + 'Leave it running — the current scours its own channel deeper, which '
-      + 'makes the rip stronger still.',
+    captions: [
+      'Every wave throws water up the beach, and all of it has to find a way back out to sea.',
+      'There is a gap cut through the sandbar out there. It is the easiest way out.',
+      'Follow the arrows: water drifts along the shore, turns, and races offshore through the gap.',
+      'That is a rip current, running two to four times faster than the water on either side.',
+      'Leave it running and the rip scours its own channel deeper, which makes it stronger still.',
+      'Caught in one? Swim parallel to the beach, out of the narrow current, then head for shore.',
+    ],
     preset: 'sandbar',
     params: { amplitude: 0.72, frequency: 0.085, angle: 0, chop: 0.3, wind: 0.25, erosion: 0.3 },
     flow: true,
@@ -240,10 +250,13 @@ const LESSONS = {
   },
   groin: {
     title: 'Longshore drift and the groin trap',
-    body: 'The swell arrives at an angle, so the water it throws up the beach '
-      + 'runs sideways as it drains — and it carries sand with it. The wall '
-      + 'blocks that river of sand: watch it build up on the upstream side and '
-      + 'starve the beach on the other. Turn Sand drift up to speed it along.',
+    captions: [
+      'The swell is arriving at an angle to the beach.',
+      'Each wave runs up the sand on a slant but drains straight back down, so the water zig-zags along the shore.',
+      'It carries sand with it: a slow river of sand called longshore drift.',
+      'The wall blocks it. Watch the sand pile up on the side the drift comes from…',
+      '…while the beach on the other side, cut off from its supply, starves and shrinks.',
+    ],
     preset: 'classic',
     params: { amplitude: 0.68, frequency: 0.085, angle: 34, chop: 0.3, wind: 0.3, erosion: 0.85 },
     build(sim) {
@@ -260,45 +273,51 @@ const LESSONS = {
   },
   refract: {
     title: 'Refraction: waves turn to face the beach',
-    body: 'The swell is set to come in at a steep angle, but look at the crests '
-      + 'near the shore — they have swung round to run almost parallel to it. '
-      + 'The end of a crest in shallow water moves slower than the end still in '
-      + 'deep water, so the whole wave pivots. Flatten the bars and it stops.',
+    captions: [
+      'The swell is set to come in at a steep angle, nearly 50° off straight-on.',
+      'Now look near the shore: the crests have swung round to run almost parallel to the beach.',
+      'The end of a crest in shallow water slows down, while the end still in deep water keeps going.',
+      'So the whole wave pivots, like a line of marchers wheeling round a corner.',
+      'That is why waves nearly always seem to arrive head-on, whichever way the wind blows.',
+    ],
     preset: 'coves',
     params: { amplitude: 0.6, frequency: 0.07, angle: 48, chop: 0.15, wind: 0.15, erosion: 0.1 },
   },
   reefbreak: {
     title: 'Why a reef makes a lagoon',
-    body: 'The swell crosses deep water untouched, then trips over the coral '
-      + 'crest and dumps almost all of it there. What gets past is small, and '
-      + 'the rough reef flat takes more of it, so the lagoon behind stays calm '
-      + 'in a swell that would be pounding an open beach. Watch the two gaps in '
-      + 'the crest: water piled over the flat has to get back out, and it leaves '
-      + 'through them as rips — turn Currents on to see it. The coral itself '
-      + 'never moves. Only the sand around it does.',
+    captions: [
+      'The swell crosses deep water untouched, then trips over the coral crest.',
+      'Almost all of its energy is dumped right there, in a line of white water.',
+      'What gets past is small, and the rough reef flat drains away even more of it.',
+      'So the lagoon behind stays calm in a swell that would be pounding an open beach.',
+      'Water piled over the reef escapes back out through the gaps in the crest. Follow the arrows.',
+      'The coral itself never moves. Only the sand around it does.',
+    ],
     preset: 'reef',
     params: { amplitude: 0.85, frequency: 0.085, angle: 12, chop: 0.35, wind: 0.3, erosion: 0.6 },
     flow: true,
   },
   pierscour: {
     title: 'What a pier does to a beach',
-    body: 'The piles cannot be washed away, so the sand has to arrange itself '
-      + 'around them. Flow squeezing between them digs a hollow at the base of '
-      + 'each one — that is scour, and it is what undermines real piers. With '
-      + 'the swell coming in at an angle the drift piles sand up on the updrift '
-      + 'side and starves the other, which is why a pier so often has a fat '
-      + 'beach on one side and a scarp on the other. Set Direction to 0 and the '
-      + 'two sides even out again.',
+    captions: [
+      "The pier's piles can't be washed away, so the sand has to arrange itself around them.",
+      'Water squeezing between the piles digs a hollow at the base of each one. That is scour.',
+      'Scour is what undermines real piers, and why they have to be inspected so often.',
+      'The swell comes in at an angle, so sand piles up on one side of the pier and the other side starves.',
+      'That is why a pier so often has a wide beach on one side and a steep drop on the other.',
+    ],
     preset: 'pier',
     params: { amplitude: 0.7, frequency: 0.09, angle: 30, chop: 0.35, wind: 0.35, erosion: 0.95 },
     flow: true,
   },
   surge: {
     title: 'Storm surge: the same beach, higher water',
-    body: 'Big steep waves on top of a raised sea level. The waves break much '
-      + 'closer in because the bars are too deep to trip them, so all that '
-      + 'energy arrives at the dunes instead. Anything left on the sand is going '
-      + 'to get taken.',
+    captions: [
+      'A storm: big, steep waves on top of a sea level pushed up by wind and low pressure.',
+      'The sandbars that normally trip waves far offshore are now too deep to touch them.',
+      'So the waves break much closer in, and all that energy lands on the upper beach.',
+      'Watch the umbrellas and chairs. Anything left on the sand is about to be taken.',
+    ],
     preset: 'classic',
     params: { amplitude: 1.05, frequency: 0.13, angle: -26, chop: 0.9, wind: 0.9, erosion: 0.9 },
     tide: 1.15,
@@ -306,12 +325,13 @@ const LESSONS = {
   },
 };
 
-const lessonCard = document.getElementById('lesson-card');
-const lessonTitle = document.getElementById('lesson-title');
-const lessonBody = document.getElementById('lesson-body');
-document.getElementById('lesson-close').addEventListener('click', () => {
-  lessonCard.classList.remove('on');
+function stopLesson() {
+  captions.stop();
   selectIn(document.getElementById('lessons'), null);
+}
+document.getElementById('caption-close').addEventListener('click', () => {
+  markInput();
+  stopLesson();
 });
 
 const lessonsEl = document.getElementById('lessons');
@@ -340,12 +360,12 @@ function runLesson(name) {
   // the card. The rest of the scene builds on screen, at the speed it happens.
   for (let t = 0; t < 10; t += sim.lastDt) { sim.step(); world.update(sim.lastDt); }
 
-  if (L.flow && !showFlow) flowBtn.click();
-  if (L.section && !section.visible) sectionBtn.click();
+  // Not by clicking the buttons: a click counts as someone at the controls,
+  // and the attract loop starts demonstrations too.
+  if (L.flow) setFlow(true);
+  if (L.section) setSection(true);
 
-  lessonTitle.textContent = L.title;
-  lessonBody.textContent = L.body;
-  lessonCard.classList.add('on');
+  captions.play({ title: L.title, lines: L.captions, loop: true });
 }
 lessonsEl.addEventListener('click', ev => {
   const b = ev.target.closest('button'); if (!b) return;
@@ -363,7 +383,6 @@ function setMood(name) {
   Object.assign(sim.params, MOODS[name]);
   syncSliders();
 }
-function rogueWave() { sim.tsunami(2.6); surf.rumble(); }
 document.getElementById('moods').addEventListener('click', ev => {
   const b = ev.target.closest('button'); if (!b) return;
   markInput();
@@ -397,6 +416,7 @@ document.getElementById('btn-calm').addEventListener('click', () => {
   markInput();
 });
 document.getElementById('btn-reset').addEventListener('click', () => {
+  stopLesson();
   sim.preset(currentPreset());
   world.reset();
   syncSliders();
@@ -410,9 +430,12 @@ document.getElementById('btn-reset').addEventListener('click', () => {
 let showFlow = true;
 const flowBtn = document.getElementById('btn-flow');
 flowBtn.classList.toggle('on', showFlow);
-flowBtn.addEventListener('click', () => {
-  showFlow = !showFlow;
+function setFlow(on) {
+  showFlow = on;
   flowBtn.classList.toggle('on', showFlow);
+}
+flowBtn.addEventListener('click', () => {
+  setFlow(!showFlow);
   markInput();
 });
 const soundBtn = document.getElementById('btn-sound');
@@ -424,10 +447,13 @@ soundBtn.addEventListener('click', () => {
 });
 
 const sectionBtn = document.getElementById('btn-section');
+function setSection(on) {
+  section.visible = on;
+  sectionBtn.classList.toggle('on', on);
+  section.canvas.classList.toggle('on', on);
+}
 sectionBtn.addEventListener('click', () => {
-  section.visible = !section.visible;
-  sectionBtn.classList.toggle('on', section.visible);
-  section.canvas.classList.toggle('on', section.visible);
+  setSection(!section.visible);
   markInput();
 });
 
@@ -479,7 +505,7 @@ addEventListener('keydown', ev => {
   switch (ev.key.toLowerCase()) {
     case ' ': ev.preventDefault(); togglePause(); break;
     case 'r': sim.preset(currentPreset()); world.reset(); syncSliders(); break;
-    case 't': sim.tsunami(2.6); surf.rumble(); break;
+    case 't': rogueWave(); break;
     case 'd': depthBtn.click(); break;
     case 'f': flowBtn.click(); break;
     case 's': soundBtn.click(); break;
@@ -491,33 +517,172 @@ addEventListener('keydown', ev => {
   }
 });
 
-// ------------------------------------------------------- attract mode (kiosk)
+// ----------------------------------------------------------- the rogue wave
+//
+// The solver makes the wave itself (sim.tsunami). This is the staging around
+// it, and every cue comes from the water rather than from a clock: the crash
+// and the shake land when the breaking energy actually spikes, the second jolt
+// when the flood actually reaches dry sand, and the spray comes off the real
+// crest. A clock would be right on one coastline and early or late on the rest.
 
-let attractT = 0;
+const ROGUE_CAPTIONS = [
+  { text: 'Watch the shoreline: the sea drains away first. That is the trough racing ahead of the crest.', hold: Infinity },
+  { text: 'Too big for water this shallow, the whole wall of water topples forward and breaks.', hold: Infinity },
+  { text: 'And it keeps coming, surging far past where any ordinary wave can reach.', hold: 5.5 },
+  'Out at sea, rogue waves form when several waves happen to line up and stack into one giant.',
+];
+const rogueBanner = document.getElementById('rogue-banner');
+const rogueVignette = document.getElementById('rogue-vignette');
+const rogueFlash = document.getElementById('rogue-flash');
+const rogue = { phase: 'idle', t: 0, phaseT: 0, be0: 0, ws0: 0, shake: 0, flash: 0, gloom: 0 };
+
+// Wet cells above sea level, sampled every fourth row: how far up the beach
+// the water has got.
+function wetSand() {
+  let n = 0;
+  for (let j = 0; j < NY; j += 4) {
+    const row = j * NX;
+    for (let i = VIEW_X0; i < NX; i++) {
+      const k = row + i;
+      if (sim.bed[k] > sim.sea && sim.eta[k] - sim.bed[k] > 0.05) n++;
+    }
+  }
+  return n;
+}
+
+function rogueWave() {
+  sim.tsunami();
+  Object.assign(rogue, { phase: 'coming', t: 0, phaseT: 0,
+    be0: sim.breakEnergy, ws0: wetSand() });
+  surf.rumble(9);           // about how long the wave takes to reach the sand
+  rogueBanner.classList.add('on');
+  captions.play({ title: 'Rogue wave', lines: ROGUE_CAPTIONS, hot: true, resume: true });
+}
+
+// Spray off the crest while it breaks, or off the leading edge of the flood.
+function rogueSpray(n, onShore) {
+  for (let s = 0; s < n; s++) {
+    const j = (Math.random() * NY) | 0;
+    const row = j * NX;
+    let best = -1, bestH = 0;
+    for (let i = VIEW_X0; i < NX; i++) {
+      const k = row + i;
+      if (onShore) {
+        if (sim.bed[k] > sim.sea && sim.eta[k] - sim.bed[k] > 0.06) best = i;
+      } else if (sim.sea - sim.bed[k] > 0.05) {
+        const h = sim.eta[k] - sim.sea;
+        if (h > bestH) { bestH = h; best = i; }
+      }
+    }
+    if (best < 0) continue;
+    if (!onShore && (bestH < 0.8 || sim.foam[row + best] < 0.3)) continue;
+    world.addSplash(best, j + Math.random(), onShore ? 2 : 3, onShore ? 1.1 : 1.8);
+  }
+}
+
+function updateRogue(dt) {
+  rogue.shake *= Math.exp(-dt * 2.4);
+  rogue.flash *= Math.exp(-dt * 4);
+  if (rogue.phase !== 'idle') {
+    rogue.t += dt; rogue.phaseT += dt;
+    if (rogue.t > 2.6) rogueBanner.classList.remove('on');
+    switch (rogue.phase) {
+      case 'coming':
+        rogue.gloom = Math.min(1, rogue.t / 4);
+        rogueSpray(4, false);
+        // The solver's breaking energy jumps once the crest topples. The
+        // fallback only matters if the wave somehow never breaks.
+        if ((rogue.t > 2 && sim.breakEnergy > rogue.be0 + 0.010) || rogue.t > 9) {
+          rogue.phase = 'breaking'; rogue.phaseT = 0;
+          rogue.shake = 1; rogue.flash = 0.7;
+          surf.crash();
+          world.addGull(); world.addGull();
+          captions.next(1);
+        }
+        break;
+      case 'breaking':
+        rogueSpray(12, false);
+        if ((rogue.phaseT > 1.5 && wetSand() > rogue.ws0 * 1.5 + 60) || rogue.phaseT > 7) {
+          rogue.phase = 'flooding'; rogue.phaseT = 0;
+          rogue.shake = Math.max(rogue.shake, 0.55);
+          surf.splash(2.5);
+          captions.next(2);
+        }
+        break;
+      case 'flooding':
+        rogueSpray(6, true);
+        rogue.gloom = Math.max(0, 1 - rogue.phaseT / 5);
+        if (rogue.phaseT > 6) { rogue.phase = 'idle'; rogue.gloom = 0; }
+        break;
+    }
+  }
+  rogueVignette.style.opacity = (rogue.gloom * 0.9).toFixed(3);
+  rogueFlash.style.opacity = rogue.flash.toFixed(3);
+  // Shaken with a CSS transform rather than inside the canvas, so it costs
+  // nothing; the slight zoom keeps the edges of the picture off screen.
+  if (rogue.shake > 0.01) {
+    const a = rogue.shake * Math.min(W, H) * 0.014;
+    canvas.style.transform = `translate(${((Math.random() * 2 - 1) * a).toFixed(1)}px,`
+      + `${((Math.random() * 2 - 1) * a).toFixed(1)}px) scale(1.04)`;
+  } else if (canvas.style.transform) {
+    canvas.style.transform = '';
+  }
+}
+
+// ------------------------------------------------------- attract mode (kiosk)
+//
+// Left alone, the beach plays the demonstrations one after another, with the
+// rogue wave between them. Each stays up for a full pass of its captions and a
+// bit more, so a passer-by always arrives part-way into something that explains
+// itself. Any input stops the loop where it is — the demonstration on screen
+// keeps running — and it moves on to the next one 45 s after the last touch.
+
+const PLAYLIST = ['shoal', 'rip', 'rogue', 'refract', 'groin', 'reefbreak', 'rogue',
+  'surge', 'pierscour'];
+let playIndex = -1;
+let playT = 0;
+
+function nextInPlaylist() {
+  playIndex = (playIndex + 1) % PLAYLIST.length;
+  playT = 0;
+  const item = PLAYLIST[playIndex];
+  if (item === 'rogue') {
+    // An ordinary barred beach in a decent swell, with things on the sand: the
+    // coastline where the wave has the furthest to run and the most to take.
+    stopLesson();
+    sim.preset('classic');
+    selectIn(presetsEl, presetsEl.querySelector('[data-preset="classic"]'));
+    world.reset();
+    setMood('surf');
+    sim.setTide(0);
+    syncSliders();
+    for (let i = 0; i < 6; i++) world.addProp(NX * (0.80 + Math.random() * 0.12), Math.random() * NY);
+    for (let t = 0; t < 10; t += sim.lastDt) { sim.step(); world.update(sim.lastDt); }
+  } else {
+    runLesson(item);
+  }
+  // Just inside the frame, so a toy drifts in from the deep rather than popping
+  // into existence somewhere the camera cannot see.
+  world.addFloater(VIEW_X0 + (4 + Math.random() * 40) * SCALE, Math.random() * NY,
+    FLOATER_KINDS[(Math.random() * FLOATER_KINDS.length) | 0]);
+}
+
 function updateAttract(dt, now) {
-  if (!attract && now - lastInput > 45000) attract = true;
+  if (!attract && now - lastInput > 45000) {
+    attract = true;
+    nextInPlaylist();       // straight on to the next demonstration
+    return;
+  }
   if (!attract) return;
-  attractT -= dt;
-  if (attractT > 0) return;
-  attractT = 9 + Math.random() * 7;
-  const p = sim.params;
-  p.amplitude = 0.25 + Math.random() * 0.7;
-  p.frequency = 0.04 + Math.random() * 0.08;
-  p.angle = (Math.random() * 2 - 1) * 40;
-  p.chop = Math.random() * 0.8;
-  p.wind = Math.random() * 0.8;
-  syncSliders();
-  if (Math.random() < 0.35) {
-    // Just inside the frame, so a toy drifts in from the deep rather than
-    // popping into existence somewhere the camera cannot see.
-    world.addFloater(VIEW_X0 + (4 + Math.random() * 40) * SCALE, Math.random() * NY,
-      FLOATER_KINDS[(Math.random() * FLOATER_KINDS.length) | 0]);
+  playT += dt;
+  if (PLAYLIST[playIndex] === 'rogue') {
+    // A few seconds of ordinary surf to set the scene, then the wave.
+    if (rogue.phase === 'idle' && playT > 4 && playT < 5) rogueWave();
+    if (playT > 8 && rogue.phase === 'idle' && !captions.active) nextInPlaylist();
+    return;
   }
-  if (Math.random() < 0.25) {
-    world.addProp(NX * (0.80 + Math.random() * 0.14), Math.random() * NY,
-      PROP_KINDS[(Math.random() * PROP_KINDS.length) | 0]);
-  }
-  if (Math.random() < 0.10) sim.tsunami(1.8);
+  const done = captions.passes >= 1 && playT > 36;
+  if (playIndex < 0 || done || playT > 80) nextInPlaylist();
 }
 
 // -------------------------------------------------------------- brush ring
@@ -689,6 +854,8 @@ function frame(now) {
   // first wave is simply allowed to travel.
 
   updateAttract(dt, now);
+  updateRogue(dt);
+  captions.update(dt);
   for (const [, g] of pointers) applyHeld(g[0], g[1], dt);
 
   if (sim.paused) {
@@ -767,6 +934,9 @@ window.__wavelab = {
   get theme() { return themeName; },
   setCoast, setTheme, setMood, rogueWave, runLesson,
   get showFlow() { return showFlow; },
+  get rogue() { return rogue; },
+  get attract() { return attract; },
+  captions,
   get section() { return section; },
   // Set below, once the handlers exist: lets the checks send a phone message
   // into the live page.

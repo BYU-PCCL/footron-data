@@ -165,8 +165,9 @@ export class Surf {
     } catch (e) { /* ignore */ }
   }
 
-  // A long low swell for the rogue wave.
-  rumble() {
+  // The rogue wave coming: a deep roar that builds for as long as the wave
+  // takes to cross the basin, with the pitch of it climbing as it nears.
+  rumble(seconds = 10) {
     if (!this.ready || this.muted) return;
     try {
       const ctx = this.ctx, t = ctx.currentTime;
@@ -174,13 +175,49 @@ export class Surf {
       src.buffer = this.noiseBuf;
       src.loop = true;
       const f = ctx.createBiquadFilter();
-      f.type = 'lowpass'; f.frequency.value = 130; f.Q.value = 1.4;
+      f.type = 'lowpass'; f.Q.value = 2.2;
+      f.frequency.setValueAtTime(70, t);
+      f.frequency.exponentialRampToValueAtTime(320, t + seconds);
       const g = ctx.createGain();
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.exponentialRampToValueAtTime(0.75, t + 0.7);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 3.4);
+      g.gain.exponentialRampToValueAtTime(0.35, t + 1.2);
+      g.gain.exponentialRampToValueAtTime(0.9, t + seconds);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + seconds + 2.5);
       src.connect(f); f.connect(g); g.connect(this.master);
-      src.start(t); src.stop(t + 3.6);
+      src.start(t); src.stop(t + seconds + 2.6);
+    } catch (e) { /* ignore */ }
+  }
+
+  // The rogue wave landing: a thump you feel, then a long roar of white water
+  // tearing up the sand.
+  crash() {
+    if (!this.ready || this.muted) return;
+    try {
+      const ctx = this.ctx, t = ctx.currentTime;
+      const o = ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(95, t);
+      o.frequency.exponentialRampToValueAtTime(32, t + 0.9);
+      const og = ctx.createGain();
+      og.gain.setValueAtTime(0.0001, t);
+      og.gain.exponentialRampToValueAtTime(0.9, t + 0.02);
+      og.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+      o.connect(og); og.connect(this.master);
+      o.start(t); o.stop(t + 1.2);
+
+      const src = ctx.createBufferSource();
+      src.buffer = this.noiseBuf;
+      src.loop = true;
+      const f = ctx.createBiquadFilter();
+      f.type = 'bandpass'; f.Q.value = 0.6;
+      f.frequency.setValueAtTime(1800, t);
+      f.frequency.exponentialRampToValueAtTime(380, t + 4.5);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(1.0, t + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 5);
+      src.connect(f); f.connect(g); g.connect(this.master);
+      src.start(t); src.stop(t + 5.1);
     } catch (e) { /* ignore */ }
   }
 }
