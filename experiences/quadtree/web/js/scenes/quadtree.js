@@ -172,12 +172,31 @@
       }
       if (dt > 0 || !this.root) this.build();
 
-      // query position: the mouse if it's here, otherwise a slow Lissajous roam
+      // query position: the mouse if it's here; otherwise it tours the flocks,
+      // circling each one's attractor at an offset so it sweeps through the crowd
       const q = this.q;
       if (this.mouse && DS.time - this.mouse.t < 6) { q.x = DS.ease(q.x, this.mouse.x, dt || 0.016, 12); q.y = DS.ease(q.y, this.mouse.y, dt || 0.016, 12); }
       else if (dt > 0) {
-        q.x = DS.ease(q.x, A * (0.5 + 0.4 * Math.sin(this.t * 0.11)), dt, 1.5);
-        q.y = DS.ease(q.y, 0.5 + 0.34 * Math.sin(this.t * 0.17 + 1), dt, 1.5);
+        // where each flock actually is (its points trail their attractor)
+        const na = this.att.length, cx = new Float64Array(na), cy = new Float64Array(na), cn = new Float64Array(na);
+        for (const p of this.pts) { const f = p.k % na; cx[f] += p.x; cy[f] += p.y; cn[f]++; }
+        this.tourT = (this.tourT || 0) - dt;
+        if (this.tourT <= 0 || this.tour === undefined || this.tour >= na || cn[this.tour] < 25) {
+          let nx = ((this.tour === undefined ? DS.ri(0, na - 1) : this.tour) + 1) % na;
+          for (let j = 0; j < na && cn[nx] < 25; j++) nx = (nx + 1) % na;
+          this.tour = nx;
+          this.tourT = 7 + Math.random() * 3;
+        }
+        const f = this.tour, ph = this.t * 0.5;
+        const fx = cn[f] ? cx[f] / cn[f] : A / 2, fy = cn[f] ? cy[f] / cn[f] : 0.5;
+        const tx = DS.clamp(fx + 0.08 * Math.cos(ph), q.r * 0.6, A - q.r * 0.6);
+        const ty = DS.clamp(fy + 0.08 * Math.sin(ph), q.r * 0.6, 1 - q.r * 0.6);
+        // a gentle speed limit so the hop between flocks glides rather than lunges
+        const e = 1 - Math.exp(-1.6 * dt);
+        let mx = (tx - q.x) * e, my = (ty - q.y) * e;
+        const lim = 0.5 * dt, d = Math.hypot(mx, my);
+        if (d > lim) { mx *= lim / d; my *= lim / d; }
+        q.x += mx; q.y += my;
       }
       this.visited = [];
       this.res = { checked: 0, hits: [] };
@@ -265,7 +284,7 @@
       }
 
       // points, batched by flock
-      const pr = 2.3 * u;
+      const pr = 3 * u;
       for (let f = 0; f < FLOCK.length; f++) {
         g.beginPath();
         for (const p of this.pts) {
@@ -285,15 +304,25 @@
         g.fillStyle = C.amber;
         g.fill();
         DS.circle(g, X(q.x), Y(q.y), q.r * k, DS.rgba(C.amber, 0.05), DS.rgba(C.amber, 0.85), 1.8 * u);
-        const pct = this.pts.length ? Math.round((100 * this.res.checked) / this.pts.length) : 0;
-        DS.text(g, `checked ${this.res.checked} of ${this.pts.length}  ·  ${pct}%`, X(q.x), Y(q.y) - q.r * k - 12 * u,
-          { size: 12 * u, mono: true, color: C.amber });
+        const lab = `found ${this.res.hits.length}  ·  looked at ${this.res.checked} of ${this.pts.length}`;
+        g.font = DS.font(15 * u, { mono: true, weight: 500 });
+        const hw = g.measureText(lab).width / 2 + 4 * u;
+        const lx = DS.clamp(X(q.x), S.x + hw, S.x1 - hw), above = Y(q.y) - q.r * k - 16 * u > S.y + 4 * u;
+        const ly = above ? Y(q.y) - q.r * k - 16 * u : Y(q.y) + q.r * k + 18 * u;
+        DS.text(g, lab, lx, ly,
+          { size: 15 * u, mono: true, weight: 500, color: C.amber });
       }
       this.linkCount = links;
     },
 
     stats() {
-      const n = this.pts.length; return [{ k: 'points', v: String(n) }, { k: 'squares', v: String(this.cells || 0) }, { k: 'of points checked to answer the search', v: this.q.on && n ? `${Math.round((100 * this.res.checked) / n)}%` : '—', accent: true }];
+      // Headline: what the tree looked at against what a plain scan must look at (everything).
+      const n = this.pts.length, on = this.q.on;
+      return [
+        { k: 'found inside the circle', v: on ? String(this.res.hits.length) : '—' },
+        { k: 'squares', v: String(this.cells || 0) },
+        { k: 'points looked at · checking every point', v: on && n ? `${this.res.checked} vs ${n}` : '—', accent: true },
+      ];
     },
 
     resize() {
