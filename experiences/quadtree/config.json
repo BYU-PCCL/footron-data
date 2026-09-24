@@ -2,7 +2,7 @@
   "id": "quadtree",
   "title": "Quadtree",
   "description": "Space that splits itself into smaller squares only where things are crowded. Hundreds of points swirl in flocks, the grid rebuilds itself sixty times a second, and a search checks only the few squares it touches.",
-  "long_description": "Any square holding more than four points splits into four smaller squares, so crowds get fine grids and empty space stays coarse. The whole tree is rebuilt from scratch every frame as the flocks move.<br><br>The amber circle is a search — “what’s near here?”. Only the squares it touches are opened; every other point is never looked at, and the corner shows what fraction of the points it actually had to check. The faint lines join close neighbours, found the same way.<br><br>Games use quadtrees for collisions, maps for “restaurants near me”, and image codecs to spend detail where it matters.",
+  "long_description": "Any square holding more than four points splits into four smaller squares, so crowds get fine grids and empty space stays coarse. The whole tree is rebuilt from scratch every frame as the flocks move.<br><br>The amber circle is a search — “what’s near here?”. It tours the flocks, and only the squares it touches are opened; every other point is never looked at. The corner compares the points it looked at with the total it would take to check every one. The faint lines join close neighbours, found the same way.<br><br>Games use quadtrees for collisions, maps for “restaurants near me”, and image codecs to spend detail where it matters.",
   "action_hints": [
     "add a new flock and watch the squares split",
     "remove points and watch squares merge back",
