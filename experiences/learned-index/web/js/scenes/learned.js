@@ -23,7 +23,7 @@
 (function () {
   'use strict';
   const DS = window.DS, C = DS.C;
-  const N = 1400, EPS = 12;
+  const N = 1400, EPS0 = 12;
 
   function gauss() { return Math.sqrt(-2 * Math.log(1 - Math.random())) * Math.cos(2 * Math.PI * Math.random()); }
   const DATA = {
@@ -36,7 +36,7 @@
     'map coordinates': () => Array.from({ length: N }, () => (Math.random() < 0.6 ? 30 + gauss() * 4 : Math.random() < 0.5 ? 70 + gauss() * 8 : Math.random() * 100)),
   };
 
-  function segment(keys) {
+  function segment(keys, EPS) {
     const segs = [];
     let i = 0;
     while (i < keys.length) {
@@ -82,6 +82,7 @@
 
     init() {
       this.steps = new DS.Steps();
+      this.eps = EPS0;
       this.di = DS.ri(0, 2);
       this.load();
       this.phase = 0;
@@ -92,7 +93,7 @@
       this.keys = DATA[name]().sort((a, b) => a - b);
       this.kmin = this.keys[0];
       this.kmax = this.keys[N - 1];
-      this.segs = segment(this.keys);
+      this.segs = segment(this.keys, this.eps);
       this.shown = 0;              // segments revealed so far
       this.look = null;
       this.lastCost = null;
@@ -101,7 +102,7 @@
     *buildGen() {
       this.shown = 0;
       this.look = null;
-      DS.say(`${N.toLocaleString('en-US')} sorted keys (${this.name})  ·  fit lines that never miss by more than ±${EPS}`);
+      DS.say(`${N.toLocaleString('en-US')} sorted keys (${this.name})  ·  fit lines that never miss by more than ±${this.eps}`);
       yield 1;
       const step = Math.max(1, Math.ceil(this.segs.length / 40));
       for (let s = 0; s < this.segs.length; s += step) { this.shown = s + step; yield 0.07; }
@@ -110,15 +111,15 @@
       yield 2;
     },
 
-    *lookupGen() {
+    *lookupGen(at) {
       if (this.shown < this.segs.length) yield* this.buildGen();
-      const idx = DS.ri(0, N - 1), k = this.keys[idx];
+      const idx = typeof at === 'number' ? Math.round(DS.clamp(at, 0, 1) * (N - 1)) : DS.ri(0, N - 1), k = this.keys[idx];
       // find the segment: binary search over segment start keys
       let a = 0, b = this.segs.length - 1, segSteps = 0;
       while (a < b) { segSteps++; const m = (a + b + 1) >> 1; if (this.segs[m].k0 <= k) a = m; else b = m - 1; }
       const s = this.segs[a];
       const pred = Math.round(s.p0 + s.slope * (k - s.k0));
-      const lo = Math.max(0, pred - EPS), hi = Math.min(N - 1, pred + EPS);
+      const lo = Math.max(0, pred - this.eps), hi = Math.min(N - 1, pred + this.eps);
       // bounded binary search inside the window
       const probes = [];
       let l = lo, h = hi;
@@ -128,7 +129,7 @@
       DS.say(`look up key ${k.toFixed(2)}  ·  which line covers it?`);
       yield 0.9;
       this.look.stage = 1;
-      DS.say(`line ${a + 1} predicts position ${pred}  ·  the truth is guaranteed to be within ±${EPS}`);
+      DS.say(`line ${a + 1} predicts position ${pred}  ·  the truth is guaranteed to be within ±${this.eps}`);
       yield 1.2;
       this.look.stage = 2;
       for (let p = 1; p <= probes.length; p++) { this.look.shownProbes = p; yield 0.4; }
@@ -145,6 +146,39 @@
       if (id === 'lookup') { s.clear(); this.shown = this.segs.length; this.look = null; s.run(() => this.lookupGen()); }
       else if (id === 'data') { s.clear(); this.di = (this.di + 1) % 3; this.load(); s.run(() => this.buildGen()); }
       else if (id === 'rebuild') { s.clear(); s.run(() => this.buildGen()); }
+    },
+
+    input(name, value) {
+      const s = this.steps;
+      const names = Object.keys(DATA);
+      if (name === 'data' && names.includes(value)) {
+        s.clear(); this.di = names.indexOf(value); this.load(); s.run(() => this.buildGen());
+        return true;
+      }
+      if (name === 'eps' && typeof value === 'number') {
+        const e = Math.round(DS.clamp(value, 4, 40));
+        if (e === this.eps) return true;
+        s.clear(); this.eps = e; this.segs = DS.learnedSegment(this.keys, e); this.shown = 0; this.look = null;
+        s.run(() => this.buildGen());
+        return true;
+      }
+      if (name === 'lookup' && typeof value === 'number') {
+        s.clear(); this.shown = this.segs.length; this.look = null;
+        s.run(() => this.lookupGen(value));
+        return true;
+      }
+      return false;
+    },
+    phone() {
+      const L = this.look;
+      return {
+        data: this.name,
+        datasets: Object.keys(DATA),
+        eps: this.eps,
+        lines: this.segs.length,
+        window: 2 * this.eps + 1,
+        look: L ? { idx: L.idx, pred: L.pred, stage: L.stage } : null,
+      };
     },
 
     auto() {
@@ -187,7 +221,7 @@
         const p0 = s.p0, p1 = s.p0 + s.slope * (s.k1 - s.k0);
         const hot = L && L.seg === i;
         g.beginPath();
-        g.moveTo(x0, Y(p0 + EPS)); g.lineTo(x1, Y(p1 + EPS)); g.lineTo(x1, Y(p1 - EPS)); g.lineTo(x0, Y(p0 - EPS)); g.closePath();
+        g.moveTo(x0, Y(p0 + this.eps)); g.lineTo(x1, Y(p1 + this.eps)); g.lineTo(x1, Y(p1 - this.eps)); g.lineTo(x0, Y(p0 - this.eps)); g.closePath();
         g.fillStyle = DS.rgba(hot ? C.amber : hueOf(i), hot ? 0.22 : 0.1);
         g.fill();
         DS.line(g, x0, Y(p0), x1, Y(p1), DS.rgba(hot ? C.amber : hueOf(i), 0.95), (hot ? 2.4 : 1.6) * u);
@@ -220,7 +254,7 @@
       DS.text(g, '0', rx, barY + bar + 13 * u, { size: 12 * u, mono: true, color: C.mute, align: 'left' });
       DS.text(g, String(N - 1), rx + rw, barY + bar + 13 * u, { size: 12 * u, mono: true, color: C.mute, align: 'right' });
       const zy = barY + bar + 78 * u, zh = 62 * u;
-      const n = 2 * EPS + 1, zc = rw / n;
+      const n = 2 * this.eps + 1, zc = rw / n;
       const act = L && L.stage >= 1;
       if (act) {
         const wx = rx + (L.lo / N) * rw, ww = Math.max(4 * u, ((L.hi - L.lo + 1) / N) * rw);
@@ -256,7 +290,7 @@
       const steps = [
         [L ? `key ${L.k.toFixed(2)}  →  line ${L.seg + 1}` : 'pick the line for the key', L ? (L.stage > 0 ? 2 : 1) : 0],
         [L && L.stage >= 1 ? `line predicts slot ${L.pred}` : 'the line predicts a slot', L ? (L.stage > 1 ? 2 : L.stage === 1 ? 1 : 0) : 0],
-        [L && L.stage >= 1 ? `search slots ${L.lo}–${L.hi}` : `search ±${EPS} around it`, L ? (found ? 2 : L.stage === 2 ? 1 : 0) : 0],
+        [L && L.stage >= 1 ? `search slots ${L.lo}–${L.hi}` : `search ±${this.eps} around it`, L ? (found ? 2 : L.stage === 2 ? 1 : 0) : 0],
         [found ? `found at ${L.idx}  ·  off by ${Math.abs(L.idx - L.pred)}` : 'found', found ? 3 : 0],
       ];
       const dataY = S.y1 - 112 * u;
@@ -272,12 +306,12 @@
       sy = Math.max(sy + 3 * lh + 40 * u, dataY);
       DS.text(g, `DATA: ${this.name}`, rx, sy, { size: 16 * u, mono: true, color: C.ink, align: 'left' });
       DS.text(g, `${this.segs.length} lines for ${N.toLocaleString('en-US')} keys`, rx, sy + 36 * u, { size: 30 * u, weight: 400, color: C.teal, align: 'left' });
-      DS.text(g, `max error ±${EPS} positions, guaranteed`, rx, sy + 68 * u, { size: 15 * u, mono: true, color: C.dim, align: 'left' });
+      DS.text(g, `max error ±${this.eps} positions, guaranteed`, rx, sy + 68 * u, { size: 15 * u, mono: true, color: C.dim, align: 'left' });
       if (this.lastCost) DS.text(g, `last lookup: ${this.lastCost.model} steps  ·  full binary search: ${this.lastCost.full}`, rx, sy + 94 * u, { size: 14 * u, mono: true, color: C.dim, align: 'left' });
     },
 
     stats() {
-      return [{ k: 'keys', v: N.toLocaleString('en-US') }, { k: 'lines in the model', v: String(this.segs.length) }, { k: 'slots searched per lookup', v: `${2 * EPS + 1} of ${N.toLocaleString('en-US')}`, accent: true }];
+      return [{ k: 'keys', v: N.toLocaleString('en-US') }, { k: 'lines in the model', v: String(this.segs.length) }, { k: 'slots searched per lookup', v: `${2 * this.eps + 1} of ${N.toLocaleString('en-US')}`, accent: true }];
     },
   });
 })();
