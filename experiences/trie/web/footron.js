@@ -13,10 +13,18 @@
  *     { type: "pause",  value: <bool> }
  *     { type: "speed",  value: <0.25 .. 3> }
  *     { type: "release" }                      hand the wall back to autoplay
+ *     { type: "input", name: <id>, value }     a value for the current scene:
+ *                                              a number, a short string, or
+ *                                              {x, y} with both in [0, 1]
  *
  *   wall -> phone
  *     { type: "state", scene, mode, paused, speed,
- *       scenes: [{id, title}], actions: [{id, label}] }
+ *       scenes: [{id, title}], actions: [{id, label}],
+ *       panel: <scene-specific live state for the phone, or null> }
+ *
+ * Off the wall, `?phone=local` swaps the socket for a BroadcastChannel so a
+ * phone panel open in another tab (or an iframe) of the same origin can drive
+ * this page — how the panels are tested without a Footron server.
  *
  * The wall owns the scene list and each scene's actions and sends them to the
  * phone, so the two can't drift; the phone keeps a static copy only as a
@@ -33,7 +41,7 @@
     return /[?&]ftMsgUrl=/.test(q) || /[?&]ftmsg=1(&|$)/.test(q);
   }
 
-  const isId = (v) => typeof v === 'string' && v.length > 0 && v.length < 40 && /^[a-z0-9-]+$/.test(v);
+  const isId = (v) => typeof v === 'string' && v.length > 0 && v.length < 40 && /^[A-Za-z0-9-]+$/.test(v);
 
   /* Route one inbound message. Pure, so it can be exercised without a socket.
    * Returns whether it was acted on. */
@@ -60,6 +68,17 @@
       case 'release':
         h.onRelease();
         return true;
+      case 'input': {
+        if (!isId(body.name) || !h.onInput) return false;
+        const v = body.value;
+        const ok01 = (n) => typeof n === 'number' && isFinite(n) && n >= 0 && n <= 1;
+        let clean;
+        if (typeof v === 'number' && isFinite(v)) clean = v;
+        else if (typeof v === 'string' && v.length <= 40 && /^[\w .,'!?-]*$/.test(v)) clean = v;
+        else if (v && typeof v === 'object' && ok01(v.x) && ok01(v.y)) clean = { x: v.x, y: v.y };
+        else return false;
+        return h.onInput(body.name, clean) !== false;
+      }
       default:
         return false;
     }
@@ -71,6 +90,12 @@
   function connect(handlers, opts) {
     opts = opts || {};
     const off = { send() {}, close() {}, live: false };
+    const onMessage0 = (b) => { try { dispatch(b, handlers); } catch (e) { console.error(e); } };
+    if (typeof location !== 'undefined' && /[?&]phone=local(&|$)/.test(location.search) && typeof BroadcastChannel === 'function') {
+      const ch = new BroadcastChannel('ds-phone');
+      ch.onmessage = (e) => { if (e.data && e.data.to === 'wall') onMessage0(e.data.body); };
+      return { live: true, send(msg) { ch.postMessage({ to: 'phone', body: msg }); }, close() { ch.close(); } };
+    }
     const enabled = opts.enabled !== undefined ? opts.enabled : footronEnabled();
     if (!enabled) return off;
     const lib = root.FootronMessaging;

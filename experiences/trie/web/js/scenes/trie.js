@@ -171,13 +171,14 @@
       yield 0.55;
     },
 
-    *completeGen() {
+    *completeGen(want) {
       const ws = [...this.words];
       if (!ws.length) return;
+      if (want && !ws.some((w) => w.startsWith(want))) { DS.say(`no stored word starts with “${want}” yet`, 'warn'); return; }
       // prefer a prefix with a handful of completions, so the lit subtree has something in it
       const under = (q) => ws.filter((w) => w.startsWith(q)).length;
-      let p = '', best = -1;
-      for (let t = 0; t < 14; t++) {
+      let p = want || '', best = want ? Infinity : -1;
+      for (let t = 0; t < 14 && !want; t++) {
         const base = DS.pick(ws), q = base.slice(0, Math.min(base.length, DS.pick([2, 2, 3])));
         const k = under(q), score = k >= 3 && k <= 14 ? 100 - t : k;
         if (score > best) { best = score; p = q; }
@@ -201,6 +202,43 @@
       DS.say(`“${p}…”  →  ${found.slice(0, 7).map((f) => f[1]).join(', ')}${found.length > 7 ? ` … ${found.length} words` : ''}`, 'good');
       yield 4.2;
       this.sub = null;
+    },
+
+    // what the phone offers: words not stored yet, and prefixes worth completing
+    offer() {
+      const out = [];
+      for (let k = 0; k < this.pool.length && out.length < 8; k++) {
+        const w = this.pool[(this.pi + k) % this.pool.length];
+        if (!this.words.has(w) && !out.includes(w)) out.push(w);
+      }
+      return out;
+    },
+    prefixes() {
+      const m = new Map();
+      for (const w of this.words) { const p = w.slice(0, 2); m.set(p, (m.get(p) || 0) + 1); }
+      return [...m.entries()].filter(([, n]) => n >= 2).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([p, n]) => ({ p, n }));
+    },
+    input(name, value) {
+      const s = this.steps;
+      if (name === 'word' && typeof value === 'string') {
+        if (!WORDS.includes(value) || this.words.has(value)) return false;
+        s.run(() => this.addGen(value));
+        return true;
+      }
+      if (name === 'prefix' && typeof value === 'string' && /^[a-z]{1,4}$/.test(value)) {
+        s.run(() => this.completeGen(value));
+        return true;
+      }
+      return false;
+    },
+    phone() {
+      return {
+        words: this.words.size,
+        offer: this.offer(),
+        prefixes: this.prefixes(),
+        prefix: this.sub ? this.subP : null,
+        suggestions: this.sub ? this.labels.map((l) => l.w).slice(0, 12) : [],
+      };
     },
 
     act(id) {
