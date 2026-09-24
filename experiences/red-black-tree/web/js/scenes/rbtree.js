@@ -45,6 +45,14 @@
     y.r = x; x.p = y;
   }
   const isRed = (n) => !!(n && n.red);
+  const upTo = (n) => Array.from({ length: n }, (_, i) => i + 1);
+  // key orders a visitor can race the two trees on
+  const ORDERS = {
+    sorted: { label: 'In order', note: '1, 2, 3 … the worst case for a plain tree', say: `inserting 1, 2, 3 … ${26} in order — the worst case for a plain tree`, keys: () => upTo(26) },
+    reverse: { label: 'Backwards', note: '26, 25, 24 … just as bad, leaning the other way', say: 'inserting 26, 25, 24 … backwards — the plain tree leans left instead', keys: () => upTo(26).reverse() },
+    zigzag: { label: 'Zig-zag', note: '1, 26, 2, 25 … squeezing in from both ends', say: 'inserting 1, 26, 2, 25, 3, 24 … — squeezing in from both ends', keys: () => { const a = upTo(26), out = []; while (a.length) { out.push(a.shift()); if (a.length) out.push(a.pop()); } return out; } },
+    random: { label: 'Random', note: 'shuffled — the plain tree does fine by luck', say: 'the same keys, shuffled — random order is kind to a plain tree', keys: () => DS.shuffle(upTo(26)) },
+  };
 
   DS.register({
     id: 'rbtree',
@@ -63,8 +71,10 @@
       'Those rules guarantee the height stays under 2·log₂ n. Java’s TreeMap, C++’s std::map and the Linux scheduler use this tree.',
     ],
     actions: [
-      { id: 'sorted', label: 'Sorted keys' },
-      { id: 'random', label: 'Random keys' },
+      { id: 'sorted', label: 'Keys in order' },
+      { id: 'reverse', label: 'Keys backwards' },
+      { id: 'zigzag', label: 'Keys zig-zag' },
+      { id: 'random', label: 'Keys shuffled' },
       { id: 'one', label: 'Insert one' },
       { id: 'clear', label: 'Clear' },
     ],
@@ -177,20 +187,9 @@
 
     act(id) {
       const s = this.steps;
-      if (s.length > 4 && id !== 'clear' && id !== 'sorted' && id !== 'random') return;
-      if (id === 'sorted') {
-        s.clear();
-        s.run(() => { this.clear(); return 0.6; });
-        s.run(() => { DS.say(`inserting 1, 2, 3 … ${SORTED_N} in order — the worst case for a plain tree`); return 0.6; });
-        for (let k = 1; k <= SORTED_N; k++) s.run(() => this.insertGen(k));
-        s.run(() => this.verdict());
-      } else if (id === 'random') {
-        s.clear();
-        s.run(() => { this.clear(); return 0.6; });
-        s.run(() => { DS.say('the same keys again, this time in random order'); return 0.4; });
-        DS.shuffle(Array.from({ length: SORTED_N }, (_, i) => i + 1)).forEach((k) => s.run(() => this.insertGen(k)));
-        s.run(() => this.verdict());
-      } else if (id === 'one') {
+      if (s.length > 4 && id !== 'clear' && !ORDERS[id]) return;
+      if (ORDERS[id]) this.race(id);
+      else if (id === 'one') {
         s.run(() => {
           let k = 0;
           for (let t = 0; t < 200 && (!k || has(this.rb, k)); t++) k = DS.ri(1, 99);
@@ -201,6 +200,32 @@
         this.clear();
         DS.say('cleared');
       }
+    },
+
+    // Race both trees on one key order from scratch.
+    race(name) {
+      const o = ORDERS[name];
+      if (!o) return false;
+      const s = this.steps;
+      this.order = name;
+      s.clear();
+      s.run(() => { this.clear(); return 0.6; });
+      s.run(() => { DS.say(o.say); return 0.6; });
+      o.keys().forEach((k) => s.run(() => this.insertGen(k)));
+      s.run(() => this.verdict());
+      return true;
+    },
+    input(name, value) { return name === 'order' ? this.race(value) : false; },
+    phone() {
+      const n = this.rb.n;
+      return {
+        order: this.order || null,
+        orders: Object.entries(ORDERS).map(([id, o]) => ({ id, label: o.label, note: o.note })),
+        n,
+        plain: height(this.bst.root),
+        redblack: height(this.rb.root),
+        best: n ? Math.ceil(Math.log2(n + 1)) : 0,
+      };
     },
 
     clear() {
