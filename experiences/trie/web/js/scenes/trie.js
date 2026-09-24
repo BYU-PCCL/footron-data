@@ -24,10 +24,12 @@
     'go goal goat gold golden golf gone good goose gopher gorge'
   ).split(' ');
 
+  const FIRST = { s: C.violet, c: C.clay, t: C.sage, p: C.plum, b: C.sky, m: C.rose, r: C.blue, i: C.sand, g: '#9fb4b0' };
+
   let uid = 0;
   const mk = (ch, parent) => ({
     ch, parent, kids: new Map(), end: false, depth: parent ? parent.depth + 1 : 0,
-    id: ++uid, x: 0, y: 0, al: 0, hl: 0, w: 1, ang: 0, hue: parent && parent.hue !== undefined ? parent.hue : undefined,
+    id: ++uid, cnt: 0, span: 0, x: 0, y: 0, al: 0, hl: 0, w: 1, ang: 0, hue: parent && parent.hue !== undefined ? parent.hue : undefined,
   });
 
   DS.register({
@@ -66,7 +68,7 @@
       this.labels = [];
       this.ghosts = [];
       this.count = 0;
-      for (let i = 0; i < 18; i++) this.addQuiet(this.nextWord());
+      for (let i = 0; i < 44; i++) this.addQuiet(this.nextWord());
       this.layout(true);
     },
 
@@ -77,7 +79,8 @@
       }
       return null;
     },
-    hueOf(ch) { return DS.HUES[(ch.charCodeAt(0) - 97 + 26) % DS.HUES.length]; },
+    // one hue per first letter; never amber (that means "happening now") or teal (word ends)
+    hueOf(ch) { return FIRST[ch] || DS.wheel((ch.charCodeAt(0) - 97) / 26, 1, 64, 30); },
     child(n, ch) {
       let k = n.kids.get(ch);
       let fresh = false;
@@ -102,24 +105,29 @@
 
     geo() {
       const S = DS.stage;
-      return { cx: S.cx, cy: S.cy, rx: S.w * 0.47, ry: S.h * 0.52 };
+      return { cx: S.cx, cy: S.cy + S.h * 0.01, rx: S.w * 0.43, ry: S.h * 0.44 };
     },
+
+    // radius for a depth: the first levels (the shared trunks) get more room
+    rad(d) { return Math.pow(d / this.maxD, 0.62); },
 
     layout(snap) {
       const G = this.geo();
       let maxD = 1;
       const weigh = (n) => {
         if (n.depth > maxD) maxD = n.depth;
-        let w = n.end && n.kids.size ? 0.6 : 0;
-        for (const k of n.kids.values()) w += weigh(k);
+        let w = n.end && n.kids.size ? 0.6 : 0, cnt = n.end ? 1 : 0;
+        for (const k of n.kids.values()) { w += weigh(k); cnt += k.cnt; }
         n.w = n.kids.size ? w : 1;
+        n.cnt = cnt;                      // words that pass through this node
         return n.w;
       };
       weigh(this.root);
       this.maxD = Math.max(8, maxD);
       const place = (n, a0, a1) => {
         n.ang = (a0 + a1) / 2;
-        const rho = n.depth / this.maxD;
+        const rho = this.rad(n.depth);
+        n.span = a1 - a0;
         n.tx = G.cx + Math.cos(n.ang) * rho * G.rx;
         n.ty = G.cy + Math.sin(n.ang) * rho * G.ry;
         if (snap) { n.x = n.tx; n.y = n.ty; n.al = 1; }
@@ -166,8 +174,14 @@
     *completeGen() {
       const ws = [...this.words];
       if (!ws.length) return;
-      const base = DS.pick(ws);
-      const p = base.slice(0, Math.min(base.length, DS.pick([2, 2, 3])));
+      // prefer a prefix with a handful of completions, so the lit subtree has something in it
+      const under = (q) => ws.filter((w) => w.startsWith(q)).length;
+      let p = '', best = -1;
+      for (let t = 0; t < 14; t++) {
+        const base = DS.pick(ws), q = base.slice(0, Math.min(base.length, DS.pick([2, 2, 3])));
+        const k = under(q), score = k >= 3 && k <= 14 ? 100 - t : k;
+        if (score > best) { best = score; p = q; }
+      }
       let n = this.root;
       this.path = [n];
       this.labels = [];
@@ -182,6 +196,7 @@
       const dfs = (m, s) => { if (m.end) found.push([m, s]); for (const [c, k] of [...m.kids].sort()) dfs(k, s + c); };
       dfs(n, p);
       this.sub = n;
+      this.subP = p;
       this.labels = found.slice(0, 18).map(([m, w]) => ({ n: m, w, t: 4.5 }));
       DS.say(`“${p}…”  →  ${found.slice(0, 7).map((f) => f[1]).join(', ')}${found.length > 7 ? ` … ${found.length} words` : ''}`, 'good');
       yield 4.2;
@@ -242,72 +257,114 @@
     },
 
     draw(g) {
-      const u = DS.u, G = this.geo();
+      const u = DS.u, G = this.geo(), S = DS.stage;
       const inSub = (n) => { if (!this.sub) return false; for (let m = n; m; m = m.parent) if (m === this.sub) return true; return false; };
       const dimOthers = !!this.sub;
+      const R = (G.rx + G.ry) / 2;
 
       // faint depth rings
       for (let d = 1; d <= this.maxD; d++) {
+        const r = this.rad(d);
         g.beginPath();
-        g.ellipse(G.cx, G.cy, (d / this.maxD) * G.rx, (d / this.maxD) * G.ry, 0, 0, Math.PI * 2);
-        g.strokeStyle = DS.rgba(C.dim, 0.045);
+        g.ellipse(G.cx, G.cy, r * G.rx, r * G.ry, 0, 0, Math.PI * 2);
+        g.strokeStyle = DS.rgba(C.dim, d <= 2 ? 0.07 : 0.04);
         g.lineWidth = 1 * u;
         g.stroke();
       }
 
-      this.ghosts.forEach((n) => { g.globalAlpha = n.al; DS.circle(g, n.x, n.y, 2 * u, DS.rgba(C.dim, 0.5)); });
+      this.ghosts.forEach((n) => { g.globalAlpha = n.al; DS.circle(g, n.x, n.y, 3 * u, DS.rgba(C.dim, 0.5)); });
       g.globalAlpha = 1;
 
       // edges, thicker where more words share the path
       g.lineCap = 'round';
       const edges = (n) => {
         for (const k of n.kids.values()) {
-          const hot = k.hl > 0.05 || inSub(k);
-          const a = (dimOthers && !inSub(k) && k.hl < 0.05 ? 0.18 : 0.6) * k.al;
+          const sub = inSub(k);
+          const hot = k.hl > 0.05 || sub;
+          const a = (dimOthers && !sub && k.hl < 0.05 ? 0.28 : 0.72) * k.al;
           const col = hot ? C.amber : k.hue || C.dim;
           g.beginPath();
           g.moveTo(n.x, n.y);
           // bend toward the child's angle so branches fan instead of criss-crossing
           const mx = DS.lerp(n.x, k.x, 0.5), my = DS.lerp(n.y, k.y, 0.5);
-          g.quadraticCurveTo(DS.lerp(mx, G.cx + (k.x - G.cx) * (n.depth / k.depth), 0.5), DS.lerp(my, G.cy + (k.y - G.cy) * (n.depth / k.depth), 0.5), k.x, k.y);
-          g.strokeStyle = DS.rgba(col, hot ? Math.max(a, 0.9 * Math.max(k.hl, inSub(k) ? 1 : 0)) : a);
-          g.lineWidth = (0.9 + Math.sqrt(k.w) * 0.55) * u;
+          const f = this.rad(n.depth) / this.rad(k.depth);
+          g.quadraticCurveTo(DS.lerp(mx, G.cx + (k.x - G.cx) * f, 0.5), DS.lerp(my, G.cy + (k.y - G.cy) * f, 0.5), k.x, k.y);
+          g.strokeStyle = DS.rgba(col, hot ? Math.max(a, 0.95 * Math.max(k.hl, sub ? 1 : 0)) : a);
+          g.lineWidth = Math.min(16, 1.6 + Math.sqrt(k.cnt || 1) * 1.6) * u;
           g.stroke();
           edges(k);
         }
       };
       edges(this.root);
 
-      // nodes + letters
-      const fs = DS.clamp(11 * u, 8, 22);
+      // nodes + letters: the first two levels are big labelled discs, deeper ones dots
+      const labelled = new Set(this.labels.map((l) => l.n));
       const nodes = (n) => {
         for (const k of n.kids.values()) {
-          const hot = k.hl > 0.05 || inSub(k);
-          const dim = dimOthers && !inSub(k) && k.hl < 0.05;
+          const sub = inSub(k);
+          const hot = k.hl > 0.05 || sub;
+          const dim = dimOthers && !sub && k.hl < 0.05;
           g.globalAlpha = k.al * (dim ? 0.35 : 1);
           const col = k.hue || C.dim;
-          if (k.end) DS.circle(g, k.x, k.y, 3.6 * u, hot ? C.amber : col, DS.rgba(C.bg, 0.9), 1.4 * u);
-          else DS.circle(g, k.x, k.y, 1.8 * u, hot ? C.amber : DS.rgba(col, 0.8));
-          const ox = Math.cos(k.ang) * 9 * u, oy = Math.sin(k.ang) * 9 * u;
-          DS.text(g, k.ch, k.x + ox, k.y + oy, { size: fs, mono: true, color: hot ? C.amber : DS.rgba(C.ink, k.depth <= 2 ? 0.85 : 0.55), weight: hot ? 600 : 400 });
+          if (k.depth <= 2) {
+            const room = k.span * this.rad(k.depth) * R;
+            const r = DS.clamp(room * 0.42, 10 * u, (k.depth === 1 ? 18 : 12) * u);
+            DS.circle(g, k.x, k.y, r, hot ? DS.mix(C.amber, C.bg, 0.55) : DS.mix(col, C.bg, 0.6), hot ? C.amber : col, 2 * u);
+            if (k.end) DS.circle(g, k.x, k.y, r + 4 * u, null, C.teal, 2 * u);
+            DS.text(g, k.ch, k.x, k.y + 0.5 * u, { size: Math.max(14 * u, r * 1.3), mono: true, weight: 600, color: hot ? C.amber : C.ink });
+          } else {
+            if (k.end) DS.circle(g, k.x, k.y, 5 * u, hot ? C.amber : C.teal, DS.rgba(C.bg, 0.9), 1.6 * u);
+            else DS.circle(g, k.x, k.y, 2.8 * u, hot ? C.amber : DS.rgba(col, 0.9));
+            // a letter only where there is room for it (or on the lit path)
+            const room = k.span * this.rad(k.depth) * R;
+            if ((hot || room > 13 * u) && !labelled.has(k)) {
+              const ox = Math.cos(k.ang) * 13 * u, oy = Math.sin(k.ang) * 13 * u;
+              DS.text(g, k.ch, k.x + ox, k.y + oy, { size: (hot ? 17 : 14) * u, mono: true, color: hot ? C.amber : DS.rgba(C.ink, k.depth === 3 ? 0.7 : 0.5), weight: hot ? 700 : 400 });
+            }
+          }
           nodes(k);
         }
       };
       nodes(this.root);
       g.globalAlpha = 1;
 
-      DS.circle(g, G.cx, G.cy, 6 * u, C.cell2, C.dim, 1.2 * u);
-      DS.text(g, '“”', G.cx, G.cy + 20 * u, { size: 13 * u, mono: true, color: C.mute });
+      DS.circle(g, G.cx, G.cy, 9 * u, C.cell2, C.dim, 1.6 * u);
+      DS.text(g, '“”', G.cx, G.cy + 24 * u, { size: 15 * u, mono: true, color: C.mute });
 
-      // whole-word labels at the end of a path
+      // the typed prefix, at the node it leads to
+      if (this.sub && this.subP) {
+        const n = this.sub, lbl = `${this.subP}…`;
+        g.font = DS.font(26 * u, { mono: true, weight: 700 });
+        const w = g.measureText(lbl).width + 26 * u, h = 42 * u;
+        const px = -Math.sin(n.ang), py = Math.cos(n.ang);        // beside the branch, not on it
+        const bx = DS.clamp(n.x - w / 2 + px * 48 * u, S.x, S.x1 - w), by = DS.clamp(n.y - h / 2 + py * 48 * u, S.y, S.y1 - h);
+        DS.box(g, bx, by, w, h, 10 * u, DS.rgba(C.bg, 0.9), C.amber, 2 * u);
+        DS.text(g, lbl, bx + w / 2, by + h / 2 + 1 * u, { size: 26 * u, mono: true, weight: 700, color: C.amber });
+      }
+
+      // whole-word labels at the end of a path; flipped inward if they would leave the stage
+      const ls = 20 * u;
+      g.font = DS.font(ls, { mono: true, weight: 600 });
       for (const l of this.labels) {
         const n = l.n, a = Math.min(1, l.t * 1.5);
-        const flip = Math.cos(n.ang) < 0;
+        const len = g.measureText(l.w).width;
+        const ca = Math.cos(n.ang), sa = Math.sin(n.ang);
+        const off = 22 * u;
+        const ex = n.x + ca * (off + len), ey = n.y + sa * (off + len);
+        const out = ex < S.x || ex > S.x1 || ey < S.y || ey > S.y1;
+        const dir = out ? -1 : 1;
+        const flip = ca * dir < 0;
         g.save();
-        g.translate(n.x + Math.cos(n.ang) * 20 * u, n.y + Math.sin(n.ang) * 20 * u);
+        g.translate(n.x + ca * off * dir, n.y + sa * off * dir);
         g.rotate(flip ? n.ang + Math.PI : n.ang);
         g.globalAlpha = a;
-        DS.text(g, l.w, 0, 0, { size: 14 * u, mono: true, weight: 600, color: C.amber, align: flip ? 'right' : 'left' });
+        g.font = DS.font(ls, { mono: true, weight: 600 });
+        g.lineWidth = 5 * u;
+        g.strokeStyle = DS.rgba(C.bg, 0.85);
+        g.textAlign = flip ? 'right' : 'left';
+        g.textBaseline = 'middle';
+        g.strokeText(l.w, 0, 0);
+        DS.text(g, l.w, 0, 0, { size: ls, mono: true, weight: 600, color: C.amber, align: flip ? 'right' : 'left' });
         g.restore();
       }
       g.globalAlpha = 1;
