@@ -79,6 +79,7 @@
     },
 
     reset() {
+      this.event = null;
       this.bst = { root: null, n: 0 };
       this.rb = { root: null, n: 0 };
       this.ghosts = [];
@@ -91,8 +92,9 @@
       const gap = 60 * u;
       const hw = (S.w - gap) / 2;
       return {
-        L: { x: S.x, w: hw, y: S.y + 36 * u, h: S.h - 110 * u },
-        R: { x: S.x + hw + gap, w: hw, y: S.y + 36 * u, h: S.h - 110 * u },
+        // headroom above the roots for the rotation marker; titles sit by the heights
+        L: { x: S.x, w: hw, y: S.y + 50 * u, h: S.h - 150 * u },
+        R: { x: S.x + hw + gap, w: hw, y: S.y + 50 * u, h: S.h - 150 * u },
         hy: S.y1 - 26 * u,
         mid: S.x + hw + gap / 2,
       };
@@ -107,7 +109,10 @@
       const lh = Math.min(62 * u, box.h / Math.max(1, h - 1 + 0.5));
       const sx = box.w / Math.max(n, 12);
       const off = (box.w - sx * n) / 2;
-      const r = DS.clamp(Math.min(sx * 0.42, lh * 0.4), 3 * u, 17 * u);
+      // Nodes are laid out in key order, one column each, so no two share a column:
+      // the radius only has to fit the column, not the level height. That keeps the
+      // plain tree's staircase readable as it grows, instead of shrinking to dots.
+      const r = DS.clamp(sx * 0.42, 3 * u, 19 * u);
       nodes.forEach(([nd, d], i) => {
         const tx = box.x + off + (i + 0.5) * sx, ty = box.y + d * lh;
         if (nd.x === 0 && nd.y === 0) { nd.x = tx; nd.y = ty - 24 * u; }
@@ -126,7 +131,7 @@
       if (has(this.rb, key)) return;
       const pb = pathTo(this.bst, key), pr = pathTo(this.rb, key);
       const L = Math.max(pb.length, pr.length);
-      const dt = Math.min(0.07, 0.8 / Math.max(1, L));
+      const dt = Math.min(0.06, 0.45 / Math.max(1, L));
       for (let i = 0; i < L; i++) {
         if (pb[i]) pb[i].hl = 1;
         if (pr[i]) pr[i].hl = 1;
@@ -135,7 +140,7 @@
       attach(this.bst, key, false).hl = 1;
       const z = attach(this.rb, key, true);
       z.hl = 1;
-      yield 0.3;
+      yield 0.25;
       yield* this.fixGen(z);
       DS.say(`insert ${key}  ·  search path: plain ${pb.length + 1} nodes, red-black ${pr.length + 1}`, pb.length > pr.length + 2 ? 'warn' : '');
     },
@@ -150,21 +155,21 @@
           p.red = false; uncle.red = false; gp.red = true;
           p.hl = uncle.hl = gp.hl = 1;
           this.recolor++;
-          this.event = { text: 'recolour', node: gp };
+          this.event = { text: 'recolour', node: gp, t: 1 };
           DS.say(`red parent, red uncle  →  recolour around ${gp.key}`);
-          yield 0.45;
+          yield 0.4;
           z = gp;
         } else {
-          if (left && z === p.r) { z = p; rotL(t, z); this.rot++; z.spin = 1; this.event = { text: 'rotate left', node: z.p }; DS.say(`zig-zag  →  rotate left at ${z.key}`); yield 0.5; }
-          else if (!left && z === p.l) { z = p; rotR(t, z); this.rot++; z.spin = 1; this.event = { text: 'rotate right', node: z.p }; DS.say(`zig-zag  →  rotate right at ${z.key}`); yield 0.5; }
+          if (left && z === p.r) { z = p; rotL(t, z); this.rot++; z.spin = 1; this.event = { text: 'rotate left', node: z.p, dir: -1, t: 1 }; DS.say(`zig-zag  →  rotate left at ${z.key}`); yield 0.6; }
+          else if (!left && z === p.l) { z = p; rotR(t, z); this.rot++; z.spin = 1; this.event = { text: 'rotate right', node: z.p, dir: 1, t: 1 }; DS.say(`zig-zag  →  rotate right at ${z.key}`); yield 0.6; }
           const pp = z.p, g2 = pp.p;
           pp.red = false; g2.red = true;
           if (left) rotR(t, g2); else rotL(t, g2);
           this.rot++;
           pp.hl = 1; g2.spin = 1;
-          this.event = { text: left ? 'rotate right' : 'rotate left', node: pp };
+          this.event = { text: left ? 'rotate right' : 'rotate left', node: pp, dir: left ? 1 : -1, t: 1 };
           DS.say(`red–red in a line  →  rotate ${left ? 'right' : 'left'} at ${g2.key}, ${pp.key} rises`, 'good');
-          yield 0.55;
+          yield 0.7;
         }
       }
       if (t.root.red) { t.root.red = false; yield 0.2; }
@@ -224,6 +229,7 @@
       this.layout(this.bst, G.L, dt);
       this.layout(this.rb, G.R, dt);
       this.ghosts.forEach((n) => { n.al = DS.ease(n.al, 0, dt, 8); });
+      if (this.event) { this.event.t -= dt / 1.4; if (this.event.t <= 0) this.event = null; }
       this.ghosts = this.ghosts.filter((n) => n.al > 0.02);
     },
 
@@ -249,22 +255,52 @@
         else { fill = '#243044'; stroke = '#62708b'; }
         DS.circle(g, n.x, n.y, r, fill, n.hl > 0.3 ? C.amber : stroke, (n.hl > 0.3 ? 2.2 : 1.3) * u);
         if (n.spin > 0.05) DS.circle(g, n.x, n.y, r * (1.5 + 0.6 * (1 - n.spin)), null, DS.rgba(C.amber, n.spin * 0.8), 1.6 * u);
-        if (r >= 8 * u) DS.text(g, String(n.key), n.x, n.y + 0.5 * u, { size: r * 0.85, mono: true, weight: 500, color: C.ink });
+        if (r >= 8 * u) DS.text(g, String(n.key), n.x, n.y + 0.5 * u, { size: Math.max(10.5 * u, r * 0.85), mono: true, weight: 500, color: C.ink });
         g.globalAlpha = 1;
       };
       nodes(t.root);
     },
 
+    // what the red-black tree just did, pinned to the node it happened at: a curved
+    // arrow showing which way the rotation turned, and the word for it
+    drawEvent(g) {
+      const e = this.event, u = DS.u;
+      if (!e || !e.node || e.node.al < 0.5) return;
+      const n = e.node, r = this.rb.r || 10 * u, a = DS.smooth(Math.min(1, e.t * 1.6));
+      if (e.dir) {
+        const R = r * 2.1, a0 = -Math.PI * 0.85, a1 = -Math.PI * 0.15;
+        const [from, to] = e.dir > 0 ? [a0, a1] : [a1, a0];
+        g.beginPath();
+        g.arc(n.x, n.y, R, from, to, e.dir < 0);
+        g.strokeStyle = DS.rgba(C.amber, 0.9 * a);
+        g.lineWidth = 2.6 * u;
+        g.stroke();
+        const hx = n.x + Math.cos(to) * R, hy = n.y + Math.sin(to) * R;
+        const tang = to + (e.dir > 0 ? Math.PI / 2 : -Math.PI / 2);
+        g.globalAlpha = a;
+        DS.arrow(g, hx - Math.cos(tang) * 8 * u, hy - Math.sin(tang) * 8 * u, hx, hy, C.amber, 2.6 * u, 10 * u);
+        g.globalAlpha = 1;
+      }
+      // the word goes beside the arc, on whichever side has room
+      const right = n.x < this.geo().R.x + this.geo().R.w * 0.75;
+      const tx = n.x + (right ? 1 : -1) * (r * 2.1 + 10 * u), ty = n.y - r * 1.5;
+      g.font = DS.font(16 * u, { mono: true, weight: 600 });
+      const w = g.measureText(e.text).width + 16 * u;
+      DS.box(g, right ? tx - 4 * u : tx - w + 4 * u, ty - 12 * u, w, 24 * u, 12 * u, DS.rgba(C.bg, 0.85 * a));
+      DS.text(g, e.text, right ? tx + 4 * u : tx - 4 * u, ty, { size: 16 * u, mono: true, weight: 600, color: DS.rgba(C.amber, a), align: right ? 'left' : 'right' });
+    },
+
     draw(g) {
       const G = this.geo(), u = DS.u;
-      DS.line(g, G.mid, G.L.y - 20 * u, G.mid, G.hy + 10 * u, DS.rgba(C.dim, 0.12), 1 * u);
-      DS.text(g, 'PLAIN BINARY SEARCH TREE', G.L.x + G.L.w / 2, G.L.y - 24 * u, { size: 13 * u, mono: true, color: C.dim });
-      DS.text(g, 'RED-BLACK TREE', G.R.x + G.R.w / 2, G.R.y - 24 * u, { size: 13 * u, mono: true, color: C.dim });
+      DS.line(g, G.mid, DS.stage.y + 10 * u, G.mid, G.hy + 10 * u, DS.rgba(C.dim, 0.12), 1 * u);
+      DS.text(g, 'PLAIN BINARY SEARCH TREE', G.L.x + G.L.w / 2, G.hy - 34 * u, { size: 15 * u, mono: true, color: C.dim });
+      DS.text(g, 'RED-BLACK TREE', G.R.x + G.R.w / 2, G.hy - 34 * u, { size: 15 * u, mono: true, color: C.dim });
 
       this.ghosts.forEach((n) => { g.globalAlpha = n.al; DS.circle(g, n.x, n.y, 6 * u, DS.rgba(C.dim, 0.4)); });
       g.globalAlpha = 1;
       this.drawTree(g, this.bst, false);
       this.drawTree(g, this.rb, true);
+      this.drawEvent(g);
 
       const hb = this.bst.h || 0, hr = this.rb.h || 0;
       const bad = hb > hr + 2;
