@@ -148,8 +148,8 @@
       return id;
     },
 
-    *queryGen() {
-      const q = this.randPoint();
+    *queryGen(at) {
+      const q = (at ? [DS.clamp(at.x, 0.02, 0.98), DS.clamp(at.y, 0.03, 0.97)] : this.randPoint());
       const trace = [], hops = [];
       let ep = [this.entry], evals = 1;
       for (let l = this.top; l > 0; l--) {
@@ -199,6 +199,25 @@
       DS.say(`found the ${K} nearest  ·  measured ${evals} distances out of ${this.P.length} points  ·  ${Math.round(recall * 100)}% match the exact answer`, 'good');
       yield 3.6;
       this.search = null;
+    },
+
+    input(name, value) {
+      if (name !== 'search' || !value || typeof value.x !== 'number') return false;
+      this.steps.clear();
+      this.search = null;
+      this.steps.run(() => this.queryGen(value));
+      return true;
+    },
+    phone() {
+      const r = (v) => Math.round(v * 1000) / 1000;
+      const S = this.search;
+      return {
+        pts: this.P.map((p) => [r(p[0]), r(p[1])]),
+        q: S ? [r(S.q[0]), r(S.q[1])] : null,
+        found: S && S.done ? S.found.slice() : [],
+        checked: this.lastEval || null,
+        recall: this.recall,
+      };
     },
 
     *addGen() {
