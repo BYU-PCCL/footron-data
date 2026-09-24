@@ -304,8 +304,8 @@ const ControlsComponent = () => {
 
         <p className="foot">
           The color is on the wall, not on your phone — that is the whole point.
-          Once you answer, the wall draws every option's real color beside its
-          code.
+          Once you answer, the wall draws each option in its real color, beside
+          its code.
         </p>
       </div>
     );
