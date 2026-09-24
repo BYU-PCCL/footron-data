@@ -154,7 +154,8 @@
       let ep = [this.entry], evals = 1;
       for (let l = this.top; l > 0; l--) {
         const start = ep[0];
-        const r = this.searchLayer(q, ep, 1, l, null);
+        const checked = [];
+        const r = this.searchLayer(q, ep, 1, l, checked);
         evals += r.evals;
         // replay the greedy walk as a path: re-run it step by step
         let cur = start, path = [cur];
@@ -165,7 +166,7 @@
           cur = best;
           path.push(cur);
         }
-        hops.push({ l, path });
+        hops.push({ l, path, checked: checked.map((t) => t.to) });
         ep = [cur];
       }
       const r0 = this.searchLayer(q, ep, EF, 0, trace);
@@ -173,14 +174,17 @@
       const found = r0.W.slice(0, K);
       const truth = this.P.map((_, i) => i).sort((a, b) => this.d(a, q) - this.d(b, q)).slice(0, K);
       const recall = found.filter((f) => truth.includes(f)).length / K;
-      this.search = { q, hops, trace, ep0: ep[0], found: [], shownHop: -1, shownPath: 0, shownTrace: 0, done: false };
-      DS.say(`search  ·  enter at the top layer (${this.top}), at the one point that lives there`);
-      yield 0.9;
+      this.search = { q, hops, trace, ep0: ep[0], found: [], shownHop: -1, shownPath: 0, shownTrace: 0, done: false, t0: this.clock, drop: null, foundAt: 0 };
+      DS.say(`search  ·  enter at the top layer (${this.top}), at its entry point`);
+      yield 0.8;
       for (let h = 0; h < hops.length; h++) {
         this.search.shownHop = h;
         for (let k = 1; k <= hops[h].path.length; k++) { this.search.shownPath = k; yield 0.3; }
-        DS.say(`layer ${hops[h].l}  ·  ${hops[h].path.length - 1} long hop${hops[h].path.length === 2 ? '' : 's'} toward the target  →  drop down`);
-        yield 0.35;
+        const n = hops[h].path.length - 1;
+        DS.say(n ? `layer ${hops[h].l}  ·  ${n} long hop${n === 1 ? '' : 's'} toward the target  →  drop down a layer` : `layer ${hops[h].l}  ·  already the closest point here  →  drop down a layer`);
+        yield 0.2;
+        this.search.drop = { h, t0: this.clock };
+        yield 0.6;
       }
       this.search.shownHop = hops.length;
       DS.say('layer 0  ·  a small beam search among close neighbours');
@@ -189,14 +193,16 @@
       this.search.shownTrace = trace.length;
       this.search.found = found;
       this.search.done = true;
+      this.search.foundAt = this.clock;
       this.lastEval = evals;
       this.recall = recall;
       DS.say(`found the ${K} nearest  ·  measured ${evals} distances out of ${this.P.length} points  ·  ${Math.round(recall * 100)}% match the exact answer`, 'good');
-      yield 3.2;
+      yield 3.6;
       this.search = null;
     },
 
     *addGen() {
+      DS.say('adding 20 points  ·  each draws its random top layer, then links to its nearest neighbours on every layer below');
       for (let k = 0; k < 20; k++) { this.insert(this.randPoint(), false); yield 0.08; }
       DS.say(`+20 points  ·  each one linked into every layer it drew`, 'good');
       yield 0.6;
@@ -217,21 +223,27 @@
     },
 
     update(dt, auto) {
+      this.clock = (this.clock || 0) + dt;
       this.steps.update(dt);
       if (auto && !this.steps.busy) this.auto();
       for (let i = 0; i < this.born.length; i++) if (this.born[i] > 0) this.born[i] = Math.max(0, this.born[i] - dt * 0.6);
     },
 
+    // Layer 0 holds every point, so its sheet is drawn deeper than the sparse
+    // ones above. Every sheet shares one horizontal skew, so a point's pillar
+    // through the layers stays vertical.
     geo() {
       const S = DS.stage, u = DS.u;
       const layers = Math.max(this.top + 1, 3);
-      const gap = S.h / layers;
-      const sh = gap * 0.72;               // sheet depth on screen
-      const sw = S.w * 0.84, skew = S.w * 0.1;
-      return { layers, gap, sh, sw, skew, x0: S.x + 60 * u, base: S.y1 - 6 * u };
+      const Du = (S.h - 12 * u) / (2 + (layers - 1) * 1.32);
+      const D0 = 2 * Du, gapU = 0.32 * Du;
+      const base = [S.y1 - 6 * u], depth = [D0];
+      for (let l = 1; l < layers; l++) { base.push(base[l - 1] - depth[l - 1] - gapU); depth.push(Du); }
+      const sw = S.w * 0.84, skew = S.w * 0.09;
+      return { layers, base, depth, sw, skew, x0: S.x + 70 * u };
     },
     proj(p, l, G) {
-      const y = G.base - l * G.gap - (1 - p[1]) * G.sh;
+      const y = G.base[l] - (1 - p[1]) * G.depth[l];
       const x = G.x0 + p[0] * G.sw + (1 - p[1]) * G.skew;
       return [x, y];
     },
@@ -239,6 +251,7 @@
     draw(g) {
       const G = this.geo(), u = DS.u, S = this.search;
       const P = this.P;
+      const now = this.clock || 0;
       // sheets, bottom first so upper ones overlay
       for (let l = 0; l < G.layers; l++) {
         const col = LAYER_COL[l % LAYER_COL.length];
@@ -246,15 +259,15 @@
         g.beginPath();
         c.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
         g.closePath();
-        g.fillStyle = DS.rgba(col, 0.035);
+        g.fillStyle = DS.rgba(col, 0.04);
         g.fill();
-        g.strokeStyle = DS.rgba(col, 0.25);
+        g.strokeStyle = DS.rgba(col, 0.28);
         g.lineWidth = 1 * u;
         g.stroke();
         const [lx, ly] = this.proj([0, 0.5], l, G);
-        DS.text(g, `layer ${l}`, lx - 14 * u, ly, { size: 13 * u, mono: true, color: DS.rgba(col, 0.9), align: 'right' });
+        DS.text(g, `layer ${l}`, lx - 14 * u, ly - 6 * u, { size: 15 * u, mono: true, color: DS.rgba(col, 0.95), align: 'right' });
         const cnt = this.lvl.filter((v) => v >= l).length;
-        DS.text(g, `${cnt} pts`, lx - 14 * u, ly + 14 * u, { size: 10.5 * u, mono: true, color: C.mute, align: 'right' });
+        DS.text(g, `${cnt} pts`, lx - 14 * u, ly + 12 * u, { size: 12 * u, mono: true, color: C.dim, align: 'right' });
 
         // edges on this layer
         const nb = this.nb[l];
@@ -269,18 +282,18 @@
               g.lineTo(bx, by);
             }
           }
-          g.strokeStyle = DS.rgba(col, l === 0 ? 0.14 : 0.32);
-          g.lineWidth = (l === 0 ? 0.8 : 1.2) * u;
+          g.strokeStyle = DS.rgba(col, l === 0 ? 0.19 : 0.4);
+          g.lineWidth = (l === 0 ? 1 : 1.6) * u;
           g.stroke();
           // points
           g.beginPath();
           for (const a of nb.keys()) {
             const [x, y] = this.proj(P[a], l, G);
-            const r = (l === 0 ? 1.8 : 2.8) * u + this.born[a] * 3 * u;
+            const r = (l === 0 ? 2.7 : 4) * u + this.born[a] * 3 * u;
             g.moveTo(x + r, y);
             g.arc(x, y, r, 0, 6.2832);
           }
-          g.fillStyle = DS.rgba(col, 0.9);
+          g.fillStyle = DS.rgba(col, 0.92);
           g.fill();
         }
       }
@@ -294,57 +307,102 @@
         g.moveTo(x0, y0);
         g.lineTo(x1, y1);
       }
-      g.strokeStyle = DS.rgba(C.dim, 0.12);
+      g.strokeStyle = DS.rgba(C.dim, 0.14);
       g.lineWidth = 1 * u;
       g.stroke();
       g.setLineDash([]);
 
       if (!S) return;
-      // the query, shown on every layer, joined by a faint pillar
-      for (let l = 0; l < G.layers; l++) {
-        const [x, y] = this.proj(S.q, l, G);
-        DS.circle(g, x, y, 5 * u, null, DS.rgba(C.amber, 0.7), 1.5 * u);
-      }
+      const since = now - S.t0;
+      const fade = Math.min(1, since / 0.4);
+      // the target, shown on every layer, joined by a faint pillar
       const [qx0, qy0] = this.proj(S.q, 0, G), [qx1, qy1] = this.proj(S.q, G.layers - 1, G);
-      DS.line(g, qx0, qy0, qx1, qy1, DS.rgba(C.amber, 0.15), 1 * u);
-      DS.halo(g, qx0, qy0, 20 * u, C.amber, 0.4);
+      DS.line(g, qx0, qy0, qx1, qy1, DS.rgba(C.amber, 0.22 * fade), 1.2 * u);
+      for (let l = 1; l < G.layers; l++) {
+        const [x, y] = this.proj(S.q, l, G);
+        DS.circle(g, x, y, 6 * u, null, DS.rgba(C.amber, 0.75 * fade), 1.6 * u);
+      }
+      // on the bottom layer it is a crosshair with a beating ring, so it can't be missed
+      const beat = 0.5 + 0.5 * Math.sin(now * 5);
+      DS.halo(g, qx0, qy0, 46 * u, C.amber, 0.45 * fade);
+      DS.circle(g, qx0, qy0, (9 + 3 * beat) * u, null, DS.rgba(C.amber, 0.95 * fade), 2.2 * u);
+      const ch = 20 * u, gap = 5 * u;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) DS.line(g, qx0 + dx * (9 * u + gap), qy0 + dy * (9 * u + gap), qx0 + dx * (9 * u + ch), qy0 + dy * (9 * u + ch), DS.rgba(C.amber, 0.9 * fade), 2 * u);
+      DS.text(g, 'target', qx0 + 34 * u, qy0 - 16 * u, { size: 14 * u, mono: true, color: DS.rgba(C.amber, fade), align: 'left' });
 
-      // the descent
+      // the descent: the current layer bright, finished layers quieter
+      const onBottom = S.shownHop >= S.hops.length;
       for (let h = 0; h < S.hops.length && h <= S.shownHop; h++) {
-        const { l, path } = S.hops[h];
+        const { l, path, checked } = S.hops[h];
         const n = h === S.shownHop ? S.shownPath : path.length;
+        const live = h === S.shownHop && !onBottom;
+        const a = live ? 1 : 0.55;
+        // every point whose distance this layer measured
+        for (const c of checked) { const [x, y] = this.proj(P[c], l, G); DS.circle(g, x, y, 6.5 * u, null, DS.rgba(C.amber, 0.55 * a), 1.4 * u); }
         g.beginPath();
         for (let k = 0; k < n; k++) {
           const [x, y] = this.proj(P[path[k]], l, G);
           k ? g.lineTo(x, y) : g.moveTo(x, y);
         }
-        g.strokeStyle = C.amber;
-        g.lineWidth = 2.6 * u;
+        g.strokeStyle = DS.rgba(C.amber, a);
+        g.lineWidth = 4 * u;
         g.lineJoin = 'round';
         g.stroke();
-        for (let k = 0; k < n; k++) { const [x, y] = this.proj(P[path[k]], l, G); DS.circle(g, x, y, 4 * u, C.amber); }
-        if (n === path.length && h < S.shownHop) {
+        for (let k = 0; k < n; k++) { const [x, y] = this.proj(P[path[k]], l, G); DS.circle(g, x, y, 6 * u, DS.rgba(C.amber, a)); }
+        if (live && n > 0) { const [x, y] = this.proj(P[path[n - 1]], l, G); DS.halo(g, x, y, 30 * u, C.amber, 0.5); }
+        // the drop to the next layer: a bead slides down the pillar and lands with a ripple
+        const dropping = S.drop && S.drop.h === h;
+        if (n === path.length && (h < S.shownHop || onBottom || dropping)) {
           const last = path[path.length - 1];
           const [x0, y0] = this.proj(P[last], l, G), [x1, y1] = this.proj(P[last], l - 1, G);
-          DS.arrow(g, x0, y0, x1, y1, DS.rgba(C.amber, 0.9), 2 * u, 8 * u);
+          const dt = dropping ? now - S.drop.t0 : 9;
+          const t = DS.smooth(Math.min(1, dt / 0.45));
+          const yb = y0 + (y1 - y0) * t;
+          DS.line(g, x0, y0, x0, yb, DS.rgba(C.amber, 0.9), 2.6 * u);
+          if (t < 1) { DS.halo(g, x0, yb, 26 * u, C.amber, 0.6); DS.circle(g, x0, yb, 6 * u, C.amber); }
+          else {
+            DS.arrow(g, x0, y0, x1, y1 - 4 * u, DS.rgba(C.amber, 0.9), 2.6 * u, 11 * u);
+            const rt = dt - 0.45;
+            if (rt < 0.7) DS.circle(g, x1, y1, (8 + 40 * rt) * u, null, DS.rgba(C.amber, 0.9 * (1 - rt / 0.7)), 2.4 * u);
+          }
         }
       }
-      // layer-0 beam search
-      if (S.shownHop >= S.hops.length) {
+      // layer-0 beam search: the links it followed and every point it measured
+      if (onBottom) {
+        const upto = Math.min(S.shownTrace, S.trace.length);
         g.beginPath();
-        for (let k = 0; k < S.shownTrace && k < S.trace.length; k++) {
+        for (let k = 0; k < upto; k++) {
           const t = S.trace[k];
           const [x0, y0] = this.proj(P[t.from], 0, G), [x1, y1] = this.proj(P[t.to], 0, G);
           g.moveTo(x0, y0);
           g.lineTo(x1, y1);
         }
-        g.strokeStyle = DS.rgba(C.amber, 0.45);
-        g.lineWidth = 1.3 * u;
+        g.strokeStyle = DS.rgba(C.amber, S.done ? 0.35 : 0.6);
+        g.lineWidth = 1.8 * u;
         g.stroke();
-        for (const f of S.found) {
-          const [x, y] = this.proj(P[f], 0, G);
-          DS.circle(g, x, y, 5 * u, C.amber, C.ink, 1.4 * u);
-          DS.line(g, x, y, qx0, qy0, DS.rgba(C.amber, 0.6), 1.2 * u);
+        g.beginPath();
+        for (let k = 0; k < upto; k++) {
+          const [x, y] = this.proj(P[S.trace[k].to], 0, G);
+          g.moveTo(x + 5 * u, y);
+          g.arc(x, y, 5 * u, 0, 6.2832);
+        }
+        g.strokeStyle = DS.rgba(C.amber, S.done ? 0.4 : 0.7);
+        g.lineWidth = 1.4 * u;
+        g.stroke();
+        if (S.found.length) {
+          const ft = now - S.foundAt;
+          const pop = DS.smooth(Math.min(1, ft / 0.35));
+          for (const f of S.found) {
+            const [x, y] = this.proj(P[f], 0, G);
+            DS.line(g, qx0 + (x - qx0) * (1 - pop), qy0 + (y - qy0) * (1 - pop), qx0, qy0, DS.rgba(C.amber, 0.85), 2 * u);
+          }
+          for (const f of S.found) {
+            const [x, y] = this.proj(P[f], 0, G);
+            DS.halo(g, x, y, 26 * u, C.amber, 0.5 * pop);
+            DS.circle(g, x, y, (4 + 4.5 * pop) * u, C.amber, C.ink, 2 * u);
+            if (ft < 0.9) DS.circle(g, x, y, (8 + 34 * ft) * u, null, DS.rgba(C.amber, 0.8 * (1 - ft / 0.9)), 2 * u);
+          }
+          DS.text(g, `${S.found.length} nearest`, qx0 + 34 * u, qy0 + 18 * u, { size: 15 * u, mono: true, weight: 600, color: DS.rgba(C.amber, pop), align: 'left' });
         }
       }
     },
