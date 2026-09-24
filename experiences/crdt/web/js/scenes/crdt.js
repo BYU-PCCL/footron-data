@@ -36,6 +36,21 @@
     R.list.splice(j, 0, { id: op.id, ch: op.ch, del: false, anchor: op.anchor, by: op.id[1], al: 0 });
   }
   const text = (R) => R.list.filter((e) => !e.del).map((e) => e.ch).join('');
+  // an edit can be applied once the letter it hangs off (or deletes) is here —
+  // real systems buffer out-of-order edits exactly like this (causal delivery)
+  const ready = (R, op) => (op.type === 'del' ? R.list.some((x) => key(x.id) === key(op.id)) : !op.anchor || R.list.some((x) => key(x.id) === key(op.anchor)));
+
+  // The examples. Each is a real situation collaborative editors have to get
+  // right; the last is a real weakness of this particular algorithm.
+  const EXAMPLES = [
+    { id: 'same-spot', title: 'Both type in the same spot', blurb: 'Each word stays in one piece, in an order both copies agree on.', seed: 'Hello!' },
+    { id: 'delete-vs-type', title: 'One deletes, the other types right after it', blurb: 'The deleted letter becomes a ghost that still holds the new text in place.', seed: 'Hello!' },
+    { id: 'same-delete', title: 'Both delete the same letter', blurb: 'Deleted twice is still deleted once.', seed: 'Hello!!' },
+    { id: 'replace', title: 'Both fix the same word, differently', blurb: 'Nothing anyone typed is lost — but a person still has to choose.', seed: 'I love cats' },
+    { id: 'scrambled', title: 'The network scrambles the order', blurb: 'Edits arrive shuffled; each waits for the letter it goes after.', seed: 'Hi' },
+    { id: 'long-apart', title: 'A long time apart', blurb: 'Many edits in different places, all kept.', seed: 'meet at noon' },
+    { id: 'backwards', title: 'Where this CRDT stumbles', blurb: 'Words typed backwards interleave. Newer designs (Fugue, 2023) fix this.', seed: 'Hi !' },
+  ];
 
   DS.register({
     id: 'crdt',
@@ -52,13 +67,18 @@
       'If two people insert at the same spot, both copies use the same tie-break — the bigger name goes first — so they agree without talking.',
       'Deleted letters stay behind as invisible tombstones, because someone else may still be typing right after them.',
       'Replaying edits by position instead (“insert at 6”) leaves the two copies permanently different. That is the bug a CRDT removes.',
+      'Seven examples play in turn: typing in the same spot, deleting, both fixing one word, a scrambled network, and one case this algorithm gets wrong.',
+      'If both fix the same word differently, both fixes are kept. A CRDT never loses typing — but a person still has to choose.',
       'Automerge is built on RGA; Yjs uses a relative, YATA. Newer designs like Fugue (2023) also stop words typed backwards from interleaving.',
     ],
     actions: [
-      { id: 'play', label: 'Replay the story' },
+      { id: 'next', label: 'Next example' },
+      { id: 'play', label: 'Replay this example' },
+      { id: 'typeA', label: 'Laptop A types' },
+      { id: 'typeB', label: 'Laptop B types' },
+      { id: 'delA', label: 'Laptop A deletes' },
+      { id: 'delB', label: 'Laptop B deletes' },
       { id: 'sync', label: 'Sync now' },
-      { id: 'typeA', label: 'A types' },
-      { id: 'typeB', label: 'B types' },
     ],
 
     init() {
@@ -67,7 +87,7 @@
     },
     // Fresh document state, but NOT a fresh step runner: the story calls this
     // from inside a generator that the current runner is executing.
-    reset() {
+    reset(seed) {
       this.R = { A: replica('A'), B: replica('B') };
       this.wire = [];              // ops in flight {op, from, to, t}
       this.online = true;
@@ -76,7 +96,9 @@
       this.phase = 0;
       this.flash = 0;
       this.lastState = null;
-      this.seed('Hello!');
+      this.scramble = false;
+      if (this.exi === undefined) this.exi = 0;
+      this.seed(seed || 'Hello!');
     },
 
     seed(s) {
@@ -109,6 +131,25 @@
         yield 0.22;
       }
     },
+    // typing backwards: every letter goes in at the same position, so every one
+    // hangs off the same left neighbour — the case RGA can interleave
+    *typeBackGen(r, word, at) {
+      const R = this.R[r];
+      const vis = R.list.filter((e) => !e.del);
+      const anchor = at < 0 ? null : vis[at].id;
+      for (const ch of [...word].reverse()) {
+        const op = { type: 'ins', id: [++R.ctr, r], ch, anchor };
+        integrate(R, op);
+        R.out.push(op);
+        R.naiveOps = R.naiveOps || [];
+        R.naiveOps.push({ type: 'ins', i: at + 1, ch });
+        R.naive = R.naive.slice(0, at + 1) + ch + R.naive.slice(at + 1);
+        yield 0.3;
+      }
+    },
+    // run two edit scripts on the two laptops at the same time
+    *together(a, b) { for (;;) { const x = a.next(), y = b.next(); if (x.done && y.done) return; yield 0.24; } },
+
     *deleteGen(r, at) {
       const R = this.R[r];
       const vis = R.list.filter((e) => !e.del);
@@ -131,9 +172,11 @@
       // Everything goes on the wire at once (staggered by a start delay), so
       // an interrupted sync can never lose an edit.
       const n = Math.max(aOps.length, bOps.length);
+      // scrambled: each edit leaves at a random moment, so they arrive out of order
+      const delay = (k, len) => (this.scramble ? -Math.random() * len * 0.28 : -k * 0.2);
       for (let k = 0; k < n; k++) {
-        if (aOps[k]) this.wire.push({ op: aOps[k], from: 'A', to: 'B', t: -k * 0.2 });
-        if (bOps[k]) this.wire.push({ op: bOps[k], from: 'B', to: 'A', t: -k * 0.2 });
+        if (aOps[k]) this.wire.push({ op: aOps[k], from: 'A', to: 'B', t: delay(k, aOps.length) });
+        if (bOps[k]) this.wire.push({ op: bOps[k], from: 'B', to: 'A', t: delay(k, bOps.length) });
       }
       // naive: replay the other side's index-based edits onto this side's text
       const replay = (txt, ops) => ops.reduce((s, o) => (o.type === 'ins' ? s.slice(0, o.i) + o.ch + s.slice(o.i) : s.slice(0, o.i) + s.slice(o.i + 1)), txt);
@@ -146,56 +189,134 @@
       yield 3;
     },
 
-    *storyGen() {
-      this.reset();
+    *exampleGen(ex) {
+      this.reset(ex.seed);
       this.inStory = true;
-      DS.say('one document, two copies — on two laptops');
-      yield 1.8;
-      this.online = false;
-      DS.say('the Wi-Fi drops  ·  both keep typing, in the same spot');
-      yield 1.2;
-      const a = this.typeGen('A', ' Alice', 4, true), b = this.typeGen('B', ' Bob', 4, true);
-      for (;;) { const x = a.next(), y = b.next(); if (x.done && y.done) break; yield 0.24; }
-      DS.say(`A sees “${text(this.R.A)}”   ·   B sees “${text(this.R.B)}”`, 'warn');
+      this.example = ex;
+      const A = () => text(this.R.A), B = () => text(this.R.B);
+      DS.say(`${ex.title}  ·  two laptops, one document: “${ex.seed}”`);
       yield 2;
-      yield* this.syncGen();
-      yield 1;
-      // act two: a delete racing an insert right after the deleted letter
       this.online = false;
-      DS.say('offline again  ·  B deletes the “!”, while A types after it');
-      yield 1.2;
-      const visB = text(this.R.B);
-      yield* this.deleteGen('B', visB.length - 1);
-      yield* this.typeGen('A', ' :)', text(this.R.A).length - 1, true);
-      yield 1.2;
+      if (ex.id === 'same-spot') {
+        DS.say('the Wi-Fi drops  ·  both keep typing, in the same spot');
+        yield 1.2;
+        yield* this.together(this.typeGen('A', ' Alice', 4, true), this.typeGen('B', ' Bob', 4, true));
+      } else if (ex.id === 'delete-vs-type') {
+        DS.say('offline  ·  B deletes the “!”, while A types right after it');
+        yield 1.2;
+        yield* this.deleteGen('B', 5);
+        yield* this.typeGen('A', ' :)', 5, true);
+      } else if (ex.id === 'same-delete') {
+        DS.say('offline  ·  both spot the extra “!” and delete it');
+        yield 1.2;
+        yield* this.together(this.deleteGen('A', 6), this.deleteGen('B', 6));
+      } else if (ex.id === 'replace') {
+        DS.say('offline  ·  both replace “cats” — A with “dogs”, B with “fish”');
+        yield 1.2;
+        const swap = function* (self, r, word) { for (let k = 0; k < 4; k++) yield* self.deleteGen(r, 7); yield* self.typeGen(r, word, 6, true); };
+        yield* this.together(swap(this, 'A', 'dogs'), swap(this, 'B', 'fish'));
+      } else if (ex.id === 'scrambled') {
+        DS.say('offline  ·  A types “ there”, B types “ you” — and the network will scramble the delivery');
+        yield 1.2;
+        yield* this.together(this.typeGen('A', ' there', 1, true), this.typeGen('B', ' you', 1, true));
+        this.scramble = true;
+      } else if (ex.id === 'long-apart') {
+        DS.say('offline for a long time  ·  each laptop makes several edits in different places');
+        yield 1.2;
+        yield* this.together(this.typeGen('A', ' by the lake', 11, true), this.typeGen('B', 'Let’s ', -1, true));
+        yield* this.typeGen('B', ' tomorrow', 17, true);
+      } else if (ex.id === 'backwards') {
+        DS.say('offline  ·  both type a word at the same spot, but each types it backwards — last letter first');
+        yield 1.2;
+        yield* this.together(this.typeBackGen('A', 'cat', 2), this.typeBackGen('B', 'dog', 2));
+      }
+      DS.say(`A sees “${A()}”   ·   B sees “${B()}”`, 'warn');
+      yield 2.2;
       yield* this.syncGen();
-      DS.say(`“!” is gone, but its tombstone still anchors A’s “ :)”  ·  both read “${text(this.R.A)}”`, 'good');
-      yield 3.5;
+      const t = A();
+      const ending = {
+        'same-spot': [`both read “${t}” — each word in one piece`, 'good'],
+        'delete-vs-type': [`the “!” is gone, but its ghost still anchors “ :)” — both read “${t}”`, 'good'],
+        'same-delete': [`both read “${t}” — deleted twice, gone once`, 'good'],
+        replace: [`both read “${t}” — nobody’s typing lost, and both copies agree; now a person picks one`, 'warn'],
+        scrambled: [`edits arrived out of order, yet both read “${t}”`, 'good'],
+        'long-apart': [`every edit survived: “${t}”`, 'good'],
+        backwards: [`both copies agree — but read “${t}”: the letters interleaved. Fugue (2023) was designed to stop this`, 'bad'],
+      }[ex.id];
+      DS.say(ending[0], ending[1]);
+      yield 4.5;
       this.inStory = false;
+    },
+    *storyGen() { const ex = EXAMPLES[this.exi % EXAMPLES.length]; yield* this.exampleGen(ex); },
+
+    startExample(i) {
+      this.visitorQueue = false;
+      this.exi = ((i % EXAMPLES.length) + EXAMPLES.length) % EXAMPLES.length;
+      this.steps.clear();
+      this.wire = [];
+      this.steps.run(() => this.storyGen());
+      // afterwards, carry on with the next example rather than replaying this one
+      this.steps.run(() => { this.exi = (this.exi + 1) % EXAMPLES.length; return 1.5; });
+    },
+
+    // phone: pick an example by id
+    input(name, value) {
+      if (name === 'example') {
+        const i = EXAMPLES.findIndex((e) => e.id === value);
+        if (i < 0) return false;
+        this.startExample(i);
+        return true;
+      }
+      return false;
+    },
+    phone() {
+      return {
+        example: this.example ? this.example.id : null,
+        examples: EXAMPLES.map((e) => ({ id: e.id, title: e.title, blurb: e.blurb })),
+        state: this.state(),
+        a: text(this.R.A),
+        b: text(this.R.B),
+        playing: !!this.inStory,
+      };
     },
 
     act(id) {
       const s = this.steps;
-      // a visitor's edit takes over from the scripted story at once, keeping
+      // a visitor's edit takes over from the scripted example at once, keeping
       // the document as it stands (every edit is already integrated or on the wire)
-      if (id !== 'play' && this.inStory) { s.clear(); this.inStory = false; }
+      if (id === 'play') { this.startExample(this.exi); return; }
+      if (id === 'next') { this.startExample(this.exi + 1); return; }
+      // …and so does anything autoplay had merely queued (the next example):
+      // a visitor's tap never waits behind a story
+      if (this.inStory || !this.visitorQueue) { s.clear(); this.inStory = false; }
+      this.visitorQueue = true;
       if (s.length > 2) return;
-      if (id === 'play') { s.clear(); s.run(() => this.storyGen()); }
-      else if (id === 'sync') s.run(() => this.syncGen());
+      if (id === 'sync') s.run(() => this.syncGen());
       else if (id === 'typeA' || id === 'typeB') {
         const r = id === 'typeA' ? 'A' : 'B';
         s.run(() => {
           this.online = false;
-          const words = r === 'A' ? [' hi', ' yes', ' ok', ' cat'] : [' no', ' dog', ' sun', ' up'];
+          const words = r === 'A' ? [' hi', ' yes', ' ok', ' cat', ' sun'] : [' no', ' dog', ' up', ' moon', ' tea'];
           const vis = text(this.R[r]);
           return this.typeGen(r, DS.pick(words), DS.ri(-1, vis.length - 1));
+        });
+      } else if (id === 'delA' || id === 'delB') {
+        const r = id === 'delA' ? 'A' : 'B';
+        s.run(() => {
+          const vis = text(this.R[r]);
+          if (!vis.length) { DS.say(`laptop ${r} has nothing left to delete`, 'warn'); return null; }
+          this.online = false;
+          const at = DS.ri(0, vis.length - 1);
+          DS.say(`laptop ${r} deletes “${vis[at] === ' ' ? '·' : vis[at]}”${' — offline, so only its own copy changes'}`);
+          return this.deleteGen(r, at);
         });
       }
     },
 
     auto() {
+      this.visitorQueue = false;
       this.steps.run(this.storyGen());
-      this.steps.hold(2);
+      this.steps.run(() => { this.exi = (this.exi + 1) % EXAMPLES.length; return 1.5; });
     },
 
     // offline · syncing · identical · (online but not yet matching)
@@ -215,10 +336,14 @@
       this.steps.update(dt);
       if (auto && !this.steps.busy) this.auto();
       for (const w of this.wire) {
-        w.t += dt / 0.9;
-        if (w.t >= 1 && !w.done) { w.done = true; integrate(this.R[w.to], w.op); }
+        if (w.done) { w.t += dt / 0.9; continue; }
+        w.t = Math.min(1, w.t + dt / 0.9);
+        if (w.t >= 1) {
+          if (ready(this.R[w.to], w.op)) { w.done = true; w.waiting = false; integrate(this.R[w.to], w.op); }
+          else w.waiting = true;     // held until the letter it hangs off arrives
+        }
       }
-      this.wire = this.wire.filter((w) => w.t < 1.2);
+      this.wire = this.wire.filter((w) => !w.done || w.t < 1.2);
       for (const r of Object.values(this.R)) r.list.forEach((e) => { e.al = DS.ease(e.al, 1, dt, 6); });
       // a flash the moment the two copies become identical again
       const st = this.state();
@@ -294,7 +419,8 @@
         const x = w.from === 'A' ? DS.lerp(mx0, mx1, t) : DS.lerp(mx1, mx0, t);
         const y = wy + (w.from === 'A' ? -18 : 18) * u;
         g.globalAlpha = w.t > 1 ? Math.max(0, 1 - (w.t - 1) * 5) : 1;
-        DS.box(g, x - 15 * u, y - 14 * u, 30 * u, 28 * u, 5 * u, DS.rgba(REP[w.from].col, 0.35), REP[w.from].col, 1.2 * u);
+        DS.box(g, x - 15 * u, y - 14 * u, 30 * u, 28 * u, 5 * u, DS.rgba(w.waiting ? C.amber : REP[w.from].col, 0.35), w.waiting ? C.amber : REP[w.from].col, (w.waiting ? 2 : 1.2) * u);
+        if (w.waiting) DS.text(g, 'waits', x, y + (w.from === 'A' ? -26 : 26) * u, { size: 12 * u, mono: true, color: C.amber });
         DS.text(g, w.op.type === 'del' ? '✕' : w.op.ch === ' ' ? '·' : w.op.ch, x, y, { size: 18 * u, mono: true, weight: 600, color: C.ink });
         g.globalAlpha = 1;
       }
@@ -308,7 +434,15 @@
       // the insertion tree (laptop A's copy): x = position in the document, y = depth
       const R = this.R.A;
       const naiveH = this.naive ? 76 * u : 0;
-      const ty0 = py + panelH + 62 * u, ty1 = S.y1 - naiveH - 22 * u;
+      // which example is playing, and what it shows
+      const exY = py + panelH + 34 * u;
+      if (this.example) {
+        const n = EXAMPLES.indexOf(this.example) + 1;
+        DS.text(g, `EXAMPLE ${n} OF ${EXAMPLES.length}`, S.x, exY, { size: 14 * u, mono: true, color: C.dim, align: 'left' });
+        const head = `${this.example.title} — ${this.example.blurb}`;
+        DS.text(g, head, S.x + 190 * u, exY, { size: fit(head, 24 * u, S.w - 200 * u, 500), weight: 500, color: this.example.id === 'backwards' ? C.rose : C.ink, align: 'left' });
+      }
+      const ty0 = py + panelH + 104 * u, ty1 = S.y1 - naiveH - 22 * u;
       const depth = new Map();
       R.list.forEach((e) => { const d = e.anchor ? (depth.get(key(e.anchor)) ?? 0) + 1 : 0; depth.set(key(e.id), d); });
       const maxD = Math.max(1, ...depth.values());
