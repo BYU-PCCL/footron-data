@@ -9,7 +9,8 @@
 (function () {
   'use strict';
   const DS = window.DS, C = DS.C;
-  const CAP = 4, MAXD = 9;
+  const CAP0 = 4, MAXD = 9;
+  let CAP = CAP0;             // points a square may hold before it splits (phone-adjustable)
   const FLOCK = [C.teal, C.violet, C.sky, C.sage, C.plum];
 
   function node(x, y, w, h, d) { return { x, y, w, h, d, pts: [], kids: null }; }
@@ -66,6 +67,7 @@
     ],
 
     init() {
+      CAP = CAP0;
       this.A = DS.stage.w / DS.stage.h;
       this.pts = [];
       this.t = Math.random() * 100;
@@ -134,6 +136,40 @@
         this.links = !this.links;
         DS.say(this.links ? 'neighbour links on' : 'neighbour links off');
       }
+    },
+
+    input(name, value) {
+      const A = this.A;
+      if (name === 'move' && value && typeof value.x === 'number') {
+        this.mouse = { x: DS.clamp(value.x, 0, 1) * A, y: DS.clamp(value.y, 0, 1), t: DS.time };
+        return true;
+      }
+      if (name === 'radius' && typeof value === 'number') { this.q.r = DS.clamp(value, 0.05, 0.3); this.q.on = true; return true; }
+      if (name === 'capacity' && typeof value === 'number') {
+        CAP = Math.round(DS.clamp(value, 1, 12));
+        this.cap = CAP;
+        this.build();
+        DS.say(CAP === 1 ? 'a square splits as soon as it holds 2 points — a deep, fine grid' : `a square splits once it holds more than ${CAP} points`, 'good');
+        return true;
+      }
+      return false;
+    },
+    // the phone shows where the flocks are, so a visitor can drag the circle onto one
+    phone() {
+      const A = this.A, na = this.att.length;
+      const cx = new Float64Array(na), cy = new Float64Array(na), cn = new Float64Array(na);
+      for (const p of this.pts) { const f = p.k % na; cx[f] += p.x; cy[f] += p.y; cn[f]++; }
+      const r = (v) => Math.round(v * 1000) / 1000;
+      return {
+        aspect: r(A),
+        flocks: Array.from({ length: na }, (_, f) => (cn[f] ? [r(cx[f] / cn[f] / A), r(cy[f] / cn[f]), cn[f]] : null)).filter(Boolean),
+        q: [r(this.q.x / A), r(this.q.y)],
+        radius: r(this.q.r),
+        capacity: CAP,
+        found: this.res.hits.length,
+        looked: this.res.checked,
+        total: this.pts.length,
+      };
     },
 
     pointer(type, x, y) {
