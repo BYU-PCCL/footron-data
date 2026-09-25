@@ -63,6 +63,7 @@ export function formatKg(kg) {
 }
 
 export const msg = {
+  hello: () => ({ type: "hello" }),
   setup: (key, value) => ({ type: "setup", key, value }),
   grow: (setup) => ({ type: "grow", ...setup }),
   lesson: (id) => ({ type: "lesson", value: id }),

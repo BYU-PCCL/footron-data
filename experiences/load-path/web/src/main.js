@@ -187,6 +187,15 @@ for (const lesson of LESSONS) {
 const REPLAY_FRAME_MS = 260;
 
 let lastPlayback = null; // every recorded iteration of the current run, for scrubbing/replay
+let phone = { send() {} }; // the link back to the visitor's phone; replaced by connectFootron() below
+
+// What the phone can't see for itself. The editor opens on a FINISHED run, and
+// lastPlayback is exactly that: empty before the first grow and while one is
+// growing, set once it has finished. Telling the phone lets it grey the button
+// out instead of offering one the wall would quietly ignore.
+function sendPhoneState() {
+  phone.send({ type: "state", canEdit: lastPlayback !== null });
+}
 let lastCapacityKg = null; // what the finished bridge can carry, exactly (failure.js)
 let lastLimit = null; // ...and what limits it: { kg, mode, side }
 const skip = { requested: false }; // "Skip" during the step-by-step explanation
@@ -210,6 +219,7 @@ async function runFullCycle(loadColumn, lesson = null) {
 
   lastLoadColumn = loadColumn;
   lastPlayback = null;
+  sendPhoneState();
   const materialKg = getMaterialKg();
   const volumeFraction = kgToVolumeFraction(materialKg);
 
@@ -228,6 +238,7 @@ async function runFullCycle(loadColumn, lesson = null) {
   if (!playback) return;
 
   lastPlayback = playback;
+  sendPhoneState();
   const { final } = playback;
   lastDensities = final.densities;
   lastU = final.u;
@@ -627,8 +638,9 @@ if (onWall) {
 // source of truth for stone and weight, so the labels on the wall follow along.
 let pendingSpot = 0.5;
 
-connectFootron({
+phone = connectFootron({
   onActivity: bumpActivity,
+  onHello: sendPhoneState,
   onSetup(key, value) {
     if (key === "stone") materialSlider.value = String(Math.round(value / 10) * 10);
     else if (key === "weight") weightSlider.value = String(Math.round(value * WEIGHT_SLIDER_MAX));

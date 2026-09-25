@@ -152,10 +152,26 @@ const PadGuides = ({ spot }) => {
 };
 
 const LoadPathControls = () => {
-  const { sendMessage } = useMessaging();
+  const [editing, setEditing] = useState(false);
+  const [trail, setTrail] = useState([]);
+  // The wall reports whether a finished bridge exists to edit (see sendPhoneState
+  // in src/main.js). null until it says: the button stays usable until told
+  // otherwise, so a wall that never answers costs the greying-out and nothing else.
+  const [canEdit, setCanEdit] = useState(null);
+  const { sendMessage } = useMessaging((message) => {
+    if (!message || message.type !== "state" || typeof message.canEdit !== "boolean") return;
+    setCanEdit(message.canEdit);
+    // A new bridge started growing under an open editor: the wall has already left
+    // it, so close this end rather than leave a pad that paints nothing.
+    if (!message.canEdit) {
+      setEditing(false);
+      setTrail([]);
+    }
+  });
 
-  // What THIS phone has asked for. The wall never reports back, so these mirror
-  // the wall only as long as nothing else is driving it.
+  // What THIS phone has asked for. Beyond whether a bridge can be edited, the wall
+  // never reports back, so these mirror the wall only as long as nothing else is
+  // driving it.
   const [stone, setStone] = useState(620);
   const [weight, setWeight] = useState(0.6);
   const [spot, setSpot] = useState(0.5);
@@ -164,12 +180,21 @@ const LoadPathControls = () => {
   // someone else, and then the pad shows no arrow rather than a wrong one.
   const [knownSpot, setKnownSpot] = useState(null);
   const [scrub, setScrub] = useState(1);
-  const [editing, setEditing] = useState(false);
   const [brush, setBrush] = useState(1);
   const [erase, setErase] = useState(false);
   const [reveal, setReveal] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [trail, setTrail] = useState([]);
+
+  // Once, not per render: sendMessage may change identity and every reply re-renders.
+  const greeted = useRef(false);
+  useEffect(() => {
+    if (greeted.current) return undefined;
+    greeted.current = true;
+    const hello = () => Promise.resolve(sendMessage(msg.hello())).catch(() => undefined);
+    hello();
+    const retry = setTimeout(hello, 1500);
+    return () => clearTimeout(retry);
+  }, [sendMessage]);
 
   const padRef = useRef(null);
   const pending = useRef(null);
@@ -251,6 +276,13 @@ const LoadPathControls = () => {
     [sendMessage]
   );
 
+  // A run this phone starts leaves nothing to edit until it finishes growing.
+  const startedRun = useCallback(() => {
+    setCanEdit(false);
+    setEditing(false);
+    setTrail([]);
+  }, []);
+
   // A lesson sets the stone, the weight and the spot on the wall; move this
   // phone's sliders to match, or they would show something the wall isn't using.
   const pickLesson = useCallback(
@@ -259,6 +291,7 @@ const LoadPathControls = () => {
       setWeight(weightFraction(lesson.weightKg));
       setSpot(lesson.column / NUM_ELEM_X);
       setKnownSpot(lesson.column / NUM_ELEM_X);
+      startedRun();
       sendMessage(msg.lesson(lesson.id));
     },
     [sendMessage]
@@ -267,8 +300,9 @@ const LoadPathControls = () => {
   // Grow from exactly what the sliders show.
   const grow = useCallback(() => {
     setKnownSpot(spot);
+    startedRun();
     sendMessage(msg.grow({ stone, weight, spot }));
-  }, [sendMessage, stone, weight, spot]);
+  }, [sendMessage, stone, weight, spot, startedRun]);
 
   const toggleEditor = useCallback(() => {
     const open = !editing;
@@ -392,9 +426,19 @@ const LoadPathControls = () => {
         Same stone as the algorithm had. Paint a bridge on the pad with your finger, join both supports to the weight, and
         see whether yours sags less or holds more.
       </Typography>
-      <Button variant={editing ? "outlined" : "contained"} color="primary" onClick={toggleEditor}>
+      <Button
+        variant={editing ? "outlined" : "contained"}
+        color="primary"
+        onClick={toggleEditor}
+        disabled={canEdit === false}
+      >
         {editing ? "Close the editor" : "Open the editor"}
       </Button>
+      {canEdit === false && (
+        <Typography css={hintStyle} variant="body2">
+          Available once the bridge has finished growing.
+        </Typography>
+      )}
 
       {editing && (
         <>
