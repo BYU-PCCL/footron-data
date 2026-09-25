@@ -67,7 +67,7 @@ function shakeScene(amplitudePx, durationMs) {
 // Below CARD_BASE_W of room they just get narrower (their text wraps); above it
 // the whole card scales up, so on a bigger screen the text grows with it.
 const CARD_BASE_W = 300;
-const CARD_MIN_W = 190;
+const CARD_MIN_W = 230;
 const CARD_MAX_ZOOM = 2.2;
 const CARD_EDGE_GAP = 16 + 14; // window margin + a gap before the bridge
 function fitScene() {
@@ -437,7 +437,10 @@ function startCollapseTest(token, densities, u, loadColumn, materialKg) {
     testWeightKg,
     canvas,
     // Hard when something breaks, a light thud when it holds.
-    effects: { onImpact: (broke, intensity) => shakeScene(broke ? 8 + 18 * intensity : 2 + 5 * intensity, broke ? 520 : 240) },
+    effects: {
+      onImpact: (broke, intensity) => shakeScene(broke ? 8 + 18 * intensity : 2 + 5 * intensity, broke ? 520 : 240),
+      drawOver: (context) => challenge.drawRevealedOver(context),
+    },
   });
   if (!scene.ok) {
     onRunFinished();

@@ -169,6 +169,10 @@ export function buildCollapseScene({ numElemX, numElemY, densities, u, loadColum
     for (const body of rightShards) drawShard(ctx, body);
     drawWeight(ctx, testBall);
     drawCrackFlashes(ctx);
+    // Something the caller wants over the wreck (the editor's revealed algorithm
+    // bridge). It has to be drawn here: this render repaints the whole canvas every
+    // frame, so anything painted on it from outside is gone by the next one.
+    if (effects.drawOver) effects.drawOver(ctx);
   });
   const dust = createDustSystem(render);
 

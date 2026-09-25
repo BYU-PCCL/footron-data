@@ -326,6 +326,12 @@ export function clearDesign() {
   updateReadout();
 }
 
+// Painted over the collapse animation by collapse.js while the visitor's bridge is
+// being tested, so "Reveal algorithm" still shows the algorithm's bridge then.
+export function drawRevealedOver(ctx) {
+  if (host && showGhost) drawGhost(ctx);
+}
+
 export function setRevealed(value) {
   if (!host) return;
   showGhost = value;
