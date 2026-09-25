@@ -6,7 +6,7 @@
 <title>Load Path</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a1729'/%3E%3Cpath d='M2 26V20q14-16 28 0v6h-5v-5q-9-9-18 0v5z' fill='%23cfc3ab'/%3E%3C/svg%3E">
 <style>
-  :root { --ui: 1; --accent: #e6c07b; }
+  :root { --ui: 1; --card: 1; --accent: #e6c07b; }
   *, *::before, *::after { box-sizing: border-box; }
   html, body {
     margin: 0;
@@ -155,9 +155,9 @@
     position: fixed;
     top: 16px;
     right: 16px;
-    width: 292px;
-    padding: 11px 14px 13px;
-    transform: scale(var(--ui));
+    width: 320px;
+    padding: 12px 16px 14px;
+    transform: scale(var(--card));
     transform-origin: top right;
     transition: opacity 0.3s ease;
     /* A notch more transparent than #panel's 0.30: these two cards pack in a
@@ -181,30 +181,29 @@
   #challenge.collapsed .ch-tools,
   #challenge.collapsed #ch-results,
   #challenge.collapsed #ch-verdict,
-  #challenge.collapsed #ch-board,
   #challenge.collapsed .ch-buttons { display: none; }
   #report.hidden { opacity: 0; pointer-events: none; }
   #challenge { z-index: 5; }
   #report .rep-head, #challenge .rep-head { display: flex; justify-content: space-between; align-items: baseline; }
   #report h2, #challenge h2 {
     margin: 0;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 650;
     letter-spacing: 0.2em;
     text-transform: uppercase;
     color: var(--accent);
   }
-  #rep-iter { font-size: 11px; color: #8ea3b8; font-variant-numeric: tabular-nums; }
+  #rep-iter { font-size: 12px; color: #8ea3b8; font-variant-numeric: tabular-nums; }
   #rep-spark { display: block; width: 100%; height: 60px; margin: 8px 0 6px; }
-  .rep-row { display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px; font-size: 11.5px; color: #8ea3b8; }
+  .rep-row { display: flex; justify-content: space-between; align-items: baseline; margin-top: 5px; font-size: 13px; color: #8ea3b8; }
   .rep-row b { font-weight: 500; color: #f1dcae; font-variant-numeric: tabular-nums; }
-  .legend { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #8ea3b8; }
+  .legend { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #8ea3b8; }
   .legend i { flex: 1; height: 6px; border-radius: 3px; }
   #rep-note {
     margin-top: 10px;
     padding-top: 9px;
     border-top: 1px solid rgba(255, 255, 255, 0.09);
-    font-size: 12px;
+    font-size: 13.5px;
     color: #eef2f6;
     min-height: 2.8em;
   }
@@ -217,12 +216,12 @@
     align-items: baseline;
     padding: 3px 0 3px 8px;
     border-left: 2px solid transparent;
-    font-size: 11px;
+    font-size: 12.5px;
     color: #8ea3b8;
     opacity: 0.55;
     transition: opacity 0.25s ease, border-color 0.25s ease;
   }
-  #rep-stages li b { font-weight: 600; color: #cfdbe7; min-width: 62px; }
+  #rep-stages li b { font-weight: 600; color: #cfdbe7; min-width: 70px; }
   #rep-stages.looping li { opacity: 0.85; }
   #rep-stages li.active { opacity: 1; border-left-color: var(--accent); background: rgba(230, 192, 123, 0.08); }
   #rep-stages li.active b { color: var(--accent); }
@@ -231,12 +230,12 @@
   .rep-controls input[type=range] { margin: 0; flex: 1; }
   .rep-controls button, #rep-test {
     font: inherit;
-    font-size: 11px;
+    font-size: 12.5px;
     color: #eef2f6;
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 8px;
-    padding: 4px 9px;
+    padding: 5px 10px;
     cursor: pointer;
   }
   .rep-controls button:disabled, input[type=range]:disabled { opacity: 0.4; cursor: default; }
@@ -247,20 +246,21 @@
   #rep-result { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.09); }
   #rep-result .rep-row { align-items: flex-start; gap: 12px; }
   #rep-result .rep-row b { text-align: right; }
+  #rep-result .rep-row span { white-space: nowrap; }
   #rep-safety.ok { color: #9fe3a6; }
   #rep-safety.warn { color: #ff9a7a; }
 
-  #rep-challenge { width: 100%; margin-top: 8px; font: inherit; font-size: 12px; font-weight: 600; color: #2a1c05;
+  #rep-challenge { width: 100%; margin-top: 8px; font: inherit; font-size: 13.5px; font-weight: 600; color: #2a1c05;
     background: linear-gradient(180deg, #f0cf8c, #d4a24a); border: 0; border-radius: 8px; padding: 7px 9px; cursor: pointer; }
   #rep-challenge:hover { filter: brightness(1.08); }
 
   /* Beat the algorithm */
-  #challenge #ch-used { font-size: 11px; color: #8ea3b8; font-variant-numeric: tabular-nums; }
+  #challenge #ch-used { font-size: 12.5px; color: #8ea3b8; font-variant-numeric: tabular-nums; }
   .ch-bar { height: 6px; margin: 9px 0 8px; border-radius: 3px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
   .ch-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #8a6a33, #e6c07b); }
-  #ch-hint { font-size: 11.5px; color: #cfdbe7; line-height: 1.45; }
+  #ch-hint { font-size: 13px; color: #cfdbe7; line-height: 1.45; }
   .ch-tools { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
-  .ch-tools span { font-size: 11px; color: #8ea3b8; min-width: 48px; text-align: center; }
+  .ch-tools span { font-size: 12.5px; color: #8ea3b8; min-width: 48px; text-align: center; }
   #challenge button {
     font: inherit; font-size: 11px; color: #eef2f6; background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 8px; padding: 4px 9px; cursor: pointer;
@@ -269,27 +269,13 @@
   #challenge button:disabled { opacity: 0.4; cursor: default; }
   #challenge button.on { background: rgba(255, 140, 120, 0.25); border-color: rgba(255, 140, 120, 0.7); }
   #ch-results { margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.09); }
-  .ch-cols, .ch-row { display: grid; grid-template-columns: 1fr 64px 76px; gap: 6px; align-items: baseline; font-size: 11.5px; margin-top: 4px; }
-  .ch-cols { color: #8ea3b8; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; }
+  .ch-cols, .ch-row { display: grid; grid-template-columns: 1fr 70px 84px; gap: 6px; align-items: baseline; font-size: 13px; margin-top: 4px; }
+  .ch-cols { color: #8ea3b8; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
   .ch-cols b, .ch-row b { text-align: right; font-weight: 500; }
   .ch-row span { color: #8ea3b8; }
   .ch-row b { color: #f1dcae; font-variant-numeric: tabular-nums; }
-  #ch-verdict { margin-top: 10px; min-height: 2.9em; font-size: 12px; color: #eef2f6; line-height: 1.45; }
+  #ch-verdict { margin-top: 10px; min-height: 2.9em; font-size: 13.5px; color: #eef2f6; line-height: 1.45; }
   #ch-verdict.win { color: #9fe3a6; font-weight: 600; }
-  #ch-board { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.09); }
-  #ch-board .ch-cols { grid-template-columns: 1fr; }
-  #ch-board-list { margin-top: 4px; }
-  #ch-board-list button {
-    display: flex; width: 100%; justify-content: space-between; align-items: baseline; gap: 8px; margin-top: 3px;
-    font: inherit; font-size: 11.5px; text-align: left; color: #eef2f6; background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.10); border-radius: 8px; padding: 4px 8px; cursor: pointer;
-  }
-  #ch-board-list button:hover { background: rgba(255, 255, 255, 0.14); }
-  #ch-board-list .rank { color: var(--accent); font-weight: 600; min-width: 22px; }
-  #ch-board-list .kg { flex: 1; font-variant-numeric: tabular-nums; }
-  #ch-board-list .sag { color: #8ea3b8; font-size: 10.5px; }
-  #ch-board-empty { font-size: 11px; color: #8ea3b8; margin-top: 4px; }
-  #ch-save { flex: 1; }
   .ch-buttons { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
   .ch-buttons #ch-test { flex: 1; }
 
@@ -309,7 +295,6 @@
   .wall .weight-row, .wall .control, .wall .lessons #lesson-chips, .wall #collapse,
   .wall .rep-controls, .wall #rep-test, .wall #rep-challenge,
   .wall #challenge .ch-tools, .wall #challenge .ch-buttons, .wall #ch-hint { display: none !important; }
-  .wall #ch-board-list button { pointer-events: none; }
   #attract {
     position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 20;
     padding: 10px 22px; border-radius: 999px; font-size: 15px; letter-spacing: 0.06em; color: #eef2f6;
@@ -418,13 +403,6 @@
     <div class="ch-row"><span>Holds up to</span><b id="ch-you-hold">—</b><b id="ch-alg-hold"></b></div>
   </div>
   <div id="ch-verdict"></div>
-  <div id="ch-board">
-    <div class="ch-cols"><span id="ch-board-title">Best for this setup</span><b></b><b></b></div>
-    <div id="ch-board-list"></div>
-  </div>
-  <div class="ch-buttons">
-    <button id="ch-save" disabled>Save my bridge</button>
-  </div>
   <div class="ch-buttons">
     <button id="ch-reveal">Reveal algorithm</button>
     <button id="ch-test">Test my bridge</button>

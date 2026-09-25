@@ -10,7 +10,6 @@ import { computeElementWork } from "./sensitivity.js";
 import { renderDensities, renderDeformed, normalizeHeat } from "./render.js";
 import { loadCapacityKg } from "./failure.js";
 import { MAX_MATERIAL_KG } from "./units.js";
-import { setupKey, encodeDesign, decodeDesign, loadBoard, addResult } from "./storage.js";
 import { createDesign, countCells, budgetCells, paintBrush, toDensities, supportsConnected, connectionStatus, connectionHint, nearbyRequiredCells } from "./design.js";
 
 const $ = (id) => document.getElementById(id);
@@ -213,7 +212,6 @@ function updateReadout() {
     verdict.className = stiffer ? "win" : "";
   }
   $("ch-test").disabled = !(result && result.connected) && !testing;
-  $("ch-save").disabled = !(result && result.connected);
 }
 
 // Solve the visitor's bridge with the same model the optimizer used.
@@ -316,73 +314,6 @@ function setTesting(value) {
   updateReadout();
 }
 
-// localStorage can throw just by being touched (blocked site data), so it is only
-// handed to storage.js, which guards every call.
-function browserStorage() {
-  try {
-    return window.localStorage;
-  } catch {
-    return { getItem: () => null, setItem: () => {} };
-  }
-}
-
-function boardKey() {
-  return setupKey(host.materialKg, host.loadColumn);
-}
-
-// The best bridges saved for this exact stone and spot; click one to load it.
-function renderBoard() {
-  const list = $("ch-board-list");
-  list.replaceChildren();
-  const board = loadBoard(browserStorage(), boardKey());
-  $("ch-board-title").textContent = `Best for ${host.materialKg} kg at this spot`;
-  if (board.length === 0) {
-    const empty = document.createElement("div");
-    empty.id = "ch-board-empty";
-    empty.textContent = "Nothing saved yet. Build a bridge and save it.";
-    list.appendChild(empty);
-    return;
-  }
-  board.forEach((entry, i) => {
-    const button = document.createElement("button");
-    button.title = "Load this bridge into the editor";
-    button.innerHTML = '<span class="rank"></span><span class="kg"></span><span class="sag"></span>';
-    button.children[0].textContent = `#${i + 1}`;
-    button.children[1].textContent = `${Math.round(entry.capacityKg).toLocaleString()} kg`;
-    button.children[2].textContent = `sag ${entry.sagPct}%`;
-    button.addEventListener("click", () => loadSaved(entry));
-    list.appendChild(button);
-  });
-}
-
-function loadSaved(entry) {
-  const loaded = decodeDesign(entry.cells, host.numElemX, host.numElemY);
-  if (!loaded || testing) return;
-  design = loaded;
-  scheduleEvaluate();
-  redraw();
-  updateReadout();
-}
-
-function saveCurrent() {
-  if (!result || !result.connected) return;
-  const { board, rank } = addResult(browserStorage(), boardKey(), {
-    capacityKg: result.capacity,
-    sagPct: Math.round((result.sag / host.evenSpreadCompliance) * 100),
-    cells: encodeDesign(design),
-    when: Date.now(),
-  });
-  renderBoard();
-  const verdict = $("ch-verdict");
-  verdict.className = rank === 1 ? "win" : "";
-  verdict.textContent =
-    rank === null
-      ? `Saved, but the ${board.length} best bridges for this setup all hold more.`
-      : rank === 1
-        ? "Saved as the best bridge for this setup!"
-        : `Saved as #${rank} for this setup.`;
-}
-
 // --- The editor's actions. The buttons and the phone (footron.js) both call
 // these, so a phone can do exactly what the buttons on the card do. ---
 
@@ -412,16 +343,6 @@ export function testMine() {
     setTesting(true);
     host.runTest(result.densities, result.u);
   }
-}
-
-export function saveMine() {
-  if (host) saveCurrent();
-}
-
-export function loadBest(rank) {
-  if (!host) return;
-  const entry = loadBoard(browserStorage(), boardKey())[rank - 1];
-  if (entry) loadSaved(entry);
 }
 
 export function setBrushSize(size) {
@@ -478,7 +399,6 @@ function bindOnce() {
   $("ch-clear").addEventListener("click", clearDesign);
   $("ch-reveal").addEventListener("click", () => setRevealed(!showGhost));
   $("ch-test").addEventListener("click", testMine);
-  $("ch-save").addEventListener("click", saveCurrent);
   $("ch-collapse").addEventListener("click", (event) => {
     const collapsed = card.classList.toggle("collapsed");
     event.currentTarget.textContent = collapsed ? "+" : "–";
@@ -526,7 +446,6 @@ export function enterChallenge(hostContext) {
     canvas.style.touchAction = "none";
   }
   card.hidden = false;
-  renderBoard();
   redraw();
   updateReadout();
 }

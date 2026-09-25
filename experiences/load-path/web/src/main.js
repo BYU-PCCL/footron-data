@@ -67,6 +67,10 @@ function shakeScene(amplitudePx, durationMs) {
 // one is still visible and still clickable.
 function fitScene() {
   document.documentElement.style.setProperty("--ui", String(Math.min(1.3, Math.max(0.85, window.innerWidth / 1700))));
+  // The two cards on the right carry the numbers a visitor reads across a room, so
+  // they scale up further than the left panel. The height term keeps the tallest
+  // one (the finished report) from running off a short window.
+  document.documentElement.style.setProperty("--card", String(Math.min(2, Math.max(1, Math.min(window.innerWidth / 1400, window.innerHeight / 640)))));
   sceneScale = Math.min(window.innerWidth / SCENE_W, window.innerHeight / SCENE_H);
   applySceneTransform(0, 0);
 }
@@ -679,6 +683,4 @@ phone = connectFootron({
   onClear: challenge.clearDesign,
   onReveal: challenge.setRevealed,
   onTestMine: challenge.testMine,
-  onSave: challenge.saveMine,
-  onLoadBest: challenge.loadBest,
 });
