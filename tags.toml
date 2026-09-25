@@ -32,11 +32,9 @@ experiences = [
   "learning-to-walk",
   "spacetime-sandbox",
   "red-black-tree",
-  "scriptures",
   "skip-list",
   "bloom-filter",
   "color-codes",
-  "bookofmormon",
   "load-path"
 ]
 
