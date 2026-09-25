@@ -128,6 +128,16 @@ const padLabelStyle = css`
 `;
 
 const TRAIL_LIMIT = 400; // how many recent stroke points the pad remembers to draw
+const PAD_UNITS = 200; // the pad's drawing space is 200 wide by 100 tall
+
+// Distance from point p to the segment a-b, all in pad units.
+const distanceToSegment = (p, a, b) => {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const lengthSquared = dx * dx + dy * dy;
+  const t = lengthSquared === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lengthSquared));
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+};
 
 // The two bridge supports and the weight's arrow, as SVG in the pad's own 0..1 space.
 const PadGuides = ({ spot }) => {
@@ -235,17 +245,38 @@ const LoadPathControls = () => {
 
   const remember = useCallback((p) => setTrail((prev) => [...prev.slice(-(TRAIL_LIMIT - 1)), p]), []);
 
+  // The dots are only a memory of where the finger has been, so erasing has to
+  // take them out, as it takes the stone out on the wall; otherwise the pad shows
+  // a bridge that is no longer there. `from` to `to` is the stretch of finger travel
+  // since the last sample, so a fast stroke leaves no dots behind. The reach is the
+  // wall's brush radius, (brush + 0.5) grid cells, in pad units.
+  const lastPoint = useRef(null);
+  const eraseTrail = useCallback(
+    (from, to) => {
+      const reach = (brush + 0.5) * (PAD_UNITS / NUM_ELEM_X);
+      const a = { x: from.x * PAD_UNITS, y: from.y * (PAD_UNITS / 2) };
+      const b = { x: to.x * PAD_UNITS, y: to.y * (PAD_UNITS / 2) };
+      setTrail((prev) => {
+        const kept = prev.filter((dot) => distanceToSegment({ x: dot.x * PAD_UNITS, y: dot.y * (PAD_UNITS / 2) }, a, b) > reach);
+        return kept.length === prev.length ? prev : kept;
+      });
+    },
+    [brush]
+  );
+
   const onPointerDown = useCallback(
     (e) => {
       padRef.current?.setPointerCapture?.(e.pointerId);
       const p = at(e);
       if (!p) return;
       setDragging(true);
-      remember(p);
+      lastPoint.current = p;
+      if (erase) eraseTrail(p, p);
+      else remember(p);
       // The first point goes straight away, so a plain tap paints too.
       sendMessage(msg.paint(p.x, p.y, erase));
     },
-    [at, erase, remember, sendMessage]
+    [at, erase, eraseTrail, remember, sendMessage]
   );
 
   const onPointerMove = useCallback(
@@ -253,10 +284,12 @@ const LoadPathControls = () => {
       if (!dragging) return;
       const p = at(e);
       if (!p) return;
-      remember(p);
+      if (erase) eraseTrail(lastPoint.current || p, p);
+      else remember(p);
+      lastPoint.current = p;
       pending.current = { ...p, erase };
     },
-    [at, dragging, erase, remember]
+    [at, dragging, erase, eraseTrail, remember]
   );
 
   const onPointerUp = useCallback(() => {
@@ -316,8 +349,11 @@ const LoadPathControls = () => {
     sendMessage(msg.yourTurn(open));
   }, [editing, sendMessage]);
 
-  const clearPad = useCallback(() => {
+  // Start the bridge over: the wall drops any test it is running and empties the
+  // grid (see clearDesign in src/challenge.js), and the pad forgets its dots.
+  const restart = useCallback(() => {
     setTrail([]);
+    setErase(false);
     sendMessage(msg.clear());
   }, [sendMessage]);
 
@@ -477,10 +513,10 @@ const LoadPathControls = () => {
               Bigger
             </Button>
             <Chip label="Erase" clickable color={erase ? "secondary" : "default"} onClick={() => setErase((prev) => !prev)} />
-            <Button variant="outlined" color="primary" size="small" onClick={clearPad}>
-              Clear
-            </Button>
           </div>
+          <Button variant="outlined" color="secondary" fullWidth onClick={restart}>
+            Restart
+          </Button>
           <div css={rowStyle}>
             <Button variant="contained" color="primary" onClick={() => sendMessage(msg.testMine())}>
               Test my bridge
