@@ -31,7 +31,7 @@
 //                                                        fractions of the design area (y from the top)
 //   { type: "stroke", value: "end" }                     the finger lifted
 //   { type: "brush", value: <0..4> }     { type: "clear" }     { type: "reveal", value: <bool> }
-//   { type: "testMine" }   { type: "save" }   { type: "loadBest", value: <1..5> }
+//   { type: "testMine" }
 //
 // Anything unrecognised, out of range, or the wrong type is ignored, and every
 // number is clamped here rather than trusted: the phone UI keeps its sliders in
@@ -45,7 +45,6 @@ export const RANGES = {
 
 export const LESSON_IDS = ["meet", "heavy", "spot", "stiff"];
 export const BRUSH_RANGE = [0, 4];
-export const BOARD_RANGE = [1, 5];
 
 // Where a 0..1 position along the span lands, as a load column. Kept clear of the
 // two supports: a weight AT a support is no bridge at all. The phone draws its
@@ -151,15 +150,6 @@ export function dispatchControlMessage(body, h) {
     case "testMine":
       h.onActivity();
       h.onTestMine();
-      return true;
-    case "save":
-      h.onActivity();
-      h.onSave();
-      return true;
-    case "loadBest":
-      if (!finite(body.value)) return false;
-      h.onActivity();
-      h.onLoadBest(Math.round(clamp(body.value, BOARD_RANGE[0], BOARD_RANGE[1])));
       return true;
     default:
       return false;

@@ -2,14 +2,13 @@
   "id": "load-path",
   "type": "web",
   "title": "Load Path",
-  "description": "Real structural engineering, not a demo of it. Pick how much stone you're allowed, drop a load onto the span, and a genuine topology optimizer -- the SIMP method engineers use to shape real trusses -- grows the most efficient shape it can find, live on the wall. Then a physics-based collapse test, using real stone tension, buckling, and crushing limits, honestly decides whether it holds under a real test weight. Guided lessons explain why a shape formed the way it did, a leaderboard tracks the lightest design that still holds, and \"beat the algorithm\" lets you paint a bridge by hand against the machine.",
+  "description": "Real structural engineering, not a demo of it. Pick how much stone you're allowed, drop a load onto the span, and a genuine topology optimizer -- the SIMP method engineers use to shape real trusses -- grows the most efficient shape it can find, live on the wall. Then a physics-based collapse test, using real stone tension, buckling, and crushing limits, honestly decides whether it holds under a real test weight. Guided lessons explain why a shape formed the way it did, and \"beat the algorithm\" lets you paint a bridge by hand against the machine.",
   "action_hints": [
     "pick a stone budget and drop the weight onto the span",
     "watch the truss grow live as the optimizer carves away what it doesn't need",
     "crank the test weight up until something breaks, and see exactly why",
     "try a guided lesson to see how the shape depends on where the load falls",
-    "paint your own bridge by hand and see if you can beat the algorithm",
-    "check the leaderboard for the lightest design that still holds"
+    "paint your own bridge by hand and see if you can beat the algorithm"
   ],
   "layout": "full",
   "lifetime": 360,

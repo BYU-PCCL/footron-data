@@ -34,7 +34,6 @@ import {
   RANGES,
   LESSONS,
   BRUSH_RANGE,
-  BOARD_SIZE,
   NUM_ELEM_X,
   DRAG_HZ,
   spotToColumn,
@@ -158,16 +157,22 @@ const LoadPathControls = () => {
   // in src/main.js). null until it says: the button stays usable until told
   // otherwise, so a wall that never answers costs the greying-out and nothing else.
   const [canEdit, setCanEdit] = useState(null);
-  const { sendMessage } = useMessaging((message) => {
+  // Two things about useMessaging's callback matter here. The hook re-registers it
+  // whenever its identity changes, so it must be stable (useCallback, not an inline
+  // arrow that is new every render). And every registration REPLAYS the recent
+  // message history, so handling a message has to be idempotent: `setTrail([])` is a
+  // new array each time, which re-rendered, re-registered, replayed, and looped.
+  const onWallMessage = useCallback((message) => {
     if (!message || message.type !== "state" || typeof message.canEdit !== "boolean") return;
     setCanEdit(message.canEdit);
     // A new bridge started growing under an open editor: the wall has already left
     // it, so close this end rather than leave a pad that paints nothing.
     if (!message.canEdit) {
       setEditing(false);
-      setTrail([]);
+      setTrail((prev) => (prev.length ? [] : prev));
     }
-  });
+  }, []);
+  const { sendMessage } = useMessaging(onWallMessage);
 
   // What THIS phone has asked for. Beyond whether a bridge can be edited, the wall
   // never reports back, so these mirror the wall only as long as nothing else is
@@ -280,7 +285,7 @@ const LoadPathControls = () => {
   const startedRun = useCallback(() => {
     setCanEdit(false);
     setEditing(false);
-    setTrail([]);
+    setTrail((prev) => (prev.length ? [] : prev));
   }, []);
 
   // A lesson sets the stone, the weight and the spot on the wall; move this
@@ -480,18 +485,9 @@ const LoadPathControls = () => {
             <Button variant="contained" color="primary" onClick={() => sendMessage(msg.testMine())}>
               Test my bridge
             </Button>
-            <Button variant="outlined" color="primary" onClick={() => sendMessage(msg.save())}>
-              Save it
-            </Button>
             <Button variant="outlined" color="primary" onClick={toggleReveal}>
               {reveal ? "Hide algorithm" : "Reveal algorithm"}
             </Button>
-          </div>
-          <div css={sectionTitleStyle}>Best bridges for this setup</div>
-          <div css={chipsStyle}>
-            {Array.from({ length: BOARD_SIZE }, (_, i) => (
-              <Chip key={i} label={`#${i + 1}`} clickable onClick={() => sendMessage(msg.loadBest(i + 1))} />
-            ))}
           </div>
         </>
       )}

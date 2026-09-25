@@ -26,7 +26,6 @@ export const LESSONS = [
 ];
 
 export const BRUSH_RANGE = [0, 4];
-export const BOARD_SIZE = 5;
 export const NUM_ELEM_X = 60; // the wall's grid, only used to place the pad's weight arrow
 export const DRAG_HZ = 20; // paint messages per second while a finger is down
 
@@ -78,6 +77,4 @@ export const msg = {
   clear: () => ({ type: "clear" }),
   reveal: (value) => ({ type: "reveal", value }),
   testMine: () => ({ type: "testMine" }),
-  save: () => ({ type: "save" }),
-  loadBest: (rank) => ({ type: "loadBest", value: rank }),
 };
