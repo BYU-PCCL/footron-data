@@ -6,11 +6,15 @@
 // experience by scripts/package-footron.mjs) which talks to this page over a
 // WebSocket. This module is the receiving end.
 //
-// Messages go phone -> wall only, as in the other exhibits on the wall, so the
-// wall must cope with any message arriving in any state (a "test" before
-// anything has grown, say) by quietly ignoring it. Protocol (keep in sync with
-// controls/lib/protocol.js — test.js checks the two agree):
+// Almost everything goes phone -> wall, so the wall must cope with any message
+// arriving in any state (a "test" before anything has grown, say) by quietly
+// ignoring it. The one thing that goes back is a state report, so the phone can
+// grey out what the wall would ignore anyway (see `send` below). Protocol (keep
+// in sync with controls/lib/protocol.js — test.js checks the two agree):
 //
+//   { type: "hello" }                                    a phone just opened: answer with the state
+//   wall -> phone: { type: "state", canEdit: <bool> }   can a bridge be edited yet? (false until one
+//                                                        has finished growing, and while it grows)
 //   { type: "setup", key: "stone",  value: <kg> }        how much stone
 //   { type: "setup", key: "weight", value: <0..1> }      test weight, along its log slider
 //   { type: "setup", key: "spot",   value: <0..1> }      where the weight lands, along the span
@@ -70,6 +74,10 @@ export function dispatchControlMessage(body, h) {
   if (!body || typeof body !== "object") return false;
 
   switch (body.type) {
+    case "hello":
+      // Not activity: a phone merely opening must not end the unattended loop.
+      h.onHello();
+      return true;
     case "setup": {
       const range = RANGES[body.key];
       if (!range || !finite(body.value)) return false;
@@ -159,25 +167,38 @@ export function dispatchControlMessage(body, h) {
 }
 
 // Connects to the wall's messaging server and routes everything it sends.
-// Returns a teardown function. Safe off the wall: it no-ops, and it no-ops again
+// Returns { send, close }. Safe off the wall: it no-ops, and it no-ops again
 // if the vendored client failed to load, because a missing script must not take
 // the exhibit down with it.
 export function connectFootron(handlers, opts) {
+  const off = { send() {}, close() {} };
   const enabled = opts && opts.enabled !== undefined ? opts.enabled : footronEnabled();
-  if (!enabled) return () => {};
+  if (!enabled) return off;
 
   const lib = typeof globalThis !== "undefined" ? globalThis.FootronMessaging : null;
   if (!lib || typeof lib.Messaging !== "function") {
     console.warn("[footron] messaging client not loaded; phone controls are off");
-    return () => {};
+    return off;
   }
 
   const client = new lib.Messaging();
   const onMessage = (body) => dispatchControlMessage(body, handlers);
   client.addMessageListener(onMessage);
   client.mount();
-  return () => {
-    client.removeMessageListener(onMessage);
-    client.unmount();
+  return {
+    // Tell the phone something. With no phone connected yet there is nobody to
+    // hear it, so a failure is expected and swallowed.
+    send(message) {
+      try {
+        const sent = client.sendMessage(message);
+        if (sent && typeof sent.catch === "function") sent.catch(() => {});
+      } catch {
+        // no phone connected
+      }
+    },
+    close() {
+      client.removeMessageListener(onMessage);
+      client.unmount();
+    },
   };
 }
