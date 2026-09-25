@@ -60,18 +60,24 @@ function shakeScene(amplitudePx, durationMs) {
   })();
 }
 
-// The scene always fills the window at full size — it does NOT shrink to make
-// room for the side panels. Instead the panels themselves are see-through
-// (index.html: low background alpha, and pointer-events disabled on their
-// empty space — see the CSS comment there) so a support corner sitting under
-// one is still visible and still clickable.
+// The scene always fills the window at full size; it does not shrink to make
+// room for the side cards. The cards go in the empty strip beside the bridge
+// instead. The scene is centred, so the strip on each side runs from the window
+// edge to the design area's edge, and both cards are given that much room.
+// Below CARD_BASE_W of room they just get narrower (their text wraps); above it
+// the whole card scales up, so on a bigger screen the text grows with it.
+const CARD_BASE_W = 300;
+const CARD_MIN_W = 190;
+const CARD_MAX_ZOOM = 2.2;
+const CARD_EDGE_GAP = 16 + 14; // window margin + a gap before the bridge
 function fitScene() {
-  document.documentElement.style.setProperty("--ui", String(Math.min(1.3, Math.max(0.85, window.innerWidth / 1700))));
-  // The two cards on the right carry the numbers a visitor reads across a room, so
-  // they scale up further than the left panel. The height term keeps the tallest
-  // one (the finished report) from running off a short window.
-  document.documentElement.style.setProperty("--card", String(Math.min(2, Math.max(1, Math.min(window.innerWidth / 1400, window.innerHeight / 640)))));
   sceneScale = Math.min(window.innerWidth / SCENE_W, window.innerHeight / SCENE_H);
+  const strip = (window.innerWidth - SCENE_W * sceneScale) / 2 + DOMAIN.x * sceneScale;
+  const room = Math.max(CARD_MIN_W, strip - CARD_EDGE_GAP);
+  const zoom = Math.min(CARD_MAX_ZOOM, Math.max(1, room / CARD_BASE_W));
+  const root = document.documentElement.style;
+  root.setProperty("--card-z", String(zoom));
+  root.setProperty("--card-w", `${room / zoom}px`);
   applySceneTransform(0, 0);
 }
 fitScene();

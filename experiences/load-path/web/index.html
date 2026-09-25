@@ -6,7 +6,7 @@
 <title>Load Path</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a1729'/%3E%3Cpath d='M2 26V20q14-16 28 0v6h-5v-5q-9-9-18 0v5z' fill='%23cfc3ab'/%3E%3C/svg%3E">
 <style>
-  :root { --ui: 1; --card: 1; --accent: #e6c07b; }
+  :root { --card-w: 300px; --card-z: 1; --accent: #e6c07b; }
   *, *::before, *::after { box-sizing: border-box; }
   html, body {
     margin: 0;
@@ -31,37 +31,24 @@
   #scene canvas { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; display: block; }
   #overlay { pointer-events: none; }
 
-  /* See-through by design: the design area runs nearly edge to edge (a
-     support corner can sit right under this card on a wide window), so the
-     card must show what's behind it rather than cover it. Low background
-     alpha does the seeing; `pointer-events: none` on the card itself does the
-     clicking-through, with `auto` restored below on every actual control so
-     buttons, sliders and the drag handle still work exactly like a normal,
-     solid panel. Text stays fully opaque — only the background is faint —
-     and a text-shadow keeps it readable over whatever bright part of the
-     scene shows through (the moon, pale stone). */
+  /* The two side cards (this one and the growth report / challenge editor on the
+     right) are solid, and sized to sit in the empty strip beside the bridge
+     instead of over it: main.js measures that strip and sets --card-w (the
+     layout width) and --card-z (the scale, so text grows with a bigger screen).
+     Layout width times scale is the room the strip leaves. */
   #panel {
     position: fixed;
     top: 16px;
     left: 16px;
-    width: 276px;
-    padding: 11px 14px 13px;
-    transition: opacity 0.3s ease;
-    transform: scale(var(--ui));
+    width: var(--card-w);
+    padding: 12px 16px 14px;
+    transform: scale(var(--card-z));
     transform-origin: top left;
-    background: rgba(8, 14, 22, 0.30);
-    backdrop-filter: blur(10px) saturate(130%);
-    -webkit-backdrop-filter: blur(10px) saturate(130%);
+    background: rgba(10, 17, 27, 0.94);
     border: 1px solid rgba(255, 255, 255, 0.10);
     border-radius: 16px;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.30);
-    pointer-events: none;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
   }
-  #panel button, #panel input, #panel #load-handle { pointer-events: auto; }
-  /* While the bridge grows or is tested the panel steps back so it doesn't
-     cover the action; hovering it brings it back. */
-  #panel.busy:not(:hover) { opacity: 0.38; }
   .panel-head { display: flex; align-items: center; justify-content: space-between; }
   .collapse-btn {
     width: 24px;
@@ -83,13 +70,13 @@
   #panel.collapsed .weight-row { margin-bottom: 0; }
   #panel h1 {
     margin: 0;
-    font-size: 15px;
+    font-size: 16.5px;
     font-weight: 650;
     letter-spacing: 0.2em;
     text-transform: uppercase;
     color: var(--accent);
   }
-  #panel .sub { margin: 2px 0 10px; font-size: 11px; color: #8ea3b8; letter-spacing: 0.04em; }
+  #panel .sub { margin: 2px 0 10px; font-size: 12.5px; color: #8ea3b8; letter-spacing: 0.04em; }
 
   .weight-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
   #load-handle {
@@ -104,7 +91,7 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   }
   #load-handle:active { cursor: grabbing; }
-  .weight-row span { font-size: 12.5px; color: #cfdbe7; line-height: 1.35; }
+  .weight-row span { font-size: 13.5px; color: #cfdbe7; line-height: 1.35; }
 
   #drag-ghost {
     position: fixed;
@@ -120,13 +107,13 @@
   .control { display: block; margin: 10px 0 0; }
   .control .head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
   .control .name {
-    font-size: 10px;
+    font-size: 11px;
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: #8ea3b8;
     flex-shrink: 0;
   }
-  .control output { font-size: 12px; color: #f1dcae; text-align: right; font-variant-numeric: tabular-nums; }
+  .control output { font-size: 13px; color: #f1dcae; text-align: right; font-variant-numeric: tabular-nums; }
 
   input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 20px; margin: 4px 0 0; background: transparent; }
   input[type=range]::-webkit-slider-runnable-track {
@@ -147,34 +134,22 @@
   input[type=range]::-moz-range-track { height: 4px; border-radius: 2px; background: linear-gradient(90deg, #8a6a33, #e6c07b); }
   input[type=range]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: #fff4dc; border: 2px solid #b8893f; }
 
-  /* Growth report / challenge editor: live numbers, top right. See-through
-     for the same reason as #panel above (comment there has the full story):
-     low background alpha to show what's behind, pointer-events disabled on
-     the card and restored on every actual control below. */
+  /* Growth report / challenge editor: live numbers, top right. Solid, and sized
+     to the strip beside the bridge like #panel above. */
   #report, #challenge {
     position: fixed;
     top: 16px;
     right: 16px;
-    width: 320px;
+    width: var(--card-w);
     padding: 12px 16px 14px;
-    transform: scale(var(--card));
+    transform: scale(var(--card-z));
     transform-origin: top right;
     transition: opacity 0.3s ease;
-    /* A notch more transparent than #panel's 0.30: these two cards pack in a
-       chart, a stage list, a legend and result rows, so they naturally have
-       less open space showing the scene through -- a slightly lower alpha
-       here is what makes them READ as equally see-through, not the same
-       number. */
-    background: rgba(8, 14, 22, 0.20);
-    backdrop-filter: blur(8px) saturate(130%);
-    -webkit-backdrop-filter: blur(8px) saturate(130%);
+    background: rgba(10, 17, 27, 0.94);
     border: 1px solid rgba(255, 255, 255, 0.10);
     border-radius: 16px;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.30);
-    pointer-events: none;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
   }
-  #report button, #report input, #challenge button, #challenge input { pointer-events: auto; }
   .rep-head-right { display: flex; align-items: center; gap: 8px; }
   #challenge.collapsed .ch-bar,
   #challenge.collapsed #ch-hint,
@@ -280,15 +255,15 @@
   .ch-buttons #ch-test { flex: 1; }
 
   .lessons { margin-top: 12px; }
-  .lessons .name { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: #8ea3b8; }
+  .lessons .name { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #8ea3b8; }
   #lesson-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
   #lesson-chips button {
-    font: inherit; font-size: 11px; color: #eef2f6; background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 999px; padding: 4px 10px; cursor: pointer;
+    font: inherit; font-size: 12.5px; color: #eef2f6; background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 999px; padding: 5px 11px; cursor: pointer;
   }
   #lesson-chips button:hover { background: rgba(255, 255, 255, 0.16); }
   #lesson-chips button.on { color: #2a1c05; background: linear-gradient(180deg, #f0cf8c, #d4a24a); border-color: transparent; font-weight: 600; }
-  #lesson-text { margin-top: 8px; font-size: 11.5px; line-height: 1.5; color: #cfdbe7; }
+  #lesson-text { margin-top: 8px; font-size: 13px; line-height: 1.5; color: #cfdbe7; }
   #lesson-text b { display: block; color: var(--accent); font-weight: 600; margin-bottom: 2px; }
 
   /* On the wall nothing can be touched: hide what only a pointer could use. */
@@ -308,7 +283,7 @@
     margin-top: 14px;
     padding-top: 11px;
     border-top: 1px solid rgba(255, 255, 255, 0.09);
-    font-size: 12.5px;
+    font-size: 13.5px;
     color: #eef2f6;
     min-height: 2.9em;
   }
