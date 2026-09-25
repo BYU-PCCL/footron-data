@@ -303,8 +303,35 @@ function Beats(){
 
 Beats.prototype.add = function(dur, cap, tick, o){
   o = o || {};
-  this.list.push({ dur: dur, cap: cap, tick: tick, enter: o.enter, exit: o.exit, hot: o.hot });
+  this.list.push({ dur: dur, cap: cap, tick: tick, enter: o.enter, exit: o.exit,
+                   hot: o.hot, mark: o.mark });
   return this;
+};
+
+/*
+ * Landmarks, for `?at=<name>`.
+ *
+ * A scene whose beat list is a fixed length can be seeked into with `?t=`, in
+ * seconds. A scene whose beat list depends on its data cannot: the same `?t=`
+ * lands in a different place for every seed. Such a scene names the moments
+ * worth looking at instead, and the shell seeks to them by name.
+ *
+ * Purely additive -- a scene that names no marks behaves exactly as before.
+ * Added for `ghost-writer` and `birthday-collision` and carried back here so
+ * the copies of this file stay one file.
+ */
+Beats.prototype.markIndex = function(name){
+  for (var i = 0; i < this.list.length; i++){
+    if (this.list[i].mark === name) return i;
+  }
+  return -1;
+};
+
+/* Seconds from the start of the run to the start of beat `i`. */
+Beats.prototype.timeOf = function(i){
+  var t = 0;
+  for (var j = 0; j < i && j < this.list.length; j++) t += this.list[j].dur;
+  return t;
 };
 
 Beats.prototype.rewind = function(){
