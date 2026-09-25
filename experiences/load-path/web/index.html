@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Load Path</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a1729'/%3E%3Cpath d='M2 26V20q14-16 28 0v6h-5v-5q-9-9-18 0v5z' fill='%23cfc3ab'/%3E%3C/svg%3E">
+<style>
+  :root { --ui: 1; --accent: #e6c07b; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    background: #04080f;
+    color: #eef2f6;
+    font: 13px/1.4 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* The fixed 1920x1080 scene, scaled uniformly to fit by main.js. */
+  #scene {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: 1920px;
+    height: 1080px;
+    transform-origin: center;
+  }
+  #scene canvas { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; display: block; }
+  #overlay { pointer-events: none; }
+
+  /* See-through by design: the design area runs nearly edge to edge (a
+     support corner can sit right under this card on a wide window), so the
+     card must show what's behind it rather than cover it. Low background
+     alpha does the seeing; `pointer-events: none` on the card itself does the
+     clicking-through, with `auto` restored below on every actual control so
+     buttons, sliders and the drag handle still work exactly like a normal,
+     solid panel. Text stays fully opaque — only the background is faint —
+     and a text-shadow keeps it readable over whatever bright part of the
+     scene shows through (the moon, pale stone). */
+  #panel {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    width: 276px;
+    padding: 11px 14px 13px;
+    transition: opacity 0.3s ease;
+    transform: scale(var(--ui));
+    transform-origin: top left;
+    background: rgba(8, 14, 22, 0.30);
+    backdrop-filter: blur(10px) saturate(130%);
+    -webkit-backdrop-filter: blur(10px) saturate(130%);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 16px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.30);
+    pointer-events: none;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  }
+  #panel button, #panel input, #panel #load-handle { pointer-events: auto; }
+  /* While the bridge grows or is tested the panel steps back so it doesn't
+     cover the action; hovering it brings it back. */
+  #panel.busy:not(:hover) { opacity: 0.38; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; }
+  .collapse-btn {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    line-height: 1;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #cfdbe7;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    flex-shrink: 0;
+  }
+  #panel.collapsed .sub,
+  #panel.collapsed .control,
+  #panel.collapsed .lessons,
+  #panel.collapsed #message,
+  #panel.collapsed .weight-row span { display: none; }
+  #panel.collapsed .weight-row { margin-bottom: 0; }
+  #panel h1 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 650;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  #panel .sub { margin: 2px 0 10px; font-size: 11px; color: #8ea3b8; letter-spacing: 0.04em; }
+
+  .weight-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  #load-handle {
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    cursor: grab;
+    touch-action: none;
+    background: radial-gradient(circle at 34% 30%, #f6dc9d, #c08a3a 48%, #4a3010);
+    border: 2px solid rgba(40, 24, 6, 0.8);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+  #load-handle:active { cursor: grabbing; }
+  .weight-row span { font-size: 12.5px; color: #cfdbe7; line-height: 1.35; }
+
+  #drag-ghost {
+    position: fixed;
+    z-index: 50;
+    pointer-events: none;
+    border-radius: 50%;
+    background: radial-gradient(circle at 34% 30%, #f6dc9d, #c08a3a 48%, #4a3010);
+    border: 2px solid rgba(40, 24, 6, 0.8);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.6);
+    transform: scale(1.25);
+  }
+
+  .control { display: block; margin: 10px 0 0; }
+  .control .head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .control .name {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #8ea3b8;
+    flex-shrink: 0;
+  }
+  .control output { font-size: 12px; color: #f1dcae; text-align: right; font-variant-numeric: tabular-nums; }
+
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 20px; margin: 4px 0 0; background: transparent; }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #8a6a33, #e6c07b);
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    margin-top: -6px;
+    border-radius: 50%;
+    background: #fff4dc;
+    border: 2px solid #b8893f;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+  input[type=range]::-moz-range-track { height: 4px; border-radius: 2px; background: linear-gradient(90deg, #8a6a33, #e6c07b); }
+  input[type=range]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: #fff4dc; border: 2px solid #b8893f; }
+
+  /* Growth report / challenge editor: live numbers, top right. See-through
+     for the same reason as #panel above (comment there has the full story):
+     low background alpha to show what's behind, pointer-events disabled on
+     the card and restored on every actual control below. */
+  #report, #challenge {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 292px;
+    padding: 11px 14px 13px;
+    transform: scale(var(--ui));
+    transform-origin: top right;
+    transition: opacity 0.3s ease;
+    /* A notch more transparent than #panel's 0.30: these two cards pack in a
+       chart, a stage list, a legend and result rows, so they naturally have
+       less open space showing the scene through -- a slightly lower alpha
+       here is what makes them READ as equally see-through, not the same
+       number. */
+    background: rgba(8, 14, 22, 0.20);
+    backdrop-filter: blur(8px) saturate(130%);
+    -webkit-backdrop-filter: blur(8px) saturate(130%);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 16px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.30);
+    pointer-events: none;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  }
+  #report button, #report input, #challenge button, #challenge input { pointer-events: auto; }
+  .rep-head-right { display: flex; align-items: center; gap: 8px; }
+  #challenge.collapsed .ch-bar,
+  #challenge.collapsed #ch-hint,
+  #challenge.collapsed .ch-tools,
+  #challenge.collapsed #ch-results,
+  #challenge.collapsed #ch-verdict,
+  #challenge.collapsed #ch-board,
+  #challenge.collapsed .ch-buttons { display: none; }
+  #report.hidden { opacity: 0; pointer-events: none; }
+  #challenge { z-index: 5; }
+  #report .rep-head, #challenge .rep-head { display: flex; justify-content: space-between; align-items: baseline; }
+  #report h2, #challenge h2 {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 650;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  #rep-iter { font-size: 11px; color: #8ea3b8; font-variant-numeric: tabular-nums; }
+  #rep-spark { display: block; width: 100%; height: 60px; margin: 8px 0 6px; }
+  .rep-row { display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px; font-size: 11.5px; color: #8ea3b8; }
+  .rep-row b { font-weight: 500; color: #f1dcae; font-variant-numeric: tabular-nums; }
+  .legend { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #8ea3b8; }
+  .legend i { flex: 1; height: 6px; border-radius: 3px; }
+  #rep-note {
+    margin-top: 10px;
+    padding-top: 9px;
+    border-top: 1px solid rgba(255, 255, 255, 0.09);
+    font-size: 12px;
+    color: #eef2f6;
+    min-height: 2.8em;
+  }
+
+  /* The optimizer's four steps; the current one lights up. */
+  #rep-stages { list-style: none; margin: 10px 0 0; padding: 0; }
+  #rep-stages li {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    padding: 3px 0 3px 8px;
+    border-left: 2px solid transparent;
+    font-size: 11px;
+    color: #8ea3b8;
+    opacity: 0.55;
+    transition: opacity 0.25s ease, border-color 0.25s ease;
+  }
+  #rep-stages li b { font-weight: 600; color: #cfdbe7; min-width: 62px; }
+  #rep-stages.looping li { opacity: 0.85; }
+  #rep-stages li.active { opacity: 1; border-left-color: var(--accent); background: rgba(230, 192, 123, 0.08); }
+  #rep-stages li.active b { color: var(--accent); }
+
+  .rep-controls { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  .rep-controls input[type=range] { margin: 0; flex: 1; }
+  .rep-controls button, #rep-test {
+    font: inherit;
+    font-size: 11px;
+    color: #eef2f6;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    padding: 4px 9px;
+    cursor: pointer;
+  }
+  .rep-controls button:disabled, input[type=range]:disabled { opacity: 0.4; cursor: default; }
+  .rep-controls button:hover:not(:disabled), #rep-test:hover { background: rgba(255, 255, 255, 0.16); }
+  #rep-test { width: 100%; margin-top: 8px; }
+  [hidden] { display: none !important; }
+
+  #rep-result { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.09); }
+  #rep-result .rep-row { align-items: flex-start; gap: 12px; }
+  #rep-result .rep-row b { text-align: right; }
+  #rep-safety.ok { color: #9fe3a6; }
+  #rep-safety.warn { color: #ff9a7a; }
+
+  #rep-challenge { width: 100%; margin-top: 8px; font: inherit; font-size: 12px; font-weight: 600; color: #2a1c05;
+    background: linear-gradient(180deg, #f0cf8c, #d4a24a); border: 0; border-radius: 8px; padding: 7px 9px; cursor: pointer; }
+  #rep-challenge:hover { filter: brightness(1.08); }
+
+  /* Beat the algorithm */
+  #challenge #ch-used { font-size: 11px; color: #8ea3b8; font-variant-numeric: tabular-nums; }
+  .ch-bar { height: 6px; margin: 9px 0 8px; border-radius: 3px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+  .ch-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #8a6a33, #e6c07b); }
+  #ch-hint { font-size: 11.5px; color: #cfdbe7; line-height: 1.45; }
+  .ch-tools { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+  .ch-tools span { font-size: 11px; color: #8ea3b8; min-width: 48px; text-align: center; }
+  #challenge button {
+    font: inherit; font-size: 11px; color: #eef2f6; background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 8px; padding: 4px 9px; cursor: pointer;
+  }
+  #challenge button:hover:not(:disabled) { background: rgba(255, 255, 255, 0.16); }
+  #challenge button:disabled { opacity: 0.4; cursor: default; }
+  #challenge button.on { background: rgba(255, 140, 120, 0.25); border-color: rgba(255, 140, 120, 0.7); }
+  #ch-results { margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.09); }
+  .ch-cols, .ch-row { display: grid; grid-template-columns: 1fr 64px 76px; gap: 6px; align-items: baseline; font-size: 11.5px; margin-top: 4px; }
+  .ch-cols { color: #8ea3b8; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; }
+  .ch-cols b, .ch-row b { text-align: right; font-weight: 500; }
+  .ch-row span { color: #8ea3b8; }
+  .ch-row b { color: #f1dcae; font-variant-numeric: tabular-nums; }
+  #ch-verdict { margin-top: 10px; min-height: 2.9em; font-size: 12px; color: #eef2f6; line-height: 1.45; }
+  #ch-verdict.win { color: #9fe3a6; font-weight: 600; }
+  #ch-board { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.09); }
+  #ch-board .ch-cols { grid-template-columns: 1fr; }
+  #ch-board-list { margin-top: 4px; }
+  #ch-board-list button {
+    display: flex; width: 100%; justify-content: space-between; align-items: baseline; gap: 8px; margin-top: 3px;
+    font: inherit; font-size: 11.5px; text-align: left; color: #eef2f6; background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.10); border-radius: 8px; padding: 4px 8px; cursor: pointer;
+  }
+  #ch-board-list button:hover { background: rgba(255, 255, 255, 0.14); }
+  #ch-board-list .rank { color: var(--accent); font-weight: 600; min-width: 22px; }
+  #ch-board-list .kg { flex: 1; font-variant-numeric: tabular-nums; }
+  #ch-board-list .sag { color: #8ea3b8; font-size: 10.5px; }
+  #ch-board-empty { font-size: 11px; color: #8ea3b8; margin-top: 4px; }
+  #ch-save { flex: 1; }
+  .ch-buttons { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .ch-buttons #ch-test { flex: 1; }
+
+  .lessons { margin-top: 12px; }
+  .lessons .name { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: #8ea3b8; }
+  #lesson-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  #lesson-chips button {
+    font: inherit; font-size: 11px; color: #eef2f6; background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 999px; padding: 4px 10px; cursor: pointer;
+  }
+  #lesson-chips button:hover { background: rgba(255, 255, 255, 0.16); }
+  #lesson-chips button.on { color: #2a1c05; background: linear-gradient(180deg, #f0cf8c, #d4a24a); border-color: transparent; font-weight: 600; }
+  #lesson-text { margin-top: 8px; font-size: 11.5px; line-height: 1.5; color: #cfdbe7; }
+  #lesson-text b { display: block; color: var(--accent); font-weight: 600; margin-bottom: 2px; }
+
+  /* On the wall nothing can be touched: hide what only a pointer could use. */
+  .wall .weight-row, .wall .control, .wall .lessons #lesson-chips, .wall #collapse,
+  .wall .rep-controls, .wall #rep-test, .wall #rep-challenge,
+  .wall #challenge .ch-tools, .wall #challenge .ch-buttons, .wall #ch-hint { display: none !important; }
+  .wall #ch-board-list button { pointer-events: none; }
+  #attract {
+    position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 20;
+    padding: 10px 22px; border-radius: 999px; font-size: 15px; letter-spacing: 0.06em; color: #eef2f6;
+    background: rgba(8, 18, 30, 0.7); border: 1px solid rgba(230, 192, 123, 0.5);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); pointer-events: none;
+    animation: attract-pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes attract-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+
+  #message {
+    margin-top: 14px;
+    padding-top: 11px;
+    border-top: 1px solid rgba(255, 255, 255, 0.09);
+    font-size: 12.5px;
+    color: #eef2f6;
+    min-height: 2.9em;
+  }
+</style>
+</head>
+<body>
+<div id="scene">
+  <canvas id="backdrop" width="1920" height="1080"></canvas>
+  <canvas id="stage" width="1920" height="1080"></canvas>
+  <canvas id="overlay" width="1920" height="1080"></canvas>
+</div>
+
+<div id="panel">
+  <div class="panel-head">
+    <h1>Load Path</h1>
+    <button id="collapse" class="collapse-btn" title="Collapse panel">–</button>
+  </div>
+  <div class="sub">a stone bridge, grown by algorithm</div>
+
+  <div class="weight-row">
+    <div id="load-handle" title="Drag onto the bridge"></div>
+    <span>Drag the weight onto the bridge</span>
+  </div>
+
+  <label class="control">
+    <span class="head"><span class="name">Stone</span><output id="material-label"></output></span>
+    <input type="range" id="material-slider" min="230" max="1560" step="10" value="620">
+  </label>
+  <label class="control">
+    <span class="head"><span class="name">Test weight</span><output id="weight-label"></output></span>
+    <input type="range" id="weight-slider" min="0" max="1000" step="1" value="600">
+  </label>
+
+  <div class="lessons">
+    <span class="name">Lessons</span>
+    <div id="lesson-chips"></div>
+    <div id="lesson-text" hidden><b id="lesson-title"></b><span id="lesson-body"></span></div>
+  </div>
+
+  <div id="message"></div>
+</div>
+
+<div id="report" class="hidden">
+  <div class="rep-head"><h2>Growth</h2><span id="rep-iter">iteration 0</span></div>
+  <canvas id="rep-spark" width="480" height="120"></canvas>
+  <div class="rep-row"><span>Stone used</span><b id="rep-stone"></b></div>
+  <div class="rep-row"><span>Sag under load</span><b id="rep-sag"></b></div>
+
+  <ol id="rep-stages" class="looping">
+    <li data-n="1"><b>1 Solve</b><span>press on it, watch it bend</span></li>
+    <li data-n="2"><b>2 Measure</b><span>find the stone working hardest</span></li>
+    <li data-n="3"><b>3 Smooth</b><span>average with neighbours</span></li>
+    <li data-n="4"><b>4 Move</b><span>shift stone from idle to busy</span></li>
+  </ol>
+  <div class="legend"><span id="rep-legend-lo">idle</span><i id="rep-legend"></i><span id="rep-legend-hi">carrying load</span></div>
+  <div id="rep-note"></div>
+
+  <div class="rep-controls">
+    <button id="rep-play" title="Replay the iterations" disabled>&#9654;</button>
+    <input type="range" id="rep-scrub" min="1" max="1" value="1" disabled>
+    <button id="rep-skip" title="Skip the step-by-step explanation" hidden>Skip</button>
+  </div>
+  <button id="rep-test" hidden>Test it again</button>
+  <button id="rep-challenge" hidden>Your turn: can you beat it?</button>
+
+  <div id="rep-result" hidden>
+    <div class="rep-row"><span>Holds up to</span><b id="rep-holds"></b></div>
+    <div class="rep-row"><span>Limited by</span><b id="rep-limit"></b></div>
+    <div class="rep-row"><span>Efficiency</span><b id="rep-eff"></b></div>
+    <div class="rep-row"><span>Test weight</span><b id="rep-safety"></b></div>
+  </div>
+</div>
+
+<div id="challenge" hidden>
+  <div class="rep-head">
+    <h2>Your turn</h2>
+    <div class="rep-head-right">
+      <span id="ch-used">0 / 0 cells</span>
+      <button id="ch-collapse" class="collapse-btn" title="Collapse panel">–</button>
+    </div>
+  </div>
+  <div class="ch-bar"><i id="ch-bar"></i></div>
+  <div id="ch-hint">Drag over the bridge area to lay stone: the same amount the algorithm had. Join both supports to the weight. Shift-drag erases.</div>
+  <div class="ch-tools">
+    <button id="ch-brush-minus">−</button><span id="ch-brush">brush 2</span><button id="ch-brush-plus">+</button>
+    <button id="ch-erase">Erase</button>
+    <button id="ch-clear">Clear</button>
+  </div>
+  <div id="ch-results">
+    <div class="ch-cols"><span></span><b>You</b><b>Algorithm</b></div>
+    <div class="ch-row"><span>Sag vs even spread</span><b id="ch-you-sag">—</b><b id="ch-alg-sag"></b></div>
+    <div class="ch-row"><span>Holds up to</span><b id="ch-you-hold">—</b><b id="ch-alg-hold"></b></div>
+  </div>
+  <div id="ch-verdict"></div>
+  <div id="ch-board">
+    <div class="ch-cols"><span id="ch-board-title">Best for this setup</span><b></b><b></b></div>
+    <div id="ch-board-list"></div>
+  </div>
+  <div class="ch-buttons">
+    <button id="ch-save" disabled>Save my bridge</button>
+  </div>
+  <div class="ch-buttons">
+    <button id="ch-reveal">Reveal algorithm</button>
+    <button id="ch-test">Test my bridge</button>
+    <button id="ch-back">Back</button>
+  </div>
+</div>
+
+<div id="attract" hidden>Pick up your phone to build a bridge</div>
+
+<script src="vendor/matter.min.js"></script>
+<script src="vendor/footron-messaging.min.js"></script>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

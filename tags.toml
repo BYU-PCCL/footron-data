@@ -37,7 +37,8 @@ experiences = [
   "skip-list",
   "bloom-filter",
   "color-codes",
-  "bookofmormon"
+  "bookofmormon",
+  "load-path"
 ]
 
 [game]
