@@ -9,7 +9,7 @@ import ShuffleIcon from "@material-ui/icons/Shuffle";
 import ReplayIcon from "@material-ui/icons/Replay";
 
 /*
- * Phone controls for `skip-list` (What Comes Next?).
+ * Phone controls for `skip-list`.
  *
  * The wall plays the run on a loop whether anyone is here or not, so this
  * panel is not required for the exhibit to work -- it is for the visitor who
@@ -115,7 +115,7 @@ const ControlsComponent = () => {
         </b>
       </p>
 
-      <p className="q">What comes next?</p>
+      <p className="q">Skip List</p>
 
       <div className="head">Speed</div>
 

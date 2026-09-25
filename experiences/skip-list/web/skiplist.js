@@ -1,5 +1,5 @@
 /*
- * Skip list -- "What comes next?"
+ * Skip list
  *
  * The reason to show this one rather than a balanced tree is that the whole
  * idea fits in a sentence and the wall can show it happening: keep the sorted
