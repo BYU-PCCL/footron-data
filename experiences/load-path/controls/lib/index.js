@@ -1,4 +1,7 @@
 /** @jsxImportSource @emotion/react */
+/* eslint-disable react/prop-types */
+// PadGuides takes a prop, and footron-web's eslint config makes react/prop-types an error
+// (CI= does not soften it). footron-web has no prop-types package to satisfy it with.
 /**
  * Load Path — phone controls.
  *
