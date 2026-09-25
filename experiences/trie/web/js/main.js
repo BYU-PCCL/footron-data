@@ -254,6 +254,17 @@
       s.act(id);
       return true;
     },
+    // a value from the phone: a tap position, a slider, a choice
+    input(name, value) {
+      const s = cur();
+      if (st.pending >= 0 || typeof s.input !== 'function') return false;
+      activity();
+      st.autoHold = st.t + 14;
+      if (s.preempt !== false && s.steps && s.steps.preempt && !(s.inputKeepsFlow && s.inputKeepsFlow(name))) s.steps.preempt();
+      const r = s.input(name, value);
+      broadcast();
+      return r !== false;
+    },
     pause(v) { activity(); st.paused = v; renderMode(); broadcast(); },
     speed(v) { activity(); st.speed = v; renderMode(); broadcast(); },
     release() {
@@ -307,6 +318,7 @@
         onPause: (v) => cmd.pause(v),
         onSpeed: (v) => cmd.speed(v),
         onRelease: () => cmd.release(),
+        onInput: (name, value) => cmd.input(name, value),
       })
     : { send() {} };
 
@@ -321,7 +333,18 @@
       speed: st.speed,
       scenes: scenes.map((x) => ({ id: x.id, title: x.title, group: x.group || '' })),
       actions: (s.actions || []).map((a) => ({ id: a.id, label: a.label })),
+      panel: panelOf(s),
     });
+  }
+  // The scene's own live state for the phone (what's on the wall right now).
+  function panelOf(s) { try { return s.phone ? s.phone() : null; } catch (e) { return null; } }
+  let panelKey = '', panelT = 0;
+  function maybeBroadcastPanel(dt) {
+    panelT -= dt;
+    if (panelT > 0) return;
+    panelT = 0.4;
+    const k = JSON.stringify(panelOf(cur()));
+    if (k !== panelKey) { panelKey = k; broadcast(); }
   }
 
   /* ---------------- loop ---------------- */
@@ -368,6 +391,7 @@
     if (opTimer > 0) { opTimer -= dt; if (opTimer <= 0) el.op.classList.add('stale'); }
     noteT += dt;
     if (noteT > NOTE_EVERY) { noteT = 0; showNote(noteI + 1); }
+    if (link.live) maybeBroadcastPanel(dt);
     statsT -= dt;
     if (statsT <= 0) { statsT = 0.2; renderStats(); }
 
