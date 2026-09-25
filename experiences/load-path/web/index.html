@@ -244,9 +244,13 @@
   #challenge button:disabled { opacity: 0.4; cursor: default; }
   #challenge button.on { background: rgba(255, 140, 120, 0.25); border-color: rgba(255, 140, 120, 0.7); }
   #ch-results { margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.09); }
-  .ch-cols, .ch-row { display: grid; grid-template-columns: 1fr 70px 84px; gap: 6px; align-items: baseline; font-size: 13px; margin-top: 4px; }
+  /* One grid for the whole table, so the You / Algorithm columns line up across the
+     header and every row, however narrow the card is. The rows just hand their cells
+     to it. */
+  #ch-results { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; column-gap: 12px; row-gap: 4px; align-items: baseline; font-size: 13px; }
+  .ch-cols, .ch-row { display: contents; }
   .ch-cols { color: #8ea3b8; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
-  .ch-cols b, .ch-row b { text-align: right; font-weight: 500; }
+  .ch-cols b, .ch-row b { text-align: right; font-weight: 500; white-space: nowrap; }
   .ch-row span { color: #8ea3b8; }
   .ch-row b { color: #f1dcae; font-variant-numeric: tabular-nums; }
   #ch-verdict { margin-top: 10px; min-height: 2.9em; font-size: 13.5px; color: #eef2f6; line-height: 1.45; }

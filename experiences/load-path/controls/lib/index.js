@@ -127,17 +127,13 @@ const padLabelStyle = css`
   opacity: 0.55;
 `;
 
-const TRAIL_LIMIT = 400; // how many recent stroke points the pad remembers to draw
-const PAD_UNITS = 200; // the pad's drawing space is 200 wide by 100 tall
-
-// Distance from point p to the segment a-b, all in pad units.
-const distanceToSegment = (p, a, b) => {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  const lengthSquared = dx * dx + dy * dy;
-  const t = lengthSquared === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lengthSquared));
-  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
-};
+// What the finger has drawn is kept as pixels on a canvas, not as a list of
+// points: a list has to be capped (the oldest points vanished when an area was
+// drawn over again), while pixels cost the same however much is drawn, and erasing
+// is just painting with the eraser. 4 canvas pixels per unit of the pad's 200 x 100.
+const INK_W = 800;
+const INK_H = 400;
+const INK_COLOR = "rgb(207,195,171)";
 
 // The two bridge supports and the weight's arrow, as SVG in the pad's own 0..1 space.
 const PadGuides = ({ spot }) => {
@@ -162,7 +158,15 @@ const PadGuides = ({ spot }) => {
 
 const LoadPathControls = () => {
   const [editing, setEditing] = useState(false);
-  const [trail, setTrail] = useState([]);
+  const [hasInk, setHasInk] = useState(false);
+  const inkRef = useRef(null);
+  // Wipe what the pad shows. Safe to call any number of times, and when the pad is
+  // not on screen (the canvas only exists while the editor is open).
+  const clearInk = useCallback(() => {
+    const canvas = inkRef.current;
+    if (canvas) canvas.getContext("2d").clearRect(0, 0, INK_W, INK_H);
+    setHasInk(false);
+  }, []);
   // The wall reports whether a finished bridge exists to edit (see sendPhoneState
   // in src/main.js). null until it says: the button stays usable until told
   // otherwise, so a wall that never answers costs the greying-out and nothing else.
@@ -170,8 +174,9 @@ const LoadPathControls = () => {
   // Two things about useMessaging's callback matter here. The hook re-registers it
   // whenever its identity changes, so it must be stable (useCallback, not an inline
   // arrow that is new every render). And every registration REPLAYS the recent
-  // message history, so handling a message has to be idempotent: `setTrail([])` is a
-  // new array each time, which re-rendered, re-registered, replayed, and looped.
+  // message history, so handling a message has to be idempotent: a handler that set
+  // fresh state on every replay (a new empty array) re-rendered, re-registered,
+  // replayed, and looped. clearInk changes nothing when there is nothing to clear.
   const onWallMessage = useCallback((message) => {
     if (!message || message.type !== "state" || typeof message.canEdit !== "boolean") return;
     setCanEdit(message.canEdit);
@@ -179,9 +184,9 @@ const LoadPathControls = () => {
     // it, so close this end rather than leave a pad that paints nothing.
     if (!message.canEdit) {
       setEditing(false);
-      setTrail((prev) => (prev.length ? [] : prev));
+      clearInk();
     }
-  }, []);
+  }, [clearInk]);
   const { sendMessage } = useMessaging(onWallMessage);
 
   // What THIS phone has asked for. Beyond whether a bridge can be edited, the wall
@@ -243,23 +248,30 @@ const LoadPathControls = () => {
     };
   }, []);
 
-  const remember = useCallback((p) => setTrail((prev) => [...prev.slice(-(TRAIL_LIMIT - 1)), p]), []);
-
-  // The dots are only a memory of where the finger has been, so erasing has to
-  // take them out, as it takes the stone out on the wall; otherwise the pad shows
-  // a bridge that is no longer there. `from` to `to` is the stretch of finger travel
-  // since the last sample, so a fast stroke leaves no dots behind. The reach is the
-  // wall's brush radius, (brush + 0.5) grid cells, in pad units.
+  // Draw (or erase) the stretch of finger travel from `from` to `to` at the wall's
+  // brush size: it paints every cell within `brush` cells of the finger, so it is
+  // (2 * brush + 1) cells across. Joining consecutive samples leaves no gaps in a
+  // fast stroke, the same as the wall does with the samples it is sent.
   const lastPoint = useRef(null);
-  const eraseTrail = useCallback(
-    (from, to) => {
-      const reach = (brush + 0.5) * (PAD_UNITS / NUM_ELEM_X);
-      const a = { x: from.x * PAD_UNITS, y: from.y * (PAD_UNITS / 2) };
-      const b = { x: to.x * PAD_UNITS, y: to.y * (PAD_UNITS / 2) };
-      setTrail((prev) => {
-        const kept = prev.filter((dot) => distanceToSegment({ x: dot.x * PAD_UNITS, y: dot.y * (PAD_UNITS / 2) }, a, b) > reach);
-        return kept.length === prev.length ? prev : kept;
-      });
+  const stamp = useCallback(
+    (from, to, erasing) => {
+      const ctx = inkRef.current?.getContext("2d");
+      if (!ctx) return;
+      const width = (2 * brush + 1) * (INK_W / NUM_ELEM_X);
+      ctx.globalCompositeOperation = erasing ? "destination-out" : "source-over";
+      ctx.strokeStyle = INK_COLOR;
+      ctx.fillStyle = INK_COLOR;
+      ctx.lineCap = "round";
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      ctx.moveTo(from.x * INK_W, from.y * INK_H);
+      ctx.lineTo(to.x * INK_W, to.y * INK_H);
+      ctx.stroke();
+      // A zero-length line draws nothing in every browser, and a tap must leave a dot.
+      ctx.beginPath();
+      ctx.arc(to.x * INK_W, to.y * INK_H, width / 2, 0, Math.PI * 2);
+      ctx.fill();
+      if (!erasing) setHasInk(true);
     },
     [brush]
   );
@@ -271,12 +283,11 @@ const LoadPathControls = () => {
       if (!p) return;
       setDragging(true);
       lastPoint.current = p;
-      if (erase) eraseTrail(p, p);
-      else remember(p);
+      stamp(p, p, erase);
       // The first point goes straight away, so a plain tap paints too.
       sendMessage(msg.paint(p.x, p.y, erase));
     },
-    [at, erase, eraseTrail, remember, sendMessage]
+    [at, erase, stamp, sendMessage]
   );
 
   const onPointerMove = useCallback(
@@ -284,12 +295,11 @@ const LoadPathControls = () => {
       if (!dragging) return;
       const p = at(e);
       if (!p) return;
-      if (erase) eraseTrail(lastPoint.current || p, p);
-      else remember(p);
+      stamp(lastPoint.current || p, p, erase);
       lastPoint.current = p;
       pending.current = { ...p, erase };
     },
-    [at, dragging, erase, eraseTrail, remember]
+    [at, dragging, erase, stamp]
   );
 
   const onPointerUp = useCallback(() => {
@@ -318,8 +328,8 @@ const LoadPathControls = () => {
   const startedRun = useCallback(() => {
     setCanEdit(false);
     setEditing(false);
-    setTrail((prev) => (prev.length ? [] : prev));
-  }, []);
+    clearInk();
+  }, [clearInk]);
 
   // A lesson sets the stone, the weight and the spot on the wall; move this
   // phone's sliders to match, or they would show something the wall isn't using.
@@ -345,17 +355,17 @@ const LoadPathControls = () => {
   const toggleEditor = useCallback(() => {
     const open = !editing;
     setEditing(open);
-    setTrail([]);
+    clearInk();
     sendMessage(msg.yourTurn(open));
-  }, [editing, sendMessage]);
+  }, [editing, sendMessage, clearInk]);
 
   // Start the bridge over: the wall drops any test it is running and empties the
-  // grid (see clearDesign in src/challenge.js), and the pad forgets its dots.
+  // grid (see clearDesign in src/challenge.js), and the pad wipes what it drew.
   const restart = useCallback(() => {
-    setTrail([]);
+    clearInk();
     setErase(false);
     sendMessage(msg.clear());
-  }, [sendMessage]);
+  }, [sendMessage, clearInk]);
 
   const changeBrush = useCallback(
     (size) => {
@@ -493,16 +503,13 @@ const LoadPathControls = () => {
             onPointerCancel={onPointerUp}
           >
             <PadGuides spot={knownSpot} />
-            {trail.length === 0 && <div css={padLabelStyle}>Draw here. The wall shows what you build.</div>}
-            <svg
-              viewBox="0 0 200 100"
-              preserveAspectRatio="none"
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}
-            >
-              {trail.map((p, i) => (
-                <circle key={i} cx={p.x * 200} cy={p.y * 100} r={1.6 + brush * 0.9} fill="rgba(207,195,171,0.55)" />
-              ))}
-            </svg>
+            {!hasInk && <div css={padLabelStyle}>Draw here. The wall shows what you build.</div>}
+            <canvas
+              ref={inkRef}
+              width={INK_W}
+              height={INK_H}
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", opacity: 0.55 }}
+            />
           </div>
           <div css={rowStyle}>
             <Button variant="outlined" color="primary" size="small" onClick={() => changeBrush(brush - 1)}>
