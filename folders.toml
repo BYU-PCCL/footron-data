@@ -43,6 +43,8 @@ tags = [ "christmas" ]
 featured = "cmas-snowglobe"
 visible = true
 
+# The controller's timer only cycles through queueable experiences in this folder on
+# Sundays, and leaves them out of the rotation on every other day
 [lds]
 title = "Sabbath Experiences"
 description = "LDS-themed experiences"
