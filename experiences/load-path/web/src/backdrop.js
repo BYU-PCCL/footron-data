@@ -3,7 +3,7 @@
 // on, and the river between them. paintWaterOverlay() is the translucent
 // water surface drawn IN FRONT of the structure canvas so debris that falls
 // in looks submerged.
-import { SCENE_W, SCENE_H, BANK_TOP_Y, RIVER_LEFT_X, RIVER_RIGHT_X, WATER_SURFACE_Y, RIVERBED_Y } from "./scene.js";
+import { SCENE_W, SCENE_H, BANK_TOP_Y, RIVER_LEFT_X, RIVER_RIGHT_X, WATER_SURFACE_Y, RIVERBED_Y, BASE_SCENE_W, domainOffset } from "./scene.js";
 
 // Small deterministic PRNG so the scene looks identical on every load.
 function makeRng(seed) {
@@ -17,7 +17,17 @@ function makeRng(seed) {
   };
 }
 
-const MOON = { x: 640, y: 92, r: 52 };
+// Fixed relative to the domain, not to the canvas edge: BASE_MOON_X is where the
+// moon sits at the layout's base width, and moonX() re-adds however far the
+// domain has since moved (see domainOffset in scene.js), so extending the scene
+// slides the whole moon-and-mountains composition along with the bridge rather
+// than stretching it -- the added width shows up purely as new sky and cliff
+// beyond either edge of what was already there.
+const BASE_MOON_X = 640;
+const MOON = { y: 92, r: 52 };
+function moonX() {
+  return BASE_MOON_X + domainOffset();
+}
 
 function paintSky(ctx) {
   const sky = ctx.createLinearGradient(0, 0, 0, WATER_SURFACE_Y);
@@ -28,11 +38,15 @@ function paintSky(ctx) {
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, SCENE_W, SCENE_H);
 
+  const moon = moonX();
   const rand = makeRng(7);
-  for (let i = 0; i < 170; i++) {
+  // Scaled with the width, so a wider sky reads as more stars, not the same
+  // 170 spread thinner.
+  const starCount = Math.round(170 * (SCENE_W / BASE_SCENE_W));
+  for (let i = 0; i < starCount; i++) {
     const x = rand() * SCENE_W;
     const y = rand() * SCENE_H * 0.5;
-    if (Math.hypot(x - MOON.x, y - MOON.y) < 150) continue;
+    if (Math.hypot(x - moon, y - MOON.y) < 150) continue;
     ctx.globalAlpha = 0.25 + rand() * 0.6;
     ctx.fillStyle = rand() < 0.15 ? "#ffe9c4" : "#dbe8ff";
     ctx.beginPath();
@@ -43,18 +57,19 @@ function paintSky(ctx) {
 }
 
 function paintMoon(ctx) {
-  const glow = ctx.createRadialGradient(MOON.x, MOON.y, MOON.r * 0.8, MOON.x, MOON.y, 320);
+  const moon = moonX();
+  const glow = ctx.createRadialGradient(moon, MOON.y, MOON.r * 0.8, moon, MOON.y, 320);
   glow.addColorStop(0, "rgba(255,240,205,0.30)");
   glow.addColorStop(1, "rgba(255,240,205,0)");
   ctx.fillStyle = glow;
-  ctx.fillRect(MOON.x - 330, MOON.y - 330, 660, 660);
+  ctx.fillRect(moon - 330, MOON.y - 330, 660, 660);
 
-  const disc = ctx.createRadialGradient(MOON.x - 18, MOON.y - 18, 4, MOON.x, MOON.y, MOON.r);
+  const disc = ctx.createRadialGradient(moon - 18, MOON.y - 18, 4, moon, MOON.y, MOON.r);
   disc.addColorStop(0, "#fffbe9");
   disc.addColorStop(1, "#dccfa6");
   ctx.fillStyle = disc;
   ctx.beginPath();
-  ctx.arc(MOON.x, MOON.y, MOON.r, 0, Math.PI * 2);
+  ctx.arc(moon, MOON.y, MOON.r, 0, Math.PI * 2);
   ctx.fill();
 
   const rand = makeRng(21);
@@ -63,22 +78,32 @@ function paintMoon(ctx) {
     const a = rand() * Math.PI * 2;
     const d = rand() * MOON.r * 0.7;
     ctx.beginPath();
-    ctx.arc(MOON.x + Math.cos(a) * d, MOON.y + Math.sin(a) * d, 5 + rand() * 11, 0, Math.PI * 2);
+    ctx.arc(moon + Math.cos(a) * d, MOON.y + Math.sin(a) * d, 5 + rand() * 11, 0, Math.PI * 2);
     ctx.fill();
   }
 }
 
 // A jagged ink-wash ridge: several sines with an |sin| term for sharp peaks.
+// Sampled at (x - domainOffset()) rather than x, so the silhouette is anchored
+// to the domain, not to the canvas edge: the peaks and valleys near the bridge
+// stay exactly where they were as the scene widens, and the extra width just
+// continues the same curve further out on either side, seamlessly, rather
+// than shifting the existing skyline over.
 function makeRidge(baseY, amp, seed) {
   const rand = makeRng(seed);
   const p = [rand() * 6.28, rand() * 6.28, rand() * 6.28, rand() * 6.28];
-  return (x) =>
-    baseY -
-    amp *
-      (0.5 * Math.abs(Math.sin(x * 0.0042 + p[0])) +
-        0.3 * Math.sin(x * 0.011 + p[1]) +
-        0.2 * Math.abs(Math.sin(x * 0.023 + p[2])) +
-        0.08 * Math.sin(x * 0.05 + p[3]));
+  const offset = domainOffset();
+  return (x) => {
+    const t = x - offset;
+    return (
+      baseY -
+      amp *
+        (0.5 * Math.abs(Math.sin(t * 0.0042 + p[0])) +
+          0.3 * Math.sin(t * 0.011 + p[1]) +
+          0.2 * Math.abs(Math.sin(t * 0.023 + p[2])) +
+          0.08 * Math.sin(t * 0.05 + p[3]))
+    );
+  };
 }
 
 function paintRidge(ctx, ridge, top, bottom) {
@@ -136,8 +161,11 @@ function paintCliff(ctx, x0, x1, faceOnRight, seed) {
   ctx.fillRect(x0, top, x1 - x0, SCENE_H - top);
 
   const rand = makeRng(seed);
+  // Scaled with how wide this particular cliff is, so a wider wall reads as
+  // more strata and stones rather than the same fixed handful stretched thin.
+  const density = (x1 - x0) / 400;
   // Strata: thin, slightly wavy horizontal seams.
-  for (let i = 0; i < 26; i++) {
+  for (let i = 0; i < Math.round(26 * density); i++) {
     const y = top + 14 + rand() * (SCENE_H - top - 20);
     ctx.strokeStyle = `rgba(${rand() < 0.5 ? "0,0,0" : "255,235,200"},${0.06 + rand() * 0.1})`;
     ctx.lineWidth = 1 + rand() * 2;
@@ -147,7 +175,7 @@ function paintCliff(ctx, x0, x1, faceOnRight, seed) {
     ctx.stroke();
   }
   // Rough stones.
-  for (let i = 0; i < 70; i++) {
+  for (let i = 0; i < Math.round(70 * density); i++) {
     const x = x0 + rand() * (x1 - x0);
     const y = top + 10 + rand() * (SCENE_H - top - 12);
     ctx.fillStyle = `rgba(${rand() < 0.5 ? "0,0,0" : "255,235,200"},${0.05 + rand() * 0.08})`;
@@ -194,7 +222,8 @@ export function paintBackdrop(canvas) {
   const near = makeRidge(WATER_SURFACE_Y - 70, 110, 29);
 
   paintRidge(ctx, far, "#28425a", "#1d3448");
-  paintPagoda(ctx, 430, far(430) + 4, "#22384d");
+  const pagodaX = 430 + domainOffset(); // fixed relative to the domain, like the moon above
+  paintPagoda(ctx, pagodaX, far(pagodaX) + 4, "#22384d");
   paintMist(ctx, WATER_SURFACE_Y - 210, 70, 0.10);
   paintRidge(ctx, mid, "#182d42", "#122436");
   paintMist(ctx, WATER_SURFACE_Y - 120, 60, 0.09);
@@ -217,13 +246,14 @@ export function paintWaterOverlay(canvas) {
   ctx.fillStyle = tint;
   ctx.fillRect(RIVER_LEFT_X, WATER_SURFACE_Y, w, SCENE_H - WATER_SURFACE_Y);
 
+  const moon = moonX();
   const rand = makeRng(41);
   // Moon glitter on the surface.
   for (let i = 0; i < 26; i++) {
     const y = WATER_SURFACE_Y + 6 + i * 3.2;
     const len = 10 + rand() * 70 * (1 - i / 34);
     ctx.fillStyle = `rgba(255,243,210,${0.5 - i * 0.017})`;
-    ctx.fillRect(MOON.x - len / 2 + (rand() - 0.5) * 40, y, len, 1.6);
+    ctx.fillRect(moon - len / 2 + (rand() - 0.5) * 40, y, len, 1.6);
   }
   // Faint ripples.
   ctx.strokeStyle = "rgba(190,230,245,0.12)";

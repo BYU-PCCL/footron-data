@@ -19,16 +19,16 @@
     user-select: none;
   }
 
-  /* The fixed 1920x1080 scene, scaled uniformly to fit by main.js. */
+  /* The scene's pixel size is set by main.js (scene.js: it can grow wider than
+     the 16:9 it was designed at, to fill a wider window edge to edge -- see
+     fitScene), which is then scaled uniformly to fit the screen. */
   #scene {
     position: fixed;
     left: 50%;
     top: 50%;
-    width: 1920px;
-    height: 1080px;
     transform-origin: center;
   }
-  #scene canvas { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; display: block; }
+  #scene canvas { position: absolute; left: 0; top: 0; display: block; }
   #overlay { pointer-events: none; }
 
   /* The two side cards (this one and the growth report / challenge editor on the
@@ -63,6 +63,7 @@
     flex-shrink: 0;
   }
   #panel.collapsed .sub,
+  #panel.collapsed .about,
   #panel.collapsed .control,
   #panel.collapsed .lessons,
   #panel.collapsed #message,
@@ -77,6 +78,13 @@
     color: var(--accent);
   }
   #panel .sub { margin: 2px 0 10px; font-size: 12.5px; color: #8ea3b8; letter-spacing: 0.04em; }
+  /* What the exhibit is, in plain words -- shown only once the left card has
+     genuine room for it (main.js's fitScene toggles .roomy on <body> using the
+     same measured strip the card's own width comes from), so a narrow preview
+     window gets the controls without a paragraph pushing them around, and a
+     wide wall gets the explanation a passerby has not read anywhere else. */
+  .about { display: none; margin: 0 0 12px; font-size: 12.5px; line-height: 1.5; color: #b7c4d4; }
+  body.roomy .about { display: block; }
 
   .weight-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
   #load-handle {
@@ -306,6 +314,7 @@
     <button id="collapse" class="collapse-btn" title="Collapse panel">–</button>
   </div>
   <div class="sub">a stone bridge, grown by algorithm</div>
+  <p class="about">A real topology optimizer decides where the stone goes: pick a budget, drop the weight anywhere on the span, and watch it grow the most efficient shape it can find. Then a physics test -- real stone strength, buckling, and crushing limits -- honestly checks whether it holds.</p>
 
   <div class="weight-row">
     <div id="load-handle" title="Drag onto the bridge"></div>
