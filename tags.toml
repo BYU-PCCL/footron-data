@@ -87,7 +87,17 @@ experiences = [
   "bookofmormon",
   "houses-of-light",
   "scriptures"
-  
+
+]
+
+# On Sundays the timer only cycles through these experiences (they must also be
+# queueable)
+[sabbath]
+title = "Sabbath"
+experiences = [
+  "bookofmormon",
+  "houses-of-light",
+  "scriptures"
 ]
 
 [archive]
