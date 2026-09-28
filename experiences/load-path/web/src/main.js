@@ -8,7 +8,7 @@ import * as challenge from "./challenge.js";
 import { LESSONS, weightToSliderValue } from "./lessons.js";
 import { connectFootron, footronEnabled, spotToColumn } from "./footron.js";
 import { paintBackdrop, paintWaterOverlay } from "./backdrop.js";
-import { DOMAIN, SCENE_W, SCENE_H } from "./scene.js";
+import { DOMAIN, SCENE_W, SCENE_H, BASE_SCENE_W, setSceneWidth } from "./scene.js";
 import { buildCollapseScene } from "./collapse.js";
 import { kgToVolumeFraction, WEIGHT_EXPONENT_MIN, WEIGHT_EXPONENT_MAX } from "./units.js";
 
@@ -23,19 +23,28 @@ const fixedDofs = [...nodeDofs(bottomLeft), ...nodeDofs(bottomRight)];
 
 const canvas = document.getElementById("stage");
 const ctx = canvas.getContext("2d");
-
-// The scene is three stacked canvases at a fixed logical size (scene.js): a
+const backdropCanvas = document.getElementById("backdrop");
+const overlayCanvas = document.getElementById("overlay");
+// The scene is three stacked canvases at the same logical size (scene.js): a
 // static backdrop, the structure/physics canvas in the middle, and a
-// translucent water overlay in front. The page scales the whole scene
-// uniformly to fit the screen.
-paintBackdrop(document.getElementById("backdrop"));
-paintWaterOverlay(document.getElementById("overlay"));
+// translucent water overlay in front. fitScene(), below, sizes and paints them
+// once it knows the real window -- not here, since the width they need
+// depends on it (see scene.js and fitScene's comment).
+const sceneCanvases = [backdropCanvas, canvas, overlayCanvas];
 
 const sceneEl = document.getElementById("scene");
 const reportEl = document.getElementById("report");
 const challengeEl = document.getElementById("challenge");
 const panelEl = document.getElementById("panel");
 let sceneScale = 1;
+// Set for real once the idle view is first drawn, below; called after a resize
+// forces a canvas resize (which wipes it) while nothing is already redrawing
+// the stage every frame on its own (an active physics test or a growth/replay
+// animation both read the domain fresh each frame, so they need nothing here
+// and are left alone).
+let redrawStage = () => {};
+let paintedSceneW = null; // null so the very first fitScene() call always paints
+let activeScene = null; // the physics scene from the current/most recent test, if any
 function applySceneTransform(dx, dy) {
   sceneEl.style.transform = `translate(-50%, -50%) translate(${dx}px, ${dy}px) scale(${sceneScale})`;
 }
@@ -70,14 +79,51 @@ const CARD_BASE_W = 300;
 const CARD_MIN_W = 230;
 const CARD_MAX_ZOOM = 2.2;
 const CARD_EDGE_GAP = 16 + 14; // window margin + a gap before the bridge
+// On a wall wider than 16:9, fitting the window by height alone already
+// reaches or passes both edges; extend the scene's width to match exactly
+// (scene.js), so the sky and cliffs fill the sides instead of leaving the
+// letterbox bars a fixed-width scene would. A window narrower than 16:9 (a
+// portrait preview, say) has no room to extend into, so it keeps the
+// original letterboxed fit.
 function fitScene() {
-  sceneScale = Math.min(window.innerWidth / SCENE_W, window.innerHeight / SCENE_H);
+  const heightScale = window.innerHeight / SCENE_H;
+  const neededWidth = window.innerWidth / heightScale;
+  if (neededWidth >= BASE_SCENE_W) {
+    setSceneWidth(neededWidth);
+    sceneScale = heightScale;
+  } else {
+    setSceneWidth(BASE_SCENE_W);
+    sceneScale = Math.min(window.innerWidth / SCENE_W, heightScale);
+  }
+
+  if (SCENE_W !== paintedSceneW) {
+    paintedSceneW = SCENE_W;
+    sceneEl.style.width = `${SCENE_W}px`;
+    sceneEl.style.height = `${SCENE_H}px`;
+    for (const el of sceneCanvases) {
+      // Resizing a canvas element wipes it -- see redrawStage below.
+      el.width = SCENE_W;
+      el.height = SCENE_H;
+      el.style.width = `${SCENE_W}px`;
+      el.style.height = `${SCENE_H}px`;
+    }
+    paintBackdrop(backdropCanvas);
+    paintWaterOverlay(overlayCanvas);
+    if (challenge.isActive()) challenge.redrawForResize();
+    else if (!activeScene) redrawStage();
+  }
+
   const strip = (window.innerWidth - SCENE_W * sceneScale) / 2 + DOMAIN.x * sceneScale;
   const room = Math.max(CARD_MIN_W, strip - CARD_EDGE_GAP);
   const zoom = Math.min(CARD_MAX_ZOOM, Math.max(1, room / CARD_BASE_W));
   const root = document.documentElement.style;
   root.setProperty("--card-z", String(zoom));
   root.setProperty("--card-w", `${room / zoom}px`);
+  // The left card's "what is this" paragraph (index.html: .about) only earns
+  // its place once the card has at least its full designed width to work
+  // with -- below that, the room is better spent on the controls a visitor
+  // actually needs to touch first.
+  document.body.classList.toggle("roomy", room >= CARD_BASE_W);
   applySceneTransform(0, 0);
 }
 fitScene();
@@ -143,7 +189,6 @@ updateLabels();
 // physics scene notice it's stale and stop touching the canvas, instead of
 // two runs racing for it.
 let currentRunToken = 0;
-let activeScene = null; // the physics scene from the current/most recent test, if any
 let lastLoadColumn = null; // set on the first drop; nothing runs before that
 let lastDensities = null; // the last converged shape and its displacement
 let lastU = null; // field, cached so changing just the test weight
@@ -299,6 +344,7 @@ function showStress() {
           ? `At ${kg} a whole leg ${failing.origin.kind === "buckling" ? "buckles (bows sideways)" : "crushes"} before the stone cracks, starting mid-leg.`
           : `At ${kg} the hottest stone is at ${Math.round(worst * 100)}% of its limit. It holds.`
   );
+  redrawStage = showStress;
 }
 
 // The capacity readout: what the finished shape holds, how efficiently it uses
@@ -333,6 +379,7 @@ function scrubTo(index) {
   report.setPlaying(false);
   panelEl.classList.remove("busy");
   showFrame(ctx, lastPlayback, index);
+  redrawStage = () => showFrame(ctx, lastPlayback, index);
   report.setMarker(index);
   setMessage("Scrubbing through the optimizer's iterations.");
 }
@@ -354,6 +401,7 @@ async function togglePlay() {
   for (let k = 1; k <= last; k++) {
     if (token !== currentRunToken) return;
     showFrame(ctx, lastPlayback, k);
+    redrawStage = () => showFrame(ctx, lastPlayback, k);
     report.setMarker(k);
     await new Promise((resolve) => setTimeout(resolve, REPLAY_FRAME_MS));
   }
@@ -398,6 +446,7 @@ function enterChallenge() {
       stopEverything();
       report.showReport();
       showFrame(ctx, lastPlayback, lastPlayback.frames.length + 1);
+      redrawStage = () => showFrame(ctx, lastPlayback, lastPlayback.frames.length + 1);
       report.setMarker(lastPlayback.frames.length + 1);
       panelEl.classList.remove("busy");
       setMessage("Back to the algorithm's bridge.");
@@ -420,6 +469,7 @@ function testAgain() {
   if (lastPlayback) {
     report.setMarker(lastPlayback.frames.length + 1);
     showFrame(ctx, lastPlayback, lastPlayback.frames.length + 1);
+    redrawStage = () => showFrame(ctx, lastPlayback, lastPlayback.frames.length + 1);
   }
   retest();
 }
@@ -495,6 +545,7 @@ function retest() {
 // Dropping the weight is what starts anything at all.
 const solidBlock = Array.from({ length: numElemY }, () => new Array(numElemX).fill(1));
 renderDensities(ctx, solidBlock);
+redrawStage = () => renderDensities(ctx, solidBlock);
 setMessage("Drag the weight onto the block to begin.");
 
 materialSlider.addEventListener("input", updateLabels);

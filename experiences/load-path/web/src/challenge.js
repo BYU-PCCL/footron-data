@@ -39,6 +39,14 @@ export function isActive() {
   return host !== null;
 }
 
+// Called by main.js after a resize forces the shared stage canvas to a new
+// size (which wipes it) while this editor owns it. A no-op if it doesn't
+// (isActive() said so first, but host can still have gone null between the
+// two calls if the run that superseded this editor also called leave()).
+export function redrawForResize() {
+  if (host) redraw();
+}
+
 function cellSize() {
   return { cw: DOMAIN.w / host.numElemX, ch: DOMAIN.h / host.numElemY };
 }
