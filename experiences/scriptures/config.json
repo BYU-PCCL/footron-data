@@ -1,0 +1,10 @@
+{
+  "id": "scriptures",
+  "type": "web",
+  "title": "Quotes",
+  "description": "Quotes typed out a letter at a time on paper, with the words that matter marked up by hand.",
+  "artist": "Emeline MacJanet",
+  "layout": "full",
+  "lifetime": 120,
+  "queueable": true
+}

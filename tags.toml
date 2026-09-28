@@ -69,7 +69,20 @@ experiences = [ "cpms50" ]
 [lds]
 title = "LDS-themed experiences"
 experiences = [
-  "temple-photo-op"
+  "temple-photo-op",
+  "bookofmormon",
+  "houses-of-light",
+  "scriptures"
+]
+
+# The timer only cycles through these experiences on Sundays, and never on the other
+# days (they must also be queueable)
+[sabbath]
+title = "Sabbath"
+experiences = [
+  "bookofmormon",
+  "houses-of-light",
+  "scriptures"
 ]
 
 [archive]
