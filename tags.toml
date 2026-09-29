@@ -6,22 +6,30 @@ experiences = [ "pi", "pi-circle", "pi-walk", "pi-triangle" ]
 title = "Interactive Experiences"
 experiences = [
   "fourier",
+  "trie",
   "wind",
   "style-transfer",
   "fluid",
   "your-campus",
   "opinion-dynamics",
+  "crdt",
   "planes",
   "huffman",
   "gradient-descent",
   "twindragon",
+  "hnsw",
   "live-dashboard",
   "snowflake",
   "trickortreat",
   "barnsley-fern",
   "alg-infect",
   "neural-net-vis",
-  "learning-to-walk"
+  "learning-to-walk",
+  "spacetime-sandbox",
+  "red-black-tree",
+  "skip-list",
+  "bloom-filter",
+  "color-codes"
 ]
 
 [game]
