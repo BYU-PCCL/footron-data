@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skip List</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+
+<!-- The phone connection. Loaded in <head> so FootronMessaging exists by the
+     time the director at the bottom of the page runs. -->
+<script src="./footron-messaging.development.js"></script>
+
+<style>
+:root{
+  /* Global chrome scale. Every length outside the canvas is written as
+     calc(<n>px * var(--k)), so this one number is the whole typography pass.
+     It has to stay unitless: a vw-based clamp() here would be a number/length
+     mix inside every one of those calcs, which is invalid at computed-value
+     time and drops the layout on the floor.
+
+     The scene needs no equivalent -- it is authored in a fixed 1000x640 world
+     and contain-fitted, so everything inside it already scales. */
+  --k:0.72;
+
+  /* The canvas-side twins of these live in T at the top of draw.js and have to
+     move with them: the canvas sits inside .viz, so a --viz that has drifted
+     from T.ink shows up as a visible rectangle. */
+  --ink:#10060c;
+  --viz:#10060c;
+  --panel:#2c1427;
+  --panel-2:#33172b;
+  --line:#4e2846;
+  --line-soft:#401e39;
+  --text:#fffbfe;
+  --muted:#d0b7cb;
+  --dim:#951c67;
+
+  --r:calc(14px*var(--k));
+  --f-mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  --f-body:"Inter","Segoe UI",system-ui,sans-serif;
+
+  /* The scene's colour. Written here so the page is never briefly the wrong
+     colour before the script runs, and set again from the scene at load so the
+     two cannot drift. */
+  --accent:#5BD5D0;
+}
+@media (min-width:1500px){ :root{--k:1} }
+@media (min-width:2300px){ :root{--k:1.22} }
+@media (min-width:3100px){ :root{--k:1.38} }
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; overflow:hidden;
+  background:
+    radial-gradient(calc(1100px*var(--k)) calc(700px*var(--k)) at 82% -10%, #17203A 0%, transparent 60%),
+    radial-gradient(calc(900px*var(--k)) calc(650px*var(--k)) at 6% 110%, #141B31 0%, transparent 58%),
+    var(--ink);
+  color:var(--text);
+  font-family:var(--f-body);
+  font-size:calc(15px*var(--k));
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  cursor:none;                       /* nothing on the wall is clickable */
+}
+
+.stage{
+  height:100vh; height:100dvh;
+  display:grid; gap:calc(14px*var(--k)); padding:calc(14px*var(--k));
+  grid-template-columns:calc(300px*var(--k)) minmax(0,1fr) calc(330px*var(--k));
+  grid-template-rows:minmax(0,1fr);
+  grid-template-areas:"left viz right";
+}
+
+.card{
+  background:linear-gradient(180deg, var(--panel-2), var(--panel));
+  /* border:1px solid var(--line); */
+  border-radius: 0;
+  padding:calc(15px*var(--k)) calc(17px*var(--k));
+  min-height:0;
+}
+.card h2{
+  margin:0 0 calc(11px*var(--k));
+  font-family:var(--f-mono); font-size:calc(10.5px*var(--k)); font-weight:30px;
+  letter-spacing:.20em; text-transform:uppercase; color:var(--dim);
+  display:flex; align-items:baseline; gap:calc(9px*var(--k));
+}
+.card h2::after{content:""; flex:1; height:1px; background:var(--line-soft)}
+
+/* ------------------------------------------------------------------ left */
+.mark{grid-area:left; display:flex; flex-direction:column; gap:calc(14px*var(--k)); min-height:0}
+.title{padding:calc(6px*var(--k)) calc(4px*var(--k)) 0}
+/* The structure's actual name. The headline below it is the question it is
+   built to answer, which is the thing worth reading from across the room --
+   but a visitor still has to be able to find out what they are looking at. */
+.title .kicker{
+  display:block; font-family:var(--f-mono); font-size:calc(11px*var(--k));
+  font-weight:600; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--accent); margin:0 0 calc(10px*var(--k));
+}
+.title h1{
+  margin:0; font-size:calc(40px*var(--k)); line-height:1.02; font-weight:700;
+  letter-spacing:-.02em; text-wrap:balance;
+}
+.title p{
+  margin:calc(12px*var(--k)) 0 0; font-size:calc(13.5px*var(--k));
+  color:var(--muted); line-height:1.45; text-wrap:pretty;
+}
+
+/* The three lines that stay put for the whole run. The rail opposite changes
+   every few seconds, so this is the only thing on the wall a visitor who
+   arrives mid-run can read to catch up. */
+.idea ul{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:calc(10px*var(--k))}
+.idea li{
+  position:relative; padding-left:calc(16px*var(--k));
+  font-size:calc(13.5px*var(--k)); line-height:1.45; color:var(--muted);
+  text-wrap:pretty;
+}
+.idea li::before{
+  content:""; position:absolute; left:0; top:calc(8px*var(--k));
+  width:calc(6px*var(--k)); height:calc(6px*var(--k)); border-radius:0;
+  background:var(--accent); opacity:.8;
+}
+.idea em{font-style:normal; color:var(--text); font-weight:500}
+
+/* ------------------------------------------------------------------- viz */
+.viz{
+  grid-area:viz; position:relative; min-height:0;
+  border:1px solid var(--line); border-radius:0;
+  overflow:hidden; background:var(--viz);
+  display:flex; flex-direction:column;
+}
+#scene{flex:1; width:100%; min-height:0; display:block}
+
+/* How far through the run the script is, along the bottom edge of the scene.
+   It is the only "something is still coming" signal left once the contents
+   list of the four-structure version is gone. */
+#progress{
+  position:absolute; left:0; bottom:0; height:calc(3px*var(--k)); width:0%;
+  background:var(--accent); opacity:.85;
+  transition:opacity .3s;
+}
+
+/* ------------------------------------------------------------------ rail */
+.rail{grid-area:right; display:flex; flex-direction:column; gap:calc(14px*var(--k)); min-height:0; overflow:hidden}
+
+.caption p{
+  margin:0; font-size:calc(19px*var(--k)); line-height:1.4; color:var(--text);
+  text-wrap:pretty;
+  min-height:calc(6 * 1.4em);        /* hold six lines so the cards below never jump */
+  transition:opacity .28s;
+}
+.caption p.swap{opacity:0}
+.caption b{font-weight:700; color:var(--accent)}
+.caption i{font-style:italic; color:var(--muted)}
+
+.cost{width:100%; border-collapse:collapse; font-family:var(--f-mono)}
+.cost th{
+  text-align:left; font-weight:500; font-size:calc(9.5px*var(--k)); letter-spacing:.13em;
+  text-transform:uppercase; color:var(--dim);
+  padding:0 0 calc(7px*var(--k)); border-bottom:1px solid var(--line-soft);
+}
+.cost th:last-child{text-align:right}
+.cost td{
+  padding:calc(8px*var(--k)) 0; border-bottom:1px solid var(--line-soft);
+  color:var(--muted); font-size:calc(12px*var(--k)); vertical-align:top;
+}
+.cost tr:last-child td{border-bottom:0}
+.cost .op{
+  color:var(--text); font-family:var(--f-body); font-weight:600; font-size:calc(13.5px*var(--k));
+}
+.cost .note{display:block; font-family:var(--f-body); font-size:calc(11.5px*var(--k)); color:var(--dim); margin-top:calc(1px*var(--k))}
+.cost .big{
+  text-align:right; font-size:calc(15px*var(--k)); font-weight:600; color:var(--muted);
+  white-space:nowrap;
+}
+/* The row the scene is currently demonstrating. */
+.cost tr.live .op,
+.cost tr.live .big{color:var(--accent)}
+.cost tr.live .big{text-shadow:0 0 calc(14px*var(--k)) color-mix(in srgb, var(--accent) 45%, transparent)}
+
+.uses p{margin:0; font-size:calc(13.5px*var(--k)); color:var(--muted); line-height:1.5; text-wrap:pretty}
+.uses em{font-style:normal; color:var(--text); font-weight:500}
+
+.sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+
+/* `?bare=1` -- the scene alone, edge to edge, with none of the chrome. It is
+   how thumb.jpg and the scene half of wide.jpg are taken, so that regenerating
+   them later lands on the same framing rather than on a guess. Inert on the
+   wall, which loads the bare URL. */
+body.bare .stage{
+  grid-template-columns:minmax(0,1fr); grid-template-areas:"viz";
+  padding:0; gap:0;
+}
+body.bare .mark,
+body.bare .rail,
+body.bare #progress{display:none}
+body.bare .viz{border:0; border-radius:0}
+
+/* Narrow screens are for previewing on a laptop, not for the wall. Keep the
+   scene and the narration; drop everything that is only orientation. */
+@media (max-width:1100px){
+  .stage{grid-template-columns:calc(250px*var(--k)) minmax(0,1fr) calc(280px*var(--k))}
+}
+@media (max-width:820px){
+  .stage{
+    grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr) auto;
+    grid-template-areas:"viz" "right";
+  }
+  .mark{display:none}
+  .rail .card:not(.caption){display:none}
+  .caption p{min-height:0; font-size:calc(17px*var(--k))}
+}
+@media (prefers-reduced-motion:reduce){ *{transition-duration:.01ms !important} }
+
+/* No devtools on the kiosk, so a script error has to say so on the wall. */
+#error{
+  display:none; position:fixed; inset:auto 0 0 0; z-index:9;
+  background:#7A1D10; color:#FFE9E2;
+  font:13px/1.5 ui-monospace,Consolas,monospace;
+  padding:12px 16px; white-space:pre-wrap;
+}
+</style>
+</head>
+
+<body>
+
+<div class="stage">
+
+  <div class="mark">
+    <div class="title">
+      <span class="kicker">Skip list</span>
+      <h1>The Skip<br>List</h1>
+      <p>A sorted linked list with express lanes built over the top of it. A coin flip decides which values get one, and that is the whole of its balancing strategy.</p>
+      <p>Normal linked lists have slow lookup time, even when the data is sorted. Self-balancing trees (like Red-Black or AVL trees) have quick lookup but are hard to implement and cause problems when a program is multi-threaded.</p>
+      <p>Skip lists can be a great solution to this. The structure stays balanced probabilistically by randomly deciding whether or not to add a "shortcut" to that point in the data.</p>
+    </div>
+
+    <section class="card idea">
+      <h2>The idea</h2>
+      <ul>
+        <li>The bottom level is an ordinary sorted linked list. Every level above it is a shortcut over the top.</li>
+        <li>How tall a value's tower is comes from <em>coin flips</em> — there is no rule keeping it balanced.</li>
+        <li>A search drops down a level the moment the next value overshoots. O(log n), with nothing to rebalance.</li>
+      </ul>
+    </section>
+  </div>
+
+  <main class="viz">
+    <canvas id="scene"></canvas>
+    <div id="progress"></div>
+    <p class="sr" aria-live="polite" id="live-region"></p>
+  </main>
+
+  <aside class="rail">
+    <section class="card caption">
+      <h2>Right now</h2>
+      <p id="caption-text">Starting up&hellip;</p>
+    </section>
+
+    <section class="card">
+      <h2>What it costs</h2>
+      <table class="cost">
+        <thead><tr><th>Operation</th><th>Cost</th></tr></thead>
+        <tbody id="cost-body"></tbody>
+      </table>
+    </section>
+
+    <section class="card uses">
+      <h2>Where you'll meet it</h2>
+      <p id="uses-text"></p>
+    </section>
+  </aside>
+
+</div>
+
+<div id="error"></div>
+
+<script>
+function showError(message){
+  console.error(message);
+  var el = document.getElementById('error');
+  el.textContent = String(message);
+  el.style.display = 'block';
+}
+window.addEventListener('error', function(e){
+  showError((e.error && e.error.stack) || e.message || String(e));
+});
+</script>
+
+<script src="./draw.js"></script>
+<script src="./skiplist.js"></script>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- phone connection ----------------
+ *
+ * Mounted before anything below touches the canvas, so that if the director
+ * throws while setting itself up the phone still connects -- otherwise a
+ * display bug shows up on the phone as "disconnected", with nothing to say
+ * which side the problem is on.
+ *
+ * handleMessage is a hoisted function declaration, but the state it drives
+ * does not exist until start() runs at the bottom of this file, and mount()
+ * can deliver a message the moment it connects. So anything arriving early is
+ * queued here and flushed there.
+ */
+var messagingReady = false;
+var pendingMessages = [];
+var client = new FootronMessaging.Messaging();
+client.mount();
+client.addMessageListener(function(message){
+  if (!messagingReady){ pendingMessages.push(message); return; }
+  handleMessage(message);
+});
+
+/* ---------------- constants ---------------- */
+var W = 1000, H = 640;               /* the world the scene is drawn in      */
+var HOLD = 2.6;                      /* pause on the finished run, seconds   */
+var FADE = 0.5;                      /* cross-fade between runs, seconds     */
+var MIN_SPEED = 0.6, MAX_SPEED = 2.0;
+
+/* One structure per page now, so there is exactly one scene on window.Scenes.
+   Taking [0] rather than looking it up by id keeps this file from having to
+   know which structure it was built around -- the scene tag above is the only
+   place that is named. */
+var sc = (window.Scenes || [])[0];
+if (!sc) showError("No scene loaded — check that draw.js and the scene file were served.");
+
+/* ---------------- dom ---------------- */
+var canvas = document.getElementById("scene");
+var ctx = canvas.getContext("2d");
+var captionEl = document.getElementById("caption-text");
+var costBody = document.getElementById("cost-body");
+var usesEl = document.getElementById("uses-text");
+var progressEl = document.getElementById("progress");
+var liveEl = document.getElementById("live-region");
+
+var dpr = Math.min(window.devicePixelRatio || 1, 2);
+var view = { s: 1, ox: 0, oy: 0, w: 0, h: 0 };
+
+/* ---------------- state ---------------- */
+var S = {
+  speed: 1,
+  paused: false,
+  hold: 0,               /* time spent sitting on the finished run          */
+  fade: 1,               /* 0..1, the cross-fade between runs               */
+  phase: "in",           /* in | play | out                                 */
+  restart: false,        /* a fade-out is on its way to a fresh run         */
+  seed: (Date.now() ^ 0x5f3a) >>> 0
+};
+
+/* ---------------- fitting ----------------
+ *
+ * The scene is authored in a fixed 1000x640 world and contain-fitted into
+ * whatever box .viz turns out to be, so it never asks how big the wall is. On
+ * any box that is not 25:16 the leftover is a margin of backdrop, which is
+ * painted the same colour as the world so the seam does not show.
+ */
+function fit(){
+  var box = canvas.getBoundingClientRect();
+  var w = Math.max(1, box.width), h = Math.max(1, box.height);
+  view.w = w; view.h = h;
+  view.s = Math.min(w / W, h / H);
+  view.ox = (w - W * view.s) / 2;
+  view.oy = (h - H * view.s) / 2;
+  canvas.width = Math.round(w * dpr);
+  canvas.height = Math.round(h * dpr);
+}
+
+function render(){
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = D.T.ink;
+  ctx.fillRect(0, 0, view.w, view.h);
+  if (!sc) return;
+  ctx.save();
+  ctx.globalAlpha = S.fade;
+  ctx.translate(view.ox, view.oy);
+  ctx.scale(view.s, view.s);
+  /* Clip to the world so the scene cannot paint into the letterbox margin. */
+  ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
+  try { sc.draw(ctx); }
+  catch (e){ showError("Scene '" + sc.id + "' failed to draw:\n" + ((e && e.stack) || e)); }
+  ctx.restore();
+}
+
+/* ---------------- the rail ---------------- */
+
+/* Built once rather than per frame: the rows never change, and rebuilding the
+   table would throw away the CSS transition that makes the live row light up.
+   The colour comes from the scene rather than from the stylesheet above, so a
+   scene file that is re-accented does not need this page edited with it. */
+function dressRail(){
+  if (!sc) return;
+  document.documentElement.style.setProperty("--accent", sc.accent);
+
+  costBody.innerHTML = "";
+  sc.cost.forEach(function(row){
+    var tr = document.createElement("tr");
+    tr.dataset.key = row.key;
+    tr.innerHTML =
+      '<td><span class="op"></span><span class="note"></span></td>' +
+      '<td class="big"></td>';
+    tr.querySelector(".op").textContent = row.op;
+    tr.querySelector(".note").textContent = row.note;
+    tr.querySelector(".big").textContent = row.big;
+    costBody.appendChild(tr);
+  });
+
+  /* The scene file is the only source of this string and it carries a little
+     markup on purpose (<em>), so this is innerHTML. Nothing from the phone or
+     from anywhere else ever reaches it. */
+  usesEl.innerHTML = sc.uses;
+}
+
+/* The caption is swapped on a short fade rather than replaced outright: on a
+   wall, text that changes instantly under your eye reads as a glitch. */
+var shownCaption = null;
+var captionTimer = null;
+function syncCaption(force){
+  if (!sc || !sc.beats) return;
+  var cap = sc.beats.cap;
+  if (cap === shownCaption && !force) return;
+  shownCaption = cap;
+  if (force){
+    /* Seeking, so there is nothing to fade from. */
+    clearTimeout(captionTimer);
+    captionEl.classList.remove("swap");
+    captionEl.innerHTML = cap || "";
+    liveEl.textContent = captionEl.textContent;
+    return;
+  }
+  captionEl.classList.add("swap");
+  clearTimeout(captionTimer);
+  captionTimer = setTimeout(function(){
+    captionEl.innerHTML = cap || "";
+    captionEl.classList.remove("swap");
+    /* Screen readers get the plain text, without the emphasis markup. */
+    liveEl.textContent = captionEl.textContent;
+  }, 170);
+}
+
+var shownHot = null;
+function syncCost(){
+  if (!sc || !sc.beats) return;
+  var hot = sc.beats.hot;
+  if (hot === shownHot) return;
+  shownHot = hot;
+  var rows = costBody.children;
+  for (var i = 0; i < rows.length; i++){
+    rows[i].classList.toggle("live", rows[i].dataset.key === hot);
+  }
+}
+
+function syncProgress(){
+  if (!sc || !sc.beats) return;
+  progressEl.style.width = (sc.beats.progress() * 100).toFixed(1) + "%";
+}
+
+/* ---------------- the director ---------------- */
+
+/* One structure, so "load" is always the same structure again with different
+   data: different names in the filter, different coin flips, a different chain
+   of evictions. */
+function load(newSeed){
+  if (!sc) return;
+  if (newSeed) S.seed = (S.seed * 1664525 + 1013904223) >>> 0;
+  try { sc.reset(S.seed); }
+  catch (e){ showError("Scene '" + sc.id + "' failed to start:\n" + ((e && e.stack) || e)); }
+  S.hold = 0;
+  shownCaption = null; shownHot = null;
+  /* Set outright rather than cross-faded: the scene is only ever loaded while
+     the canvas is faded out, so there is nothing on screen to fade from. */
+  syncCaption(true);
+  syncCost();
+  syncProgress();
+}
+
+function replay(){
+  if (S.phase === "out") return;      /* already on the way to a fresh run   */
+  S.restart = true;
+  S.phase = "out";
+}
+
+function update(dt){
+  if (!sc) return;
+
+  if (S.phase === "out"){
+    S.fade -= dt / FADE;
+    if (S.fade <= 0){
+      S.fade = 0;
+      load(S.restart);
+      S.restart = false;
+      S.phase = "in";
+    }
+    return;
+  }
+  if (S.phase === "in"){
+    S.fade += dt / FADE;
+    if (S.fade >= 1){ S.fade = 1; S.phase = "play"; }
+  }
+
+  if (S.paused) return;
+
+  try { sc.step(dt * S.speed); }
+  catch (e){ showError("Scene '" + sc.id + "' failed while running:\n" + ((e && e.stack) || e)); return; }
+
+  syncCaption();
+  syncCost();
+  syncProgress();
+
+  if (sc.beats && sc.beats.done){
+    S.hold += dt;
+    /* The run is over and there is nowhere else to go, so it plays again with
+       fresh data rather than freezing on the last frame. */
+    if (S.hold > HOLD) replay();
+  }
+}
+
+var last = 0;
+function frame(ts){
+  requestAnimationFrame(frame);
+  if (!last) last = ts;
+  /* Clamped, because a tab that was backgrounded comes back with a huge dt and
+     would otherwise skip most of a run in a single step. */
+  var dt = Math.min((ts - last) / 1000, 0.05);
+  last = ts;
+  update(dt);
+  render();
+}
+
+/* ---------------- controls from the phone ----------------
+ *
+ * The message names below are exactly the ones the panel in
+ * controls/lib/index.js sends. Nothing is ever sent back the other way -- the
+ * wall only adds a listener -- so the panel owns its own copy of the state and
+ * seeds it from the same defaults.
+ */
+function handleMessage(message){
+  if (!message || typeof message !== "object") return;
+  switch (message.type){
+    case "speed":
+      S.speed = D.clamp(Number(message.value) || 1, MIN_SPEED, MAX_SPEED);
+      break;
+
+    case "pause":
+      S.paused = message.value === undefined ? !S.paused : !!message.value;
+      break;
+
+    case "shuffle":
+      /* New data, from the top. */
+      S.paused = false;
+      replay();
+      break;
+
+    case "resume":
+      /* Nobody is driving any more: back to the defaults and playing, which is
+         how the wall should look when it is left alone. Clearing the pause
+         matters most -- a scene left frozen stays frozen for whoever walks up
+         next. */
+      S.paused = false;
+      S.speed = 1;
+      replay();
+      break;
+
+    default:
+      console.warn("Unrecognized message type", message.type);
+  }
+}
+
+window.messageHandler = handleMessage;   /* purely for local testing */
+
+/* Authoring keys. The wall has no keyboard; these are for working on the page.
+   Space pauses, R deals new data. */
+document.addEventListener("keydown", function(e){
+  if (e.code === "Space"){ e.preventDefault(); S.paused = !S.paused; }
+  else if (e.key === "r" || e.key === "R"){ replay(); }
+});
+
+/* ---------------- start ---------------- */
+
+/* The fonts have to be in before the first frame is measured: the scene sets
+   text in IBM Plex Mono and centres things on measureText, and a layout
+   measured while Consolas is standing in is a layout that is wrong for the
+   life of that run. */
+function fontsIn(){
+  if (!document.fonts) return Promise.resolve();
+  return Promise.all([
+    document.fonts.load("500 14px \"IBM Plex Mono\""),
+    document.fonts.load("600 14px \"IBM Plex Mono\""),
+    document.fonts.load("700 14px \"IBM Plex Mono\""),
+    document.fonts.load("400 14px \"Inter\""),
+    document.fonts.load("600 14px \"Inter\"")
+  ]).catch(function(){ /* offline kiosk: fall back and carry on */ })
+    .then(function(){ return document.fonts.ready; });
+}
+
+/*
+ * Authoring query parameters. The wall loads the bare URL, so all of this is
+ * inert in production -- it exists so a given moment can be looked at over and
+ * over without waiting for it to come round.
+ *
+ *   ?t=12.5     fast-forward that many seconds into the run before drawing
+ *   ?seed=42    fix the data instead of taking it from the clock
+ *   ?hold=1     freeze once there
+ *   ?speed=2    run at a different rate
+ *   ?bare=1     the scene alone, no chrome -- how the stills are taken
+ */
+function applyParams(){
+  var p = new URLSearchParams(location.search);
+
+  if (p.get("bare")) document.body.classList.add("bare");
+
+  var seed = p.get("seed");
+  if (seed !== null && seed !== "") S.seed = (parseInt(seed, 10) || 0) >>> 0;
+
+  var speed = parseFloat(p.get("speed"));
+  if (isFinite(speed)) S.speed = D.clamp(speed, MIN_SPEED, MAX_SPEED);
+
+  load(false);
+
+  /* Seeking is done by stepping the scene at a fixed rate rather than by
+     jumping a clock, because a beat's enter/exit hooks are what actually move
+     the structure -- skipping them would land on a drawn frame whose data
+     never happened. */
+  var seek = parseFloat(p.get("t"));
+  if (isFinite(seek) && seek > 0 && sc){
+    var acc = 0, dt = 1 / 60, guard = 0;
+    while (acc < seek && !sc.beats.done && guard++ < 60 * 600){
+      sc.step(dt); acc += dt;
+    }
+    syncCaption(true); syncCost(); syncProgress();
+  }
+
+  if (p.get("hold")) S.paused = true;
+
+  /* A seeked page should show what was asked for, not fade up to it. */
+  if (p.has("t") || p.has("hold")){ S.fade = 1; S.phase = "play"; }
+}
+
+function start(){
+  dressRail();
+  fit();
+  S.fade = 0; S.phase = "in";
+  applyParams();
+
+  /* Watch the canvas rather than the window: the viewport a browser reports in
+     its first frames is not always the one it settles on, and a fit measured
+     against that early value would otherwise stay wrong. */
+  if (window.ResizeObserver){
+    new ResizeObserver(function(){ fit(); }).observe(canvas);
+  } else {
+    window.addEventListener("resize", fit);
+  }
+  /* A face landing late changes every measureText in the scene. */
+  if (document.fonts) document.fonts.addEventListener("loadingdone", fit);
+
+  requestAnimationFrame(frame);
+
+  /* Everything handleMessage touches now exists, so it is safe to run anything
+     that arrived from the phone while this script was still starting up. */
+  messagingReady = true;
+  for (var i = 0; i < pendingMessages.length; i++) handleMessage(pendingMessages[i]);
+}
+
+fontsIn().then(start).catch(function(e){ showError(e); start(); });
+
+})();
+</script>
+
+</body>
+</html>

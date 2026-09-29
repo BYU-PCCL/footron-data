@@ -1,0 +1,17 @@
+{
+  "id": "skip-list",
+  "type": "web",
+  "title": "What Comes Next?",
+  "description": "A skip list is a sorted linked list with express lanes built over it, and a coin flip decides which values get one. No rotations, no rebalancing, and still O(log n) — which is why Redis uses one for every sorted set it keeps.",
+  "long_description": "A balanced tree is fast because somebody wrote the rotations. A skip list is fast because of coin flips.<br><br>The bottom level is an ordinary sorted linked list, and it is the only level that holds every value. Each value above it is there because a coin came up heads, then heads again — so about half the values have a second level, a quarter have a third, and one or two reach the top. Those upper levels are express lanes over the list.<br><br>A search starts at the top left and walks right until the next value would overshoot the target, then drops a level and does it again. The wall counts the comparisons it takes and, beside it, the comparisons the bottom walk would have taken.<br><br>Nothing here is staged: the heights are flipped, and both counts on screen are the real ones for the value actually searched for.",
+  "artist": "Emeline MacJanet",
+  "action_hints": [
+    "watch the coin flips decide how tall each value gets",
+    "slow it down to follow the search dropping levels",
+    "compare the two comparison counts at the end",
+    "deal new data for a different set of express lanes"
+  ],
+  "layout": "full",
+  "lifetime": 180,
+  "queueable": true
+}
