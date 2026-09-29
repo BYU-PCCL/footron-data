@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Spacetime Sandbox</title>
+    <style>
+      /*
+        Painted before any script loads. The wall must never show a white flash
+        while the bundle is fetched -- on a display this size it reads as a
+        fault, and there is nobody standing at the kiosk to reassure.
+      */
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #0b0a0c;
+        overflow: hidden;
+      }
+    </style>
+    <script type="module" crossorigin src="./assets/index-BpzVk28E.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-D3W0Eh33.css">
+  </head>
+  <body>
+    <!--
+      BYU-PCCL's messaging client, vendored as a UMD build because the wall's
+      shell has no package registry and the experience is served from a static
+      folder. It defines window.FootronMessaging; src/input/phone.ts picks it
+      up from there, and does nothing at all if it is missing.
+    -->
+    <script src="./footron-messaging.development.js"></script>
+  </body>
+</html>
