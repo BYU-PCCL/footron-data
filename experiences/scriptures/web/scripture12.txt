@@ -1,0 +1,11 @@
+“Have ye any that are sick among you?
+[Bring them hither](highlight).
+Have ye any that are lame, or blind, or halt,
+or maimed, or leprous, or that are withered,
+or that are deaf,
+or that are afflicted in any manner?
+Bring them hither and [I will heal them](underline),
+for I have [compassion](script) upon you;
+my bowels are filled with [mercy](glow).”
+
+-- 3 Nephi 17:7

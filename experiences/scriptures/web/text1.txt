@@ -1,0 +1,30 @@
+# ---------------------------------------------------------------------------
+# Lines starting with # are notes and are never shown. Delete them freely.
+#
+#   [some words](effect)        mark a run; effects fire when it finishes typing
+#   [some words](swell circle)  several effects on one run, space-separated
+#   -- Name                     a line opening with -- is the attribution
+#   (a blank line)              a stanza break
+#
+# ANIMATED SPANS (CSS, in index.html -- add a .fx-<name> rule to add one):
+#   glow       warm lamp under the word, breathing
+#   swell      arrives a size too big and settles back
+#   wobble     slow permanent shimmy
+#   shimmer    band of light sweeping through the letters
+#   highlight  marker pen swiped on behind the word
+#   script     written out by hand in WindSong rather than typed
+#
+# DOODLES (rough.js, in doodles.js -- add a case to MARKS to add one):
+#   circle     hand-drawn ellipse round the run
+#   box        hand-drawn rectangle
+#   underline  two loose passes under the baseline
+#   strike     struck through
+#   star       sparkles scattered round it
+# ---------------------------------------------------------------------------
+
+“You've gotta [dance](swell circle) like there's nobody watching,
+Love like you'll [never](glow) be hurt,
+[Sing](wobble) like there's [nobody listening](underline),
+And [live](shimmer) like it's [heaven on earth](highlight star).”
+
+-- often attributed to William W. Purkey
