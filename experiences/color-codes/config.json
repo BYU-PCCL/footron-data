@@ -1,0 +1,17 @@
+{
+  "id": "color-codes",
+  "type": "web",
+  "title": "What Color Is This?",
+  "description": "A screen has no idea what red looks like — it has three numbers per pixel. The wall picks a color and works out its hex, its rgb() and its hsl() in front of you, then turns the hue so you can watch the three channels chase each other. Pick up a phone to play it as a guessing game instead.",
+  "long_description": "Every color on a screen is three numbers, one per light: red, green and blue, each somewhere between 0 and 255.<br><br><i>Hex</i> is those same three numbers written in base 16, two digits each — 134 is eight sixteens with six left over, so it is written 86. <i>rgb()</i> is the same three numbers in base 10. <i>hsl()</i> is a different set of questions about them: how light, how colorful, and which color — and all three of those answers are read off the largest and smallest of the same three channels.<br><br>Which is why the run ends by turning the hue: the three channels climb, hold and fall, each a third of a turn behind the last. Hue is nothing but the order and spacing of those three numbers.<br><br>Pick up a phone and the wall turns into a quiz: a color, four codes, and only one of them right. Answer and the wall draws every option's real color beside its code, so a wrong guess shows you exactly what you picked.",
+  "artist": "Emeline MacJanet",
+  "action_hints": [
+    "guess the code on your phone and see what you actually picked",
+    "watch the three channels chase each other as the hue turns",
+    "follow one byte from its bar to its two hex digits",
+    "ask for a new color and watch the numbers change with it"
+  ],
+  "layout": "full",
+  "lifetime": 180,
+  "queueable": true
+}
