@@ -81,6 +81,25 @@ window.addEventListener('unhandledrejection', function (e) {
     cursor: none;
   }
 
+  /* ------------------------------------------------------- the backdrop */
+  /* The photo, heavily blurred and darkened, behind everything. It is oversized
+     past the viewport on every side because a blur fades toward transparent at
+     the element's own edges -- without the overhang the corners would go soft
+     and show the flat body colour through. The canvas is cleared, not filled,
+     each frame, so this is what shows through around the leaf. */
+  body::before {
+    content: ""; position: fixed; inset: -8vw; z-index: -2;
+    background: url(background.jpg) center / cover no-repeat;
+    filter: blur(clamp(24px, 2.4vw, 96px)) brightness(0.72);
+  }
+  /* Vignette: a little extra darkening toward the edges, on top of the photo
+     and under the canvas and HUD. */
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background: radial-gradient(ellipse at center,
+      rgba(0,0,0,0) 45%, rgba(0,0,0,.28) 80%, rgba(0,0,0,.5) 100%);
+  }
+
   /* ------------------------------------------------------------- the stage */
   /* The demo pinned this at a fixed 1200px, which is a laptop measurement and
      would leave the leaf as a postage stamp on the wall. Same 622:350 stage,
@@ -95,12 +114,6 @@ window.addEventListener('unhandledrejection', function (e) {
     width: min(88vw, 135vh);
     aspect-ratio: 622 / 350;
     display: block;
-    -webkit-mask-image: url(brush-mask-solid.png);
-            mask-image: url(brush-mask-solid.png);
-    -webkit-mask-size: 100% 100%;
-            mask-size: 100% 100%;
-    -webkit-mask-repeat: no-repeat;
-            mask-repeat: no-repeat;
   }
 
   .hud { position: fixed; z-index: 2; pointer-events: none; }
@@ -112,8 +125,19 @@ window.addEventListener('unhandledrejection', function (e) {
   }
 
   /* ------------------------------------------------ left stack: two cards */
+  /* About 12% smaller than the root scale, so the bottom of the stack clears
+     the QR code on the main Footron display. Only the type and padding
+     variables are redefined here, so everything inside the stack shrinks
+     together and the right card and bottom bar are left alone. */
   #left {
-    top: var(--edge); left: var(--edge); width: 26vw; max-width: 460px;
+    --f-label:   clamp(8.5px, 0.70vw, 14px);
+    --f-small:   clamp(9.5px, 0.81vw, 16px);
+    --f-body:    clamp(10px, 0.92vw, 18.5px);
+    --f-h1:      clamp(18px, 1.67vw, 33px);
+    --f-date:    clamp(18.5px, 1.80vw, 36px);
+    --pad:       clamp(10px, 0.75vw, 16px);
+
+    top: var(--edge); left: var(--edge); width: 23vw; max-width: 405px;
     display: flex; flex-direction: column; gap: calc(var(--pad) * 0.8);
   }
 
@@ -156,6 +180,22 @@ window.addEventListener('unhandledrejection', function (e) {
   .badge.none   { background: rgba(255,255,255,.07); color: var(--dim); }
   .badge.held   { background: rgba(95,158,74,.20); color: #a7d392; }
   .badge.fallen { background: rgba(224,162,81,.18); color: var(--accent); }
+
+  /* ------------------------ top right: where the leaf sits in the grid ---
+     Carried over from leaf-season.html's grid map, sized for the wall like
+     the left cards. The canvas backing store is sized from its CSS box in
+     resize(), so it stays sharp at any wall resolution. */
+  #gridmap { top: var(--edge); right: var(--edge); width: 19vw; max-width: 380px; }
+  .panel-h {
+    margin: 0 0 .7em; font-size: var(--f-label); text-transform: uppercase;
+    letter-spacing: .1em; color: var(--dim); font-weight: 650;
+  }
+  #mapc { display: block; width: 100%; aspect-ratio: 4 / 3; border-radius: calc(var(--radius) * 0.5); }
+  .axl {
+    display: flex; justify-content: space-between; color: var(--dim);
+    font-size: var(--f-small); margin-top: .4em;
+    font-family: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  }
 
   /* ---------- bottom centre: how far through the season we are ----------
      The demo had play / step / speed / controls buttons here. The wall has no
@@ -245,6 +285,14 @@ window.addEventListener('unhandledrejection', function (e) {
 
 </div>
 
+<div class="hud" id="gridmap">
+  <div class="card">
+    <div class="panel-h">Where the leaf sits in the grid</div>
+    <canvas id="mapc"></canvas>
+    <div class="axl"><span>full green</span><span>dead brown</span></div>
+  </div>
+</div>
+
 <div class="hud" id="bar">
   <div class="card">
     <div id="season">Aug 1 &ndash; Nov 28 &middot; one season</div>
@@ -258,7 +306,7 @@ window.addEventListener('unhandledrejection', function (e) {
   <div id="bootbar"><i id="bootFill"></i></div>
 </div></div>
 
-<div id="build-marker">leaves: pixel-1</div>
+<div id="build-marker">leaves: pixel-4</div>
 <div id="error-overlay"></div>
 
 <!-- onerror distinguishes the two ways the guards below can trip: the file not
@@ -557,11 +605,11 @@ function draw() {
   var W = cv.width / dpr, H = cv.height / dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  var g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, '#dfcebf');
-  g.addColorStop(1, '#b6a79a');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, W, H);
+  /* Cleared rather than painted: the canvas is transparent so the page's
+     blurred backdrop shows through it. Clearing every frame is still what wipes
+     the previous frame's leaf -- with no fill to cover it, skipping this would
+     leave every position the leaf has been drawn at smeared across the stage. */
+  ctx.clearRect(0, 0, W, H);
 
   var leaf = sim.leaves[0];
 
@@ -625,6 +673,65 @@ function draw() {
   ctx.globalAlpha = 1 - 0.40 * ease;
   interp.draw(ctx, interp.atCell(shownCC.cx, shownCC.cy), cx, y, w, rot);
   ctx.globalAlpha = 1;
+
+  /* The map marks the same glided position the leaf is drawn from, so the dot
+     slides with the picture instead of jumping a day at a time. */
+  drawMap(shownCC, leaf.attached);
+}
+
+/* ------------------------------------------------- the grid position map */
+/* From leaf-season.html: every reference cell at its measured colour, the dot
+ * where the leaf sits, and the ring around the 2 x 2 quad being blended. */
+var mapc = el('mapc'), mctx = mapc.getContext('2d');
+var MAP_CELLS = (function () {
+  var rows = G.rowsOf(SPECIES), out = [];
+  for (var r = 0; r < rows; r++) {
+    for (var c = 0; c < G.COLS; c++) {
+      out.push({ c: c, r: r, hex: G.cellColor(SPECIES, G.xAt(c), G.yAt(SPECIES, r)) });
+    }
+  }
+  return out;
+})();
+
+function drawMap(cc, attached) {
+  var W = mapc.width, H = mapc.height, rows = G.rowsOf(SPECIES), cols = G.COLS;
+  var cw = W / cols, ch = H / rows;
+  var u = W / 440;                                   // line/dot scale vs. the demo's 440px map
+  mctx.clearRect(0, 0, W, H);
+
+  for (var i = 0; i < MAP_CELLS.length; i++) {
+    var m = MAP_CELLS[i];
+    mctx.fillStyle = m.hex;
+    /* Row 0 is y = 0 and belongs at the BOTTOM. */
+    mctx.fillRect(m.c * cw, H - (m.r + 1) * ch, cw + 0.5, ch + 0.5);
+  }
+
+  mctx.strokeStyle = 'rgba(0,0,0,.22)';
+  mctx.lineWidth = u;
+  for (var c = 1; c < cols; c++) {
+    mctx.beginPath(); mctx.moveTo(c * cw, 0); mctx.lineTo(c * cw, H); mctx.stroke();
+  }
+  for (var r = 1; r < rows; r++) {
+    mctx.beginPath(); mctx.moveTo(0, r * ch); mctx.lineTo(W, r * ch); mctx.stroke();
+  }
+
+  var px = (cc.cx + 0.5) * cw;
+  var py = H - (cc.cy + 0.5) * ch;
+
+  var c0 = Math.max(0, Math.min(cols - 2, Math.floor(cc.cx)));
+  var r0 = Math.max(0, Math.min(rows - 2, Math.floor(cc.cy)));
+  var inset = 0.75 * u;
+  mctx.strokeStyle = 'rgba(255,255,255,.30)';
+  mctx.lineWidth = 1.5 * u;
+  mctx.strokeRect(c0 * cw + inset, H - (r0 + 2) * ch + inset, cw * 2 - 2 * inset, ch * 2 - 2 * inset);
+
+  mctx.beginPath();
+  mctx.arc(px, py, 6.5 * u, 0, Math.PI * 2);
+  mctx.fillStyle = attached ? '#fff' : 'rgba(255,255,255,.35)';
+  mctx.fill();
+  mctx.lineWidth = 2 * u;
+  mctx.strokeStyle = 'rgba(0,0,0,.55)';
+  mctx.stroke();
 }
 
 /* ------------------------------------------------------------------- hud */
@@ -732,6 +839,9 @@ function resize() {
   var rect = cv.getBoundingClientRect();
   cv.width = Math.round(rect.width * dpr);
   cv.height = Math.round(rect.height * dpr);
+  var mrect = mapc.getBoundingClientRect();
+  mapc.width = Math.max(1, Math.round(mrect.width * dpr));
+  mapc.height = Math.max(1, Math.round(mrect.height * dpr));
 }
 })();
 </script>
