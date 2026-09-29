@@ -1,0 +1,17 @@
+{
+  "id": "trie",
+  "title": "Trie: How Autocomplete Works",
+  "description": "Words that start the same way share the same branch. A trie stores every word as a path out from the centre, one letter per step — so typing “ca” lights up everything that could come next.",
+  "long_description": "The centre is the empty word. Each step outward adds one letter, and a dot marks where a real word ends — so “car”, “card”, “care” and “career” are one branch that forks near the tips.<br><br>Watch new words arrive: the letters they share with words already there light up and cost nothing, and only the new ending grows. The number in the corner is how many letters the sharing has saved.<br><br>Then it autocompletes: walk down the prefix, and every word below that point is a suggestion. Looking a word up takes one step per letter, however many millions of words are stored — which is why phone keyboards, spell checkers and internet routers use tries.",
+  "action_hints": [
+    "add a word and watch which letters it shares",
+    "autocomplete a random prefix",
+    "add ten words at once and watch the branches thicken",
+    "clear it and grow the tree from nothing"
+  ],
+  "type": "web",
+  "layout": "full",
+  "lifetime": 180,
+  "queueable": true,
+  "unlisted": false
+}
