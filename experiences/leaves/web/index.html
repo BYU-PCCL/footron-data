@@ -1,0 +1,849 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wasatch Fall</title>
+
+<script>
+// Error surfacing, registered here in <head> before ANY other script so a
+// failure in model.js, one of the grid modules, or the scene script below is
+// visible on the wall itself -- there is no devtools access to the kiosk, so
+// without this a failure is just a black screen with no way to find out why.
+// The overlay element does not exist yet at this point, so it is looked up
+// lazily.
+function showError(message) {
+    console.error(message);
+    var overlay = document.getElementById('error-overlay');
+    if (!overlay) {
+        // Failed before <body> parsed -- hold it until the DOM is ready.
+        document.addEventListener('DOMContentLoaded', function () { showError(message); });
+        return;
+    }
+    overlay.textContent = String(message);
+    overlay.style.display = 'block';
+}
+window.addEventListener('error', function (e) {
+    showError((e.error && e.error.stack) || e.message || String(e));
+});
+window.addEventListener('unhandledrejection', function (e) {
+    showError('Unhandled promise rejection: ' + ((e.reason && e.reason.stack) || e.reason));
+});
+</script>
+
+<script src="./footron-messaging.development.js"></script>
+
+<!-- Display fonts. Every rule below names a real system fallback after them,
+     because the kiosk is not guaranteed to reach fonts.googleapis.com and a
+     missing webfont must degrade to a readable page rather than to nothing. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kranky&family=Montserrat:wght@400;600&display=swap">
+
+<style>
+  :root {
+    --ink:    #f4ece0;
+    --dim:    #a9998a;
+    --faint:  #7d7065;
+    --glass:  rgba(28, 22, 17, 0.62);
+    --line:   rgba(244, 236, 224, 0.11);
+    --accent: #e0a251;
+
+    /* ------------------------------------------------------------------------
+     * WALL TYPOGRAPHY
+     *
+     * The standalone demo was authored for a laptop at arm's length and its HUD
+     * runs at 11-12.5px. On the wall the same page is read from across a room,
+     * so every size here is viewport-relative with a floor (so it stays sane in
+     * a desktop browser during development) and a ceiling (so it does not grow
+     * into the scene on an oversized viewport). Carried over unchanged from the
+     * hillside build of this page, where the ceilings were set against
+     * twindragon's caption -- the one size on this wall already known to read
+     * well.
+     * ----------------------------------------------------------------------*/
+    --f-label:   clamp(9.5px, 0.80vw, 16px);   /* uppercase panel headers */
+    --f-small:   clamp(10.5px, 0.92vw, 18px);  /* secondary readouts */
+    --f-body:    clamp(11.5px, 1.05vw, 21px);  /* the readout grid */
+    --f-h1:      clamp(20px, 1.90vw, 38px);
+    --f-date:    clamp(21px, 2.05vw, 41px);
+
+    --pad:  clamp(11px, 0.85vw, 18px);
+    --edge: clamp(16px, 1.15vw, 26px);         /* inset from the screen edge */
+    --radius: clamp(10px, 0.7vw, 15px);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; overflow: hidden; background: #302822; color: var(--ink);
+    font: var(--f-body)/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    /* Nothing on the wall is clickable and there is no cursor to show. */
+    cursor: none;
+  }
+
+  /* ------------------------------------------------------- the backdrop */
+  /* The photo, heavily blurred and darkened, behind everything. It is oversized
+     past the viewport on every side because a blur fades toward transparent at
+     the element's own edges -- without the overhang the corners would go soft
+     and show the flat body colour through. The canvas is cleared, not filled,
+     each frame, so this is what shows through around the leaf. */
+  body::before {
+    content: ""; position: fixed; inset: -8vw; z-index: -2;
+    background: url(background.jpg) center / cover no-repeat;
+    filter: blur(clamp(24px, 2.4vw, 96px)) brightness(0.72);
+  }
+  /* Vignette: a little extra darkening toward the edges, on top of the photo
+     and under the canvas and HUD. */
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background: radial-gradient(ellipse at center,
+      rgba(0,0,0,0) 45%, rgba(0,0,0,.28) 80%, rgba(0,0,0,.5) 100%);
+  }
+
+  /* ------------------------------------------------------------- the stage */
+  /* The demo pinned this at a fixed 1200px, which is a laptop measurement and
+     would leave the leaf as a postage stamp on the wall. Same 622:350 stage,
+     sized off the viewport instead: 135vh is the height-bound case (on 16:9
+     that is ~76vh tall, clear of both the bottom bar and the top cards) and
+     88vw catches a viewport wider than 16:9. */
+  #c {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(88vw, 135vh);
+    aspect-ratio: 622 / 350;
+    display: block;
+  }
+
+  .hud { position: fixed; z-index: 2; pointer-events: none; }
+  .card {
+    background: var(--glass); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: var(--pad) calc(var(--pad) * 1.18);
+    backdrop-filter: blur(11px); -webkit-backdrop-filter: blur(11px);
+    box-shadow: 0 10px 34px rgba(0,0,0,.42);
+  }
+
+  /* ------------------------------------------------ left stack: two cards */
+  /* About 12% smaller than the root scale, so the bottom of the stack clears
+     the QR code on the main Footron display. Only the type and padding
+     variables are redefined here, so everything inside the stack shrinks
+     together and the right card and bottom bar are left alone. */
+  #left {
+    --f-label:   clamp(8.5px, 0.70vw, 14px);
+    --f-small:   clamp(9.5px, 0.81vw, 16px);
+    --f-body:    clamp(10px, 0.92vw, 18.5px);
+    --f-h1:      clamp(18px, 1.67vw, 33px);
+    --f-date:    clamp(18.5px, 1.80vw, 36px);
+    --pad:       clamp(10px, 0.75vw, 16px);
+
+    top: var(--edge); left: var(--edge); width: 23vw; max-width: 405px;
+    display: flex; flex-direction: column; gap: calc(var(--pad) * 0.8);
+  }
+
+  /* card one — what the thing is */
+  #about h1 {
+    margin: 0 0 .25em; font-size: var(--f-h1); font-weight: 600; letter-spacing: .1px;
+    font-family: "Kranky", Georgia, "Times New Roman", serif;
+  }
+  #about p {
+    margin: 0 0 .6em; color: var(--dim); font-size: var(--f-body); line-height: 1.62;
+    font-family: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  }
+  #about p:last-child { margin-bottom: 0; }
+  #about em { color: var(--ink); font-style: normal; }
+
+  /* card two — where the season is right now */
+  #date {
+    display: flex; align-items: baseline; gap: .45em; margin: 0 0 .25em;
+    font-family: "Kranky", Georgia, "Times New Roman", serif;
+  }
+  #date .d { font-size: var(--f-date); font-weight: 600; letter-spacing: -.01em; line-height: 1.1; }
+  #date .n { color: var(--faint); font-size: var(--f-small); font-variant-numeric: tabular-nums; }
+  #seasonbar {
+    height: clamp(3px, 0.24vw, 5px); border-radius: 2px; background: rgba(255,255,255,.09);
+    overflow: hidden; margin: .55em 0 .8em;
+  }
+  #seasonbar i { display: block; height: 100%; width: 0; background: var(--accent); }
+  .env {
+    display: grid; grid-template-columns: auto auto; gap: .25em 1.2em;
+    font-size: var(--f-body); font-family: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  }
+  .env span:nth-child(odd) { color: var(--dim); }
+  .env span:nth-child(even) { text-align: right; font-variant-numeric: tabular-nums; }
+  .badge {
+    display: inline-block; padding: .1em .45em; border-radius: .3em;
+    font-size: var(--f-label); font-weight: 700; letter-spacing: .05em;
+  }
+  .badge.frost  { background: #2b4b6b; color: #d5e9ff; }
+  .badge.freeze { background: #6b2b33; color: #ffdde1; }
+  .badge.none   { background: rgba(255,255,255,.07); color: var(--dim); }
+  .badge.held   { background: rgba(95,158,74,.20); color: #a7d392; }
+  .badge.fallen { background: rgba(224,162,81,.18); color: var(--accent); }
+
+  /* ------------------------ top right: where the leaf sits in the grid ---
+     Carried over from leaf-season.html's grid map, sized for the wall like
+     the left cards. The canvas backing store is sized from its CSS box in
+     resize(), so it stays sharp at any wall resolution. */
+  #gridmap { top: var(--edge); right: var(--edge); width: 19vw; max-width: 380px; }
+  .panel-h {
+    margin: 0 0 .7em; font-size: var(--f-label); text-transform: uppercase;
+    letter-spacing: .1em; color: var(--dim); font-weight: 650;
+  }
+  #mapc { display: block; width: 100%; aspect-ratio: 4 / 3; border-radius: calc(var(--radius) * 0.5); }
+  .axl {
+    display: flex; justify-content: space-between; color: var(--dim);
+    font-size: var(--f-small); margin-top: .4em;
+    font-family: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  }
+
+  /* ---------- bottom centre: how far through the season we are ----------
+     The demo had play / step / speed / controls buttons here. The wall has no
+     pointer, so all of that moved to the phone (see handleMessage below) and
+     what is left is the one thing a passer-by needs: where in the season the
+     picture they are looking at sits. */
+  #bar { bottom: var(--edge); left: 50%; transform: translateX(-50%); text-align: center; }
+  #bar .card { padding: calc(var(--pad) * 0.75) calc(var(--pad) * 1.3); }
+  #season {
+    font-size: var(--f-label); text-transform: uppercase; letter-spacing: .1em;
+    color: var(--faint); font-weight: 650; margin-bottom: .7em;
+  }
+  #prog {
+    width: 26vw; height: clamp(4px, 0.32vw, 7px); border-radius: 99px;
+    background: rgba(255,255,255,.12); overflow: hidden;
+  }
+  #prog i { display: block; height: 100%; width: 0; background: var(--accent); }
+
+  /* ---------------------------------------------------------------- boot */
+  #boot {
+    position: fixed; inset: 0; z-index: 9; display: grid; place-items: center;
+    background: #0b0908; text-align: center; padding: 24px;
+  }
+  #boot .in { max-width: 40vw; }
+  #boot h2 { font-size: var(--f-h1); font-weight: 600; margin: 0 0 .5em; }
+  #boot p { color: var(--dim); margin: 0 0 1em; font-size: var(--f-body); }
+  #bootbar {
+    width: 26vw; height: clamp(3px, 0.24vw, 5px); border-radius: 2px;
+    background: rgba(255,255,255,.12); overflow: hidden; margin: 0 auto;
+  }
+  #bootbar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .15s; }
+  #boot.err h2 { color: #e8907f; }
+  #boot code { background: rgba(255,255,255,.07); padding: 2px 6px; border-radius: 4px; }
+
+  /* Surfaces JS errors directly on the wall screen -- there is no devtools
+     access to the kiosk, so this is the only way to see why the display might
+     be black. */
+  #error-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 9999;
+    padding: 24px;
+    background: rgba(80,0,0,0.92); color: #fff;
+    font: 16px/1.5 ui-monospace, monospace;
+    white-space: pre-wrap; overflow: auto;
+  }
+
+  /* Always-visible build marker so we can tell, just by looking at the wall,
+     whether it is actually running the latest deployed code -- bump the string
+     any time this file changes meaningfully. */
+  #build-marker {
+    position: fixed; right: 6px; bottom: 6px; z-index: 9998;
+    color: rgba(255,255,255,0.30);
+    font: 11px ui-monospace, monospace;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<div class="hud" id="left">
+
+  <div class="card" id="about">
+    <h1>Simulated color change</h1>
+    <p>Every fall, leaves change color based on measurable environmental
+      conditions. Depending on which chemicals are present in a leaf at a given
+      time, oranges, reds, yellows, and browns manifest differently. This
+      program visualizes those chemical changes in real time.</p>
+    <p>Try scanning the QR code to change the amount of cloud cover, wind, and
+      monthly temperature to see how the leaf reacts!</p>
+  </div>
+
+  <div class="card" id="tracker">
+    <div id="date"><span class="d" id="oDate">Aug 1</span><span class="n" id="oDay">day 0 / 120</span></div>
+    <div id="seasonbar"><i id="seasonFill"></i></div>
+    <div class="env">
+      <span>Night low</span><span id="oTmin">&mdash;</span>
+      <span>Daylength</span><span id="oLen">&mdash;</span>
+      <span>Sunlight</span><span id="oSun">&mdash;</span>
+      <span>Gust</span><span id="oGust">&mdash;</span>
+      <span>Precip</span><span id="oPrecip">&mdash;</span>
+      <span>Overnight</span><span id="oFrost">&mdash;</span>
+      <span>Leaf</span><span id="oHeld">&mdash;</span>
+    </div>
+  </div>
+
+</div>
+
+<div class="hud" id="gridmap">
+  <div class="card">
+    <div class="panel-h">Where the leaf sits in the grid</div>
+    <canvas id="mapc"></canvas>
+    <div class="axl"><span>full green</span><span>dead brown</span></div>
+  </div>
+</div>
+
+<div class="hud" id="bar">
+  <div class="card">
+    <div id="season">Aug 1 &ndash; Nov 28 &middot; one season</div>
+    <div id="prog"><i id="progFill"></i></div>
+  </div>
+</div>
+
+<div id="boot"><div class="in">
+  <h2 id="bootH">Loading cells</h2>
+  <p id="bootP">Putting each into leaf space.</p>
+  <div id="bootbar"><i id="bootFill"></i></div>
+</div></div>
+
+<div id="build-marker">leaves: pixel-4</div>
+<div id="error-overlay"></div>
+
+<!-- onerror distinguishes the two ways the guards below can trip: the file not
+     arriving at all, versus arriving and running but not publishing its global.
+     They present identically from the page's side and have completely different
+     fixes, and there is no devtools on the kiosk to tell them apart. -->
+<script src="model.js"       onerror="window.__loadFailed = (window.__loadFailed || []).concat('model.js')"></script>
+<script src="grid.js"        onerror="window.__loadFailed = (window.__loadFailed || []).concat('grid.js')"></script>
+<script src="leafspace.js"   onerror="window.__loadFailed = (window.__loadFailed || []).concat('leafspace.js')"></script>
+<script src="interpolate.js" onerror="window.__loadFailed = (window.__loadFailed || []).concat('interpolate.js')"></script>
+<script>
+/* ============================================================================
+ * Wasatch Fall — one leaf, one season. The wall cut of pixel/demo.html.
+ *
+ * Nothing biological is decided here. A single bigtooth maple leaf comes from
+ * M.createSim(), is advanced one simulated day at a time by the model, and each
+ * frame is asked one question — where are you in the grid? — via
+ * LeafGrid.axesOf(). The answer indexes the image: the leaf is drawn by
+ * bilinearly blending the four surrounding reference cells, per pixel, rather
+ * than filled with a single average colour. This file owns layout and the
+ * clock, and nothing else.
+ *
+ * Two differences from the standalone demo, both of them the wall:
+ *
+ *   No controls on the page. The demo's bottom action bar and its `C` controls
+ *   panel are gone, along with the diagnostic toggles (pigment bars, grid map,
+ *   flat comparison, perf readout) — the wall has no pointer and no keyboard,
+ *   so nothing on it is touchable. Every control the demo had lives on the
+ *   phone instead; the message names below are exactly the `type` strings that
+ *   controls/lib/index.js sends.
+ *
+ *   The season never ends. The demo could stop at day 120; an unattended wall
+ *   must not, so a finished season always rolls straight into a fresh one with
+ *   a new seed. There is no "loop" option to turn that off.
+ * ==========================================================================*/
+(function () {
+'use strict';
+
+/* --------------------------------------------------------------------------
+ * PHONE CONNECTION -- opened before anything else in this script.
+ *
+ * Connecting first means a rendering failure below (a bad canvas context, a
+ * throw while the grid loads, anything) cannot also take the phone connection
+ * down with it. Otherwise a display-only bug shows up on the phone as
+ * "disconnected", with nothing to indicate the problem is on the wall's side.
+ *
+ * handleMessage is a function declaration further down and so is hoisted, but
+ * the state it touches (sim, interp, CTL) does not exist until the grid has
+ * finished loading -- and mount() can deliver a message long before that, since
+ * the cells are 38 MB. So messages are queued here and flushed once the scene
+ * is actually running.
+ * ------------------------------------------------------------------------*/
+var messagingReady = false;
+var pendingMessages = [];
+var client = new FootronMessaging.Messaging();
+client.mount();
+client.addMessageListener(function (message) {
+  if (!messagingReady) { pendingMessages.push(message); return; }
+  handleMessage(message);
+});
+
+/* Every module publishes its global unconditionally (see the note at the top of
+ * each file), so a missing global here means the file did not arrive rather
+ * than that it picked the wrong export branch. onerror above records which. */
+var NEEDED = [['LeafModel', 'model.js'], ['LeafGrid', 'grid.js'],
+              ['LeafSpace', 'leafspace.js'], ['LeafInterp', 'interpolate.js']];
+for (var g = 0; g < NEEDED.length; g++) {
+  if (!window[NEEDED[g][0]]) {
+    var failed = window.__loadFailed || [];
+    throw new Error(
+      NEEDED[g][1] + ' did not publish window.' + NEEDED[g][0] + '. ' +
+      (failed.indexOf(NEEDED[g][1]) >= 0
+        ? 'Its request errored, so the file is not in the deployed bundle at this path.'
+        : 'The file loaded and ran but set no global.'));
+  }
+}
+
+var M = window.LeafModel, G = window.LeafGrid;
+var SPECIES = 'bigtoothMaple';
+
+var el = function (id) { return document.getElementById(id); };
+var cv = el('c'), ctx = cv.getContext('2d');
+var interp = null, sim = null, dpr = 1;
+var playing = true, acc = 0, lastT = 0;
+
+/* --------------------------------------------------------------------------
+ * CONTROL STATE
+ *
+ * The demo read these straight off its own sliders. With the sliders gone this
+ * plain object is the only copy, written by phone messages (handleMessage) and
+ * by the query string, and read by readControls().
+ *
+ * `speed` is not a model control -- it is how fast the clock runs -- so it sits
+ * here beside the six the model does take rather than in sim.controls.
+ * ------------------------------------------------------------------------*/
+var CTL = {
+  tempOffset:   M.DEFAULT_CONTROLS.tempOffset,
+  cloudCover:   M.DEFAULT_CONTROLS.cloudCover,
+  windMean:     M.DEFAULT_CONTROLS.windMean,
+  precipMult:   M.DEFAULT_CONTROLS.precipMult,
+  winterPrecip: M.DEFAULT_CONTROLS.winterPrecip,
+  latitude:     M.DEFAULT_CONTROLS.latitude,
+  speed:        1.5
+};
+
+/* Ranges are the demo's slider bounds, and controls/lib/index.js uses the same
+ * numbers -- so the phone cannot ask for a value the wall silently reels back
+ * in, and the number shown on the phone is always the number the model got.
+ * Clamped here anyway, because a message is an input from off the machine. */
+var CTL_RANGE = {
+  tempOffset:   [-6, 6],
+  cloudCover:   [0, 100],
+  windMean:     [0, 12],
+  precipMult:   [0, 3],
+  winterPrecip: [0.3, 1.8],
+  latitude:     [30, 46],
+  speed:        [0.25, 6]
+};
+
+function setCtl(key, value) {
+  var r = CTL_RANGE[key];
+  if (!r) return false;
+  var v = parseFloat(value);
+  if (!isFinite(v)) return false;
+  CTL[key] = M.clamp(v, r[0], r[1]);
+  return true;
+}
+
+function readControls() {
+  return {
+    tempOffset: CTL.tempOffset,
+    cloudCover: CTL.cloudCover,
+    windMean: CTL.windMean,
+    precipMult: CTL.precipMult,
+    winterPrecip: CTL.winterPrecip,
+    latitude: CTL.latitude
+  };
+}
+
+/* Weather takes effect going forward -- a leaf already brown does not go back.
+ * Before the season opens, though, re-seed day 0 so the readouts (daylength in
+ * particular) answer the new latitude straight away rather than on the first
+ * step. */
+function applyEnvChange() {
+  if (!sim) return;
+  var c = readControls();
+  for (var k in c) sim.controls[k] = c[k];
+  if (sim.day === 0) {
+    sim.env = M.makeEnvironment(sim.doy, sim.controls, M.makeRng(sim.seed ^ 0xC2B2AE35));
+    refreshHud();
+  }
+}
+
+/* ------------------------------------------------------------------ boot */
+LeafInterp.load({
+  species: SPECIES,
+  /* Twice the module default. x spans 7 cell intervals, so 6 substeps is 42
+     distinct composites across a whole season — one new image roughly every
+     three simulated days, which at a leaf this size reads as a visible pop.
+     12 halves the interval to ~1.4 days. There is no point going further:
+     the model only advances in whole days, so at the default 1.5x transport
+     (~4.8 days a second) the day step becomes the binding constraint. */
+  substeps: 12,
+  /* Measured: a season visits 96 distinct composites (28 before the glide went
+     in). Sized above that so a replay of the same seed is all hits rather than
+     evicting the path exactly as it wraps. ~128 MB at 512 px. */
+  cacheMax: 128,
+  onProgress: function (done, total) {
+    el('bootFill').style.width = (100 * done / total).toFixed(0) + '%';
+    el('bootH').textContent = 'Loading cells — ' + done + ' / ' + total;
+  }
+}).then(function (gi) {
+  interp = gi;
+  el('boot').style.display = 'none';
+  start();
+}).catch(function (err) {
+  var b = el('boot');
+  b.className = 'err';
+  el('bootH').textContent = 'Could not load the grid';
+  el('bootP').innerHTML = String(err.message || err) +
+    '<br><br>The reference cells are read pixel by pixel, which browsers refuse ' +
+    'over <code>file://</code> — this page has to be served, and ' +
+    '<code>cells/bigtoothMaple/</code> has to be beside it in the deployed bundle.';
+  el('bootbar').style.display = 'none';
+});
+
+function start() {
+  resize();
+  window.addEventListener('resize', resize);
+  var q = applyQuery();
+  buildSim(q.seed == null ? 20260910 : q.seed);
+  /* ?day=62 runs the season forward without drawing, so a particular day of a
+     particular season is reproducible from a URL — which is how thumb.jpg and
+     wide.jpg get captured. markCoords after the run-up, not during it: the
+     glide has no meaning for days that were never drawn, and without this the
+     picture would sit on the day-0 composite while every readout showed the day
+     asked for. */
+  if (q.day) { for (var d = 0; d < q.day && sim.step(); d++); markCoords(true); refreshHud(); }
+  if (q.paused || q.day) setPlaying(false);
+  lastT = performance.now();
+  requestAnimationFrame(frame);
+
+  // Everything handleMessage touches now exists, so it is safe to run anything
+  // that arrived from the phone while the cells were still loading.
+  messagingReady = true;
+  for (var pm = 0; pm < pendingMessages.length; pm++) handleMessage(pendingMessages[pm]);
+  pendingMessages.length = 0;
+}
+
+/* ==========================================================================
+ * QUERY STRING
+ *
+ * ?day=62&paused=1&seed=9&temp=-2&cloud=70&nohud=1 — a specific day of a
+ * specific season is reproducible from a URL, which is how a still gets
+ * captured and how two settings get compared side by side.
+ * ========================================================================*/
+function applyQuery() {
+  var out = {}, p = {}, q = window.location.search;
+  if (!q || q.length < 2) return out;
+  q.slice(1).split('&').forEach(function (kv) {
+    var i = kv.indexOf('=');
+    p[decodeURIComponent(i < 0 ? kv : kv.slice(0, i))] = i < 0 ? '1' : decodeURIComponent(kv.slice(i + 1));
+  });
+  /* Query keys map onto CTL keys. `lat` keeps its short spelling because the
+     standalone page's URLs use it and those URLs are written down. */
+  var keys = { temp: 'tempOffset', cloud: 'cloudCover', wind: 'windMean',
+               precip: 'precipMult', winterPrecip: 'winterPrecip',
+               lat: 'latitude', speed: 'speed' };
+  Object.keys(keys).forEach(function (k) { if (p[k] != null) setCtl(keys[k], p[k]); });
+  if (p.day) out.day = Math.max(0, Math.min(M.SEASON_DAYS, parseInt(p.day, 10) || 0));
+  if (p.paused) out.paused = true;
+  if (p.seed != null) out.seed = (parseInt(p.seed, 10) || 0) >>> 0;
+  /* ?nohud hides the overlays entirely -- that is how config.json's wide.jpg
+     and thumb.jpg get captured as a clean picture of the leaf. */
+  if (p.nohud) {
+    var huds = document.querySelectorAll('.hud');
+    for (var h = 0; h < huds.length; h++) huds[h].style.display = 'none';
+    el('build-marker').style.display = 'none';
+  }
+  return out;
+}
+
+/* ------------------------------------------------------------------- sim */
+/* Where the leaf sat yesterday and where it sits today, in continuous cell
+ * coordinates. The model advances in whole days and a leaf is stationary in
+ * the grid on most of them — a season visits only ~34 distinct positions,
+ * nearly all of them between senescence and fall — so drawing the current
+ * day's position alone is what makes the change read as a series of pops.
+ * Keeping both lets the draw show the point between them that the clock's
+ * fractional day has actually reached. */
+var prevCC = null, curCC = null;
+
+function markCoords(reset) {
+  if (!interp) return;
+  curCC = interp.coordsOf(sim.leaves[0]);
+  if (reset || !prevCC) prevCC = curCC;
+}
+
+function buildSim(seed) {
+  sim = M.createSim({
+    cols: 1, rows: 1, mix: [SPECIES], seed: seed,
+    controls: readControls()
+  });
+  sim.reset();
+  markCoords(true);
+  refreshHud();
+}
+
+/* A finished season rolls straight into a new one. The wall is unattended, so
+ * this is not optional the way it was on the demo. */
+function nextSeed() { return (sim.seed * 1664525 + 1013904223) >>> 0; }
+
+/* ------------------------------------------------------------------ loop */
+function frame(t) {
+  var dt = Math.min(0.1, (t - lastT) / 1000);
+  lastT = t;
+
+  if (playing) {
+    acc += dt * CTL.speed * 3.2;                      // ~3 sim days a second at 1x
+    while (acc >= 1) {
+      acc -= 1;
+      var wasAt = curCC;
+      if (!sim.step()) { buildSim(nextSeed()); break; }
+      prevCC = wasAt;
+      markCoords(false);
+      refreshHud();
+    }
+  }
+
+  draw();
+  requestAnimationFrame(frame);
+}
+
+/* -------------------------------------------------------------- the draw */
+function draw() {
+  var W = cv.width / dpr, H = cv.height / dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  /* Cleared rather than painted: the canvas is transparent so the page's
+     blurred backdrop shows through it. Clearing every frame is still what wipes
+     the previous frame's leaf -- with no fill to cover it, skipping this would
+     leave every position the leaf has been drawn at smeared across the stage. */
+  ctx.clearRect(0, 0, W, H);
+
+  var leaf = sim.leaves[0];
+
+  /* Insets are a fraction of the stage, not of the window: the stage is a fixed
+     622:350 rectangle sized in CSS, so these hold at any wall resolution. */
+  var padL = W * 0.09;
+  var padR = W * 0.09;
+  var topClear = H * 0.08;
+  var bottomClear = H - H * 0.12;
+
+  var stageW = Math.max(160, W - padL - padR);
+  var stageH = Math.max(120, bottomClear - topClear);
+
+  var FALL_DROP = Math.min(96, stageH * 0.10);
+  /* Simulated days the fall takes, so it keeps pace with the clock rather than
+     running at a fixed wall-clock speed the rest of the scene ignores. */
+  var FALL_DAYS = 6;
+  var availH = Math.max(80, stageH - FALL_DROP);
+
+  /* 0.92 of whichever dimension binds. One leaf means the constraint is
+     usually height, and on a wide window that is a very large leaf — the 512px
+     source is upscaled and goes soft, which is the trade this cut accepts. */
+  var leafH = Math.min(availH * 0.92, (stageW * 0.92) / interp.aspect);
+  var leafW = leafH * interp.aspect;
+
+  var cx = padL + stageW / 2;
+  var cy = topClear + stageH / 2;
+  var t = performance.now() / 1000;
+
+  /* Paused, show the day we are on exactly; playing, show how far between
+     yesterday and today the clock has got. This is what turns ~30 stepped
+     images into a continuous slide, and it is why the doubled substeps are
+     worth paying for — at 6 the glide would quantise straight back onto the
+     same handful of composites it was gliding between. */
+  var tDay = playing ? Math.max(0, Math.min(1, acc)) : 1;
+
+  /* That same fraction as a day number. sim.doy is the day just stepped onto
+     and the frame is drawing the way from the one before it, so the picture
+     stands at doy - 1 + tDay. Anything animated off simulated time reads this
+     and not the integer, or it moves in whole-day jumps. */
+  var dayNow = sim.doy - 1 + tDay;
+
+  var shownCC = {
+    cx: prevCC.cx + (curCC.cx - prevCC.cx) * tDay,
+    cy: prevCC.cy + (curCC.cy - prevCC.cy) * tDay
+  };
+
+  /* A fallen leaf sinks and tips over. The model decided it fell; this only
+     decides where a fallen thing sits on the page. Measured off the integer
+     doy the six-day fall was six frames of animation, however fast the clock
+     ran — same easing, sampled continuously. */
+  var sinceFall = leaf.attached ? 0
+                : Math.max(0, Math.min(1, (dayNow - leaf.fellOnDoy) / FALL_DAYS));
+  var ease = sinceFall * sinceFall * (3 - 2 * sinceFall);
+  var y = cy + ease * FALL_DROP;
+  /* The sway damps out as it goes instead of being cut dead at the moment of
+     detachment, which was a hitch of its own at the top of the fall. */
+  var rot = ease * 0.5 + (1 - ease) * Math.sin(t * 0.6) * 0.014;
+  var w = leafW * (1 - 0.12 * ease);
+
+  ctx.globalAlpha = 1 - 0.40 * ease;
+  interp.draw(ctx, interp.atCell(shownCC.cx, shownCC.cy), cx, y, w, rot);
+  ctx.globalAlpha = 1;
+
+  /* The map marks the same glided position the leaf is drawn from, so the dot
+     slides with the picture instead of jumping a day at a time. */
+  drawMap(shownCC, leaf.attached);
+}
+
+/* ------------------------------------------------- the grid position map */
+/* From leaf-season.html: every reference cell at its measured colour, the dot
+ * where the leaf sits, and the ring around the 2 x 2 quad being blended. */
+var mapc = el('mapc'), mctx = mapc.getContext('2d');
+var MAP_CELLS = (function () {
+  var rows = G.rowsOf(SPECIES), out = [];
+  for (var r = 0; r < rows; r++) {
+    for (var c = 0; c < G.COLS; c++) {
+      out.push({ c: c, r: r, hex: G.cellColor(SPECIES, G.xAt(c), G.yAt(SPECIES, r)) });
+    }
+  }
+  return out;
+})();
+
+function drawMap(cc, attached) {
+  var W = mapc.width, H = mapc.height, rows = G.rowsOf(SPECIES), cols = G.COLS;
+  var cw = W / cols, ch = H / rows;
+  var u = W / 440;                                   // line/dot scale vs. the demo's 440px map
+  mctx.clearRect(0, 0, W, H);
+
+  for (var i = 0; i < MAP_CELLS.length; i++) {
+    var m = MAP_CELLS[i];
+    mctx.fillStyle = m.hex;
+    /* Row 0 is y = 0 and belongs at the BOTTOM. */
+    mctx.fillRect(m.c * cw, H - (m.r + 1) * ch, cw + 0.5, ch + 0.5);
+  }
+
+  mctx.strokeStyle = 'rgba(0,0,0,.22)';
+  mctx.lineWidth = u;
+  for (var c = 1; c < cols; c++) {
+    mctx.beginPath(); mctx.moveTo(c * cw, 0); mctx.lineTo(c * cw, H); mctx.stroke();
+  }
+  for (var r = 1; r < rows; r++) {
+    mctx.beginPath(); mctx.moveTo(0, r * ch); mctx.lineTo(W, r * ch); mctx.stroke();
+  }
+
+  var px = (cc.cx + 0.5) * cw;
+  var py = H - (cc.cy + 0.5) * ch;
+
+  var c0 = Math.max(0, Math.min(cols - 2, Math.floor(cc.cx)));
+  var r0 = Math.max(0, Math.min(rows - 2, Math.floor(cc.cy)));
+  var inset = 0.75 * u;
+  mctx.strokeStyle = 'rgba(255,255,255,.30)';
+  mctx.lineWidth = 1.5 * u;
+  mctx.strokeRect(c0 * cw + inset, H - (r0 + 2) * ch + inset, cw * 2 - 2 * inset, ch * 2 - 2 * inset);
+
+  mctx.beginPath();
+  mctx.arc(px, py, 6.5 * u, 0, Math.PI * 2);
+  mctx.fillStyle = attached ? '#fff' : 'rgba(255,255,255,.35)';
+  mctx.fill();
+  mctx.lineWidth = 2 * u;
+  mctx.strokeStyle = 'rgba(0,0,0,.55)';
+  mctx.stroke();
+}
+
+/* ------------------------------------------------------------------- hud */
+function refreshHud() {
+  var e = sim.env, leaf = sim.leaves[0];
+  el('oDate').textContent = M.doyToLabel(sim.doy);
+  el('oDay').textContent = 'day ' + sim.day + ' / ' + M.SEASON_DAYS;
+  el('oTmin').textContent = e.tMin.toFixed(1) + ' °C';
+  el('oLen').textContent = e.dayLength.toFixed(2) + ' h';
+  el('oSun').textContent = e.swMeanWm2 + ' W/m²';
+  el('oGust').textContent = e.gust.toFixed(1) + ' m/s';
+  el('oPrecip').textContent = e.rain < 0.05 ? 'none' : e.rain.toFixed(1) + ' mm';
+  el('oFrost').innerHTML = e.hardFreeze
+    ? '<span class="badge freeze">HARD FREEZE</span>'
+    : e.lightFrost ? '<span class="badge frost">frost</span>'
+                   : '<span class="badge none">clear</span>';
+  el('oHeld').innerHTML = leaf.attached
+    ? '<span class="badge held">held</span>'
+    : '<span class="badge fallen">fell ' + M.doyToLabel(leaf.fellOnDoy) + '</span>';
+
+  var pct = (100 * sim.day / M.SEASON_DAYS).toFixed(1) + '%';
+  el('progFill').style.width = pct;
+  el('seasonFill').style.width = pct;
+}
+
+/* --------------------------------------------------------------- transport */
+function setPlaying(v) {
+  /* Resuming starts the glide from where the paused frame actually sat, so play
+     never rewinds by the day it had not finished crossing. */
+  if (v && !playing) { prevCC = curCC; acc = 0; }
+  playing = v;
+}
+
+function stepOne() {
+  var wasAt = curCC;
+  if (!sim.step()) { buildSim(nextSeed()); return; }
+  prevCC = wasAt;
+  markCoords(false);
+  refreshHud();
+}
+
+/* ==========================================================================
+ * CONTROL MESSAGES FROM THE PHONE
+ *
+ * These `case` labels are exactly the `type` strings controls/lib/index.js
+ * sends, and the wall never sends anything back -- it only adds a listener. So
+ * the phone owns its own copy of the state and this is write-only.
+ * ========================================================================*/
+function handleMessage(message) {
+  if (!message || typeof message !== 'object') return;
+  switch (message.type) {
+    // --- the six environment settings, all `{type, value}` ---------------
+    case 'temp':         if (setCtl('tempOffset', message.value))   applyEnvChange(); break;
+    case 'cloud':        if (setCtl('cloudCover', message.value))   applyEnvChange(); break;
+    case 'wind':         if (setCtl('windMean', message.value))     applyEnvChange(); break;
+    case 'precip':       if (setCtl('precipMult', message.value))   applyEnvChange(); break;
+    case 'winterPrecip': if (setCtl('winterPrecip', message.value)) applyEnvChange(); break;
+    case 'latitude':     if (setCtl('latitude', message.value))     applyEnvChange(); break;
+
+    case 'speed':
+      setCtl('speed', message.value);
+      break;
+
+    case 'play':
+      setPlaying(message.value === undefined ? !playing : !!message.value);
+      break;
+
+    case 'step':
+      setPlaying(false);
+      stepOne();
+      break;
+
+    // Same weather, same seed, from the first green day -- which is how you see
+    // a change you just made apply to a leaf that has already turned.
+    case 'replay':
+      acc = 0;
+      buildSim(sim.seed);
+      setPlaying(true);
+      break;
+
+    case 'newLeaf':
+      acc = 0;
+      buildSim(nextSeed());
+      setPlaying(true);
+      break;
+
+    case 'resume':
+      // Nobody is driving any more: back to defaults and an unattended season,
+      // the way the wall should look when it is left alone.
+      Object.keys(M.DEFAULT_CONTROLS).forEach(function (k) { CTL[k] = M.DEFAULT_CONTROLS[k]; });
+      CTL.speed = 1.5;
+      applyEnvChange();
+      setPlaying(true);
+      break;
+
+    default:
+      console.warn('Unrecognized message type', message.type);
+  }
+}
+
+window.messageHandler = handleMessage;   // purely for local testing
+
+function resize() {
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  var rect = cv.getBoundingClientRect();
+  cv.width = Math.round(rect.width * dpr);
+  cv.height = Math.round(rect.height * dpr);
+  var mrect = mapc.getBoundingClientRect();
+  mapc.width = Math.max(1, Math.round(mrect.width * dpr));
+  mapc.height = Math.max(1, Math.round(mrect.height * dpr));
+}
+})();
+</script>
+</body>
+</html>

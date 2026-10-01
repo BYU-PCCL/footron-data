@@ -25,6 +25,7 @@ experiences = [
   "alg-infect",
   "neural-net-vis",
   "learning-to-walk",
+  "leaves",
   "spacetime-sandbox",
   "red-black-tree",
   "skip-list",
