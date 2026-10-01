@@ -1,0 +1,10 @@
+{
+  "id": "bookofmormon",
+  "type": "web",
+  "title": "One book, 100+ languages",
+  "description": "Every published translation of the Book of Mormon, 1830 to 2024 - each language's own title and a verse in its own script, and where on earth it is spoken.",
+  "artist": "Emeline MacJanet",
+  "layout": "full",
+  "lifetime": 400,
+  "queueable": true
+}

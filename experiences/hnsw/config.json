@@ -1,0 +1,16 @@
+{
+  "id": "hnsw",
+  "title": "How AI Search Finds Things",
+  "description": "The index inside most vector databases: points on a stack of graphs, sparse at the top and dense at the bottom. A search takes long jumps up high, drops down, and finds the closest matches after checking only a small fraction of the points.",
+  "long_description": "Every point lives on the bottom layer. Each layer above keeps only about a fifth of the points below it, picked at random, so the upper layers are sparse and their links are long jumps across the map.<br><br>A search enters at the top, hops greedily toward the target, drops a layer, and repeats with finer steps. At the bottom it widens into a small beam search to collect the closest few. The corner shows how many points it actually measured — usually a quarter or less — and how often that matched the exact answer.<br><br>This is HNSW (Malkov &amp; Yashunin, 2016), the method most vector databases use to find “things like this” for chatbots and image search. The graphs here are built the way the paper describes.",
+  "action_hints": [
+    "run a search and follow it down the layers",
+    "add twenty points and watch them link in",
+    "rebuild the whole graph with new random layers"
+  ],
+  "type": "web",
+  "layout": "full",
+  "lifetime": 180,
+  "queueable": true,
+  "unlisted": false
+}

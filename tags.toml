@@ -6,15 +6,18 @@ experiences = [ "pi", "pi-circle", "pi-walk", "pi-triangle" ]
 title = "Interactive Experiences"
 experiences = [
   "fourier",
+  "trie",
   "wind",
   "style-transfer",
   "fluid",
   "your-campus",
   "opinion-dynamics",
+  "crdt",
   "planes",
   "huffman",
   "gradient-descent",
   "twindragon",
+  "hnsw",
   "live-dashboard",
   "snowflake",
   "trickortreat",
@@ -22,7 +25,12 @@ experiences = [
   "alg-infect",
   "neural-net-vis",
   "learning-to-walk",
-  "leaves"
+  "leaves",
+  "spacetime-sandbox",
+  "red-black-tree",
+  "skip-list",
+  "bloom-filter",
+  "color-codes"
 ]
 
 [game]
@@ -70,7 +78,10 @@ experiences = [ "cpms50" ]
 [lds]
 title = "LDS-themed experiences"
 experiences = [
-  "temple-photo-op"
+  "temple-photo-op",
+  "bookofmormon",
+  "houses-of-light",
+  "scriptures"
 ]
 
 [archive]

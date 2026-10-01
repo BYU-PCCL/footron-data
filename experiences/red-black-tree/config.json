@@ -1,0 +1,17 @@
+{
+  "id": "red-black-tree",
+  "title": "Red-Black Tree",
+  "description": "The same keys, in the same order, into two trees. Fed sorted keys, a plain search tree collapses into a long line; a red-black tree recolours and rotates as it goes and stays short and bushy.",
+  "long_description": "A binary search tree puts smaller keys to the left and larger keys to the right, so a search follows one path down. But feed it keys in sorted order and every key goes right: the “tree” becomes a list as tall as the data.<br><br>The red-black tree next to it follows two rules — no red node has a red child, and every path down passes the same number of black nodes. When a new key breaks a rule it recolours, or rotates three nodes around, and each rotation happens on screen. The heights at the bottom are the punchline.<br><br>Those rules keep the height under 2·log₂ n. Java’s TreeMap, C++’s std::map and the Linux scheduler all use red-black trees.",
+  "action_hints": [
+    "insert keys in sorted order and watch the plain tree fall over",
+    "insert the same keys in random order",
+    "insert one key and follow its rotations",
+    "clear both trees"
+  ],
+  "type": "web",
+  "layout": "full",
+  "lifetime": 180,
+  "queueable": true,
+  "unlisted": false
+}
