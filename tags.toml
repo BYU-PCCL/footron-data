@@ -35,7 +35,8 @@ experiences = [
   "skip-list",
   "bloom-filter",
   "color-codes",
-  "load-path"
+  "load-path",
+  "haunted-gallery"
 ]
 
 [game]

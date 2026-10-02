@@ -1,0 +1,16 @@
+{
+  "id": "haunted-gallery",
+  "type": "web",
+  "title": "Haunted Gallery",
+  "description": "A candlelit wall of real old-master portraits, and some of them have noticed you. Walk past and their eyes follow.",
+  "long_description": "Every painting here is real: public-domain portraits from the Art Institute of Chicago, the Cleveland Museum of Art, the Metropolitan Museum and the National Gallery of Denmark, painted between the 1500s and 1900s. Five of them are watching. A camera above the wall finds the faces in the corridor, and each watcher's eyes turn to the person it has picked, moving the way real eyes do: quick jumps, slow follows, the odd blink. Bring friends and the watchers split their attention between you. The camera picture never leaves this machine and nothing is recorded.",
+  "artist": "Boston Sharp",
+  "action_hints": [
+    "walk past slowly and watch the eyes",
+    "bring a friend and see who they pick",
+    "stand still and see who is still staring"
+  ],
+  "layout": "full",
+  "lifetime": 300,
+  "queueable": true
+}
