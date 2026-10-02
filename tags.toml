@@ -30,7 +30,8 @@ experiences = [
   "red-black-tree",
   "skip-list",
   "bloom-filter",
-  "color-codes"
+  "color-codes",
+  "haunted-gallery"
 ]
 
 [game]
