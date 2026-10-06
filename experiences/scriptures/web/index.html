@@ -16,18 +16,19 @@
 
 <style>
   :root {
-    --paper:     #a39c93;   /* the old #f4ece0 at ~2/3 brightness -- full paper glared on the wall */
-    --paper-dim: #9a9186;
-    --ink:       #2f2419;
-    --ink-soft:  #5f5243;   /* marginalia, caret, attribution -- darkened to hold up on the dimmer paper */
+    /* Dark paper, light ink: a pale page glared on the wall. */
+    --paper:     #675c57;
+    --paper-dim: #5c524d;
+    --ink:       #e0dfd2;
+    --ink-soft:  #a59a90;   /* marginalia, caret, attribution */
 
     /* The two pens. Both are re-rolled per verse from PALETTES below, so these
        are only what the page opens with before the first verse is dealt. */
-    --accent:      #e352bc;              /* doodles, shimmer, lit words   */
-    --accent-deep: #a81f96;              /* the same pen pressed harder   */
-    --glow-near:   rgba(227,82,188,.75); /* the lamp under a glowing word */
-    --glow-far:    rgba(227,82,188,.32);
-    --marker:      #f6d976;              /* highlighter                   */
+    --accent:      #f08ad6;              /* doodles, shimmer, lit words   */
+    --accent-deep: #f5b0e3;              /* the same pen, brighter        */
+    --glow-near:   rgba(240,138,214,.75); /* the lamp under a glowing word */
+    --glow-far:    rgba(240,138,214,.32);
+    --marker:      #8f6a14;              /* highlighter                   */
 
     /* One size rules the page. Everything else is a ratio of it, so the whole
        quote scales with the wall in one move. */
@@ -51,9 +52,9 @@
   #paper {
     position: fixed; inset: 0;
     background:
-      radial-gradient(120% 90% at 50% 40%, rgba(255,255,255,.18) 0%, rgba(255,255,255,0) 55%),
-      radial-gradient(130% 110% at 50% 50%, rgba(0,0,0,0) 45%, rgba(74,54,32,.16) 100%),
-      repeating-linear-gradient(115deg, rgba(120,95,60,.035) 0 2px, rgba(0,0,0,0) 2px 6px),
+      radial-gradient(120% 90% at 50% 40%, rgba(255,255,255,.06) 0%, rgba(255,255,255,0) 55%),
+      radial-gradient(130% 110% at 50% 50%, rgba(0,0,0,0) 45%, rgba(30,20,14,.35) 100%),
+      repeating-linear-gradient(115deg, rgba(255,240,220,.03) 0 2px, rgba(0,0,0,0) 2px 6px),
       var(--paper);
   }
 
@@ -309,22 +310,24 @@ window.addEventListener('error', function (e) {
     ].join('\n');
 
     /* Two pens per verse. They are listed in pairs rather than drawn from two
-       separate lists, so the marker never lands next to a colour it fights. */
+       separate lists, so the marker never lands next to a colour it fights.
+       On the dark paper the pens are light, so the marks read, and the markers
+       are deep, so the light ink still reads on top of them. */
     var PALETTES = [
-        { accent: '#e352bc', marker: '#f6d976' },   /* magenta  / butter  */
-        { accent: '#c2452d', marker: '#f6d976' },   /* red pen  / butter  */
-        { accent: '#1f7a8c', marker: '#ffd2a6' },   /* teal     / peach   */
-        { accent: '#3b56c4', marker: '#ffe08a' },   /* indigo   / amber   */
-        { accent: '#7b3fc4', marker: '#dcea94' },   /* violet   / lime    */
-        { accent: '#2e7d4f', marker: '#ffd0e2' },   /* forest   / rose    */
-        { accent: '#cf6a1f', marker: '#c3e6f7' }    /* burnt orange / sky */
+        { accent: '#f08ad6', marker: '#8f6a14' },   /* pink      / deep gold  */
+        { accent: '#ff8a70', marker: '#1f6b6b' },   /* coral     / deep teal  */
+        { accent: '#6fd3e0', marker: '#7a3266' },   /* aqua      / plum       */
+        { accent: '#9db0ff', marker: '#8c5a1a' },   /* periwinkle / amber     */
+        { accent: '#c9a2ff', marker: '#5f6e1c' },   /* lilac     / olive      */
+        { accent: '#8fe0a8', marker: '#8a3550' },   /* mint      / deep rose  */
+        { accent: '#ffb36b', marker: '#2d5a8c' }    /* apricot   / deep blue  */
     ];
 
     /* Deals a pair onto the root element, where the doodles read it (the pen
        pulls --accent at the moment it draws) and every effect that carries
        colour picks it up. The glow is light rather than ink, so it gets the
-       accent darkened for the letterforms and the plain accent at two
-       strengths for the halo. */
+       accent lifted toward white for the letterforms and the plain accent at
+       two strengths for the halo. */
     function dealColours() {
         var p = PALETTES[Math.floor(Math.random() * PALETTES.length)];
         var n = parseInt(p.accent.slice(1), 16);
@@ -332,9 +335,9 @@ window.addEventListener('error', function (e) {
         var rgb = r + ',' + g + ',' + b;
         var root = document.documentElement.style;
         root.setProperty('--accent', p.accent);
-        root.setProperty('--accent-deep', 'rgb(' + Math.round(r * 0.72) + ',' +
-                                                   Math.round(g * 0.72) + ',' +
-                                                   Math.round(b * 0.72) + ')');
+        root.setProperty('--accent-deep', 'rgb(' + Math.round(r + (255 - r) * 0.35) + ',' +
+                                                   Math.round(g + (255 - g) * 0.35) + ',' +
+                                                   Math.round(b + (255 - b) * 0.35) + ')');
         root.setProperty('--glow-near', 'rgba(' + rgb + ',.75)');
         root.setProperty('--glow-far',  'rgba(' + rgb + ',.32)');
         root.setProperty('--marker', p.marker);
