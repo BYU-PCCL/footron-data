@@ -45,7 +45,7 @@ var Doodles = (function () {
     /* The pen. `seed` keeps a given doodle's wobble identical across redraws. */
     function pen(seed, opts) {
         var o = {
-            stroke: cssVar('--accent', '#c2452d'),
+            stroke: cssVar('--accent', '#ff8a70'),
             strokeWidth: 2.4,
             roughness: 1.9,
             bowing: 1.6,
@@ -182,7 +182,7 @@ var Doodles = (function () {
 
     function paintAmbient(seed, animate) {
         var w = window.innerWidth, h = window.innerHeight;
-        var ink = cssVar('--ink-soft', '#8a7a68');
+        var ink = cssVar('--ink-soft', '#a59a90');
         var g = document.createElementNS(NS, 'g');
         g.setAttribute('class', 'doodle doodle-ambient');
 
