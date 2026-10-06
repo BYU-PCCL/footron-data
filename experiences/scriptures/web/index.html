@@ -16,10 +16,10 @@
 
 <style>
   :root {
-    --paper:     #f4ece0;
-    --paper-dim: #e7dbc9;
+    --paper:     #a39c93;   /* the old #f4ece0 at ~2/3 brightness -- full paper glared on the wall */
+    --paper-dim: #9a9186;
     --ink:       #2f2419;
-    --ink-soft:  #9a8872;   /* marginalia, caret, attribution */
+    --ink-soft:  #5f5243;   /* marginalia, caret, attribution -- darkened to hold up on the dimmer paper */
 
     /* The two pens. Both are re-rolled per verse from PALETTES below, so these
        are only what the page opens with before the first verse is dealt. */
@@ -51,7 +51,7 @@
   #paper {
     position: fixed; inset: 0;
     background:
-      radial-gradient(120% 90% at 50% 40%, rgba(255,255,255,.55) 0%, rgba(255,255,255,0) 55%),
+      radial-gradient(120% 90% at 50% 40%, rgba(255,255,255,.18) 0%, rgba(255,255,255,0) 55%),
       radial-gradient(130% 110% at 50% 50%, rgba(0,0,0,0) 45%, rgba(74,54,32,.16) 100%),
       repeating-linear-gradient(115deg, rgba(120,95,60,.035) 0 2px, rgba(0,0,0,0) 2px 6px),
       var(--paper);
