@@ -56,8 +56,8 @@ window.APP_CONFIG = {
         width: 1280,            // detection quality at distance comes from here
         height: 720,
         fps: 30,                // capture rate; detector.fps is the inference rate
-        deviceId: null,         // press "L" in the app to list device ids
-        facingMode: 'user',
+        deviceId: null,         // null = the Logitech, never an Intel RealSense;
+                                // press "L" in the app to list device ids
     },
 
     // ---- Detector ---------------------------------------------------------
