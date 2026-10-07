@@ -233,8 +233,7 @@ export async function startCamera (video, cfg = {}) {
         height: { ideal: cfg.height || 720 },
     };
     if (cfg.fps) constraints.frameRate = { ideal: cfg.fps };
-    if (cfg.deviceId) constraints.deviceId = { exact: cfg.deviceId };
-    else if (cfg.facingMode) constraints.facingMode = cfg.facingMode;
+    constraints.deviceId = { exact: cfg.deviceId || await pickCamera() };
 
     const stream = await navigator.mediaDevices.getUserMedia({ video: constraints, audio: false });
     video.srcObject = stream;
@@ -242,6 +241,28 @@ export async function startCamera (video, cfg = {}) {
     if (video.videoWidth === 0)
         await new Promise(res => video.addEventListener('loadeddata', res, { once: true }));
     return stream;
+}
+
+// The wall's browser sees the Logitech webcam and the Intel RealSense (which
+// shows up as several devices), and its default is often a RealSense. Chrome
+// on Linux puts the USB vendor id in the label: 046d is Logitech, 8086 Intel.
+const LOGITECH = /logitech|\b046d:/i;
+const INTEL = /intel|realsense|\b8086:/i;
+
+async function pickCamera () {
+    let cams = await listCameras();
+    // Labels stay empty until the page has been granted the camera once.
+    if (!cams.some(c => c.label)) {
+        const probe = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        probe.getTracks().forEach(t => t.stop());
+        cams = await listCameras();
+    }
+    const cam = cams.find(c => LOGITECH.test(c.label)) ||
+                cams.find(c => c.label && !INTEL.test(c.label));
+    if (!cam) throw new Error('no non-Intel camera found (' +
+        (cams.map(c => c.label || '?').join(', ') || 'no cameras') + ')');
+    console.log('camera:', cam.label);
+    return cam.deviceId;
 }
 
 export async function listCameras () {
