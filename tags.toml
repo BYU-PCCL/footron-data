@@ -5,7 +5,6 @@ experiences = [ "pi", "pi-circle", "pi-walk", "pi-triangle" ]
 [interactive]
 title = "Interactive Experiences"
 experiences = [
-  "ghost-fleet",
   "fourier",
   "trie",
   "wind",
@@ -23,11 +22,8 @@ experiences = [
   "live-dashboard",
   "snowflake",
   "trickortreat",
-  "learned-index",
-  "wave-lab",
   "barnsley-fern",
   "alg-infect",
-  "quadtree",
   "neural-net-vis",
   "learning-to-walk",
   "spacetime-sandbox",
